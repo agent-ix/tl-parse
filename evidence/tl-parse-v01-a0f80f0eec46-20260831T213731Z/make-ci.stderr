@@ -1,0 +1,143 @@
+    Checking tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.35s
+   Compiling tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.42s
+     Running unittests src/lib.rs (target/debug/deps/tl_parse-c906a0a33a32e948)
+     Running unittests src/bin/tl-parse.rs (target/debug/deps/tl_parse-533ab2739be22da0)
+     Running tests/cli.rs (target/debug/deps/cli-417372e058bd80f6)
+     Running tests/corpus.rs (target/debug/deps/corpus-fcaec6a086548211)
+     Running tests/evidence_contract.rs (target/debug/deps/evidence_contract-a368a1ab574e4cc5)
+     Running tests/format.rs (target/debug/deps/format-78f405b95f8301e2)
+     Running tests/parser.rs (target/debug/deps/parser-ccaba9b8ba80c0a0)
+     Running tests/property.rs (target/debug/deps/property-a68adec9b0ececc3)
+   Compiling proc-macro2 v1.0.107
+   Compiling version_check v0.9.5
+   Compiling unicode-ident v1.0.24
+   Compiling libc v0.2.189
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling typenum v1.20.1
+   Compiling find-msvc-tools v0.1.11
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling shlex v2.0.1
+   Compiling serde_json v1.0.151
+   Compiling cpufeatures v0.2.17
+   Compiling cfg-if v1.0.4
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling arbitrary v1.4.2
+   Compiling generic-array v0.14.7
+   Compiling syn v3.0.4
+   Compiling jobserver v0.1.35
+   Compiling cc v1.4.4
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling libfuzzer-sys v0.4.13
+   Compiling serde_derive v1.0.229
+   Compiling tl-syntax v0.1.0 (https://github.com/agent-ix/tl-syntax.git?rev=740182f13b84858008d6f176f75136737d405c1b#740182f1)
+   Compiling tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+   Compiling tl-parse-fuzz v0.0.0 (/home/peter/dev/tl-parse/fuzz)
+    Finished `release` profile [optimized + debuginfo] target(s) in 8.24s
+LeakSanitizer enabled
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.02s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.02s
+     Running `fuzz/target/x86_64-unknown-linux-gnu/release/parser -artifact_prefix=/home/peter/dev/tl-parse/fuzz/artifacts/parser/ -artifact_prefix=/tmp/tmp.HReSboejd1/artifacts/ -runs=64 /tmp/tmp.HReSboejd1/generated /tmp/tmp.HReSboejd1/seeds`
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1668822119
+INFO: Loaded 1 modules   (4600 inline 8-bit counters): 4600 [0x5b25cf3c5ef0, 0x5b25cf3c70e8), 
+INFO: Loaded 1 PC tables (4600 PCs): 4600 [0x5b25cf3c70e8,0x5b25cf3d9068), 
+INFO:        0 files found in /tmp/tmp.HReSboejd1/generated
+INFO:        4 files found in /tmp/tmp.HReSboejd1/seeds
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: seed corpus: files: 4 min: 15b max: 67b total: 168b rss: 31Mb
+#5	INITED cov: 855 ft: 1394 corp: 4/168b exec/s: 0 rss: 34Mb
+#6	NEW    cov: 861 ft: 1488 corp: 5/233b lim: 67 exec/s: 0 rss: 34Mb L: 65/67 MS: 1 CrossOver-
+#7	NEW    cov: 870 ft: 1613 corp: 6/300b lim: 67 exec/s: 0 rss: 35Mb L: 67/67 MS: 1 ChangeByte-
+#8	NEW    cov: 871 ft: 1655 corp: 7/314b lim: 67 exec/s: 0 rss: 35Mb L: 14/67 MS: 1 EraseBytes-
+#9	NEW    cov: 877 ft: 1766 corp: 8/381b lim: 67 exec/s: 0 rss: 35Mb L: 67/67 MS: 1 ChangeByte-
+#10	NEW    cov: 888 ft: 1858 corp: 9/402b lim: 67 exec/s: 0 rss: 35Mb L: 21/67 MS: 1 ShuffleBytes-
+#11	NEW    cov: 889 ft: 1860 corp: 10/431b lim: 67 exec/s: 0 rss: 35Mb L: 29/67 MS: 1 InsertRepeatedBytes-
+#12	NEW    cov: 891 ft: 1880 corp: 11/485b lim: 67 exec/s: 0 rss: 35Mb L: 54/67 MS: 1 EraseBytes-
+#14	NEW    cov: 897 ft: 1944 corp: 12/551b lim: 67 exec/s: 0 rss: 35Mb L: 66/67 MS: 2 CrossOver-InsertRepeatedBytes-
+#20	NEW    cov: 897 ft: 1989 corp: 13/616b lim: 67 exec/s: 0 rss: 36Mb L: 65/67 MS: 1 InsertRepeatedBytes-
+#23	NEW    cov: 897 ft: 1999 corp: 14/683b lim: 67 exec/s: 0 rss: 36Mb L: 67/67 MS: 3 ShuffleBytes-ShuffleBytes-ChangeBinInt-
+#29	NEW    cov: 901 ft: 2018 corp: 15/704b lim: 67 exec/s: 0 rss: 36Mb L: 21/67 MS: 1 CMP- DE: "->"-
+#33	NEW    cov: 909 ft: 2094 corp: 16/718b lim: 67 exec/s: 0 rss: 36Mb L: 14/67 MS: 4 ChangeByte-ChangeBinInt-ChangeASCIIInt-CrossOver-
+#34	NEW    cov: 916 ft: 2135 corp: 17/785b lim: 67 exec/s: 0 rss: 37Mb L: 67/67 MS: 1 CMP- DE: "\000\000\000\000\000\000\007V"-
+#35	NEW    cov: 916 ft: 2146 corp: 18/850b lim: 67 exec/s: 0 rss: 37Mb L: 65/67 MS: 1 ChangeBit-
+#36	NEW    cov: 916 ft: 2151 corp: 19/889b lim: 67 exec/s: 0 rss: 37Mb L: 39/67 MS: 1 EraseBytes-
+#38	NEW    cov: 916 ft: 2181 corp: 20/901b lim: 67 exec/s: 0 rss: 37Mb L: 12/67 MS: 2 ChangeBit-EraseBytes-
+#39	NEW    cov: 916 ft: 2197 corp: 21/967b lim: 67 exec/s: 0 rss: 37Mb L: 66/67 MS: 1 CopyPart-
+#40	NEW    cov: 918 ft: 2204 corp: 22/988b lim: 67 exec/s: 0 rss: 37Mb L: 21/67 MS: 1 ChangeBinInt-
+#46	NEW    cov: 925 ft: 2220 corp: 23/999b lim: 67 exec/s: 0 rss: 37Mb L: 11/67 MS: 1 EraseBytes-
+	NEW_FUNC[1/3]: 0x5b25cf301380  (/home/peter/dev/tl-parse/fuzz/target/x86_64-unknown-linux-gnu/release/parser+0x147380) (BuildId: 70534c02dbd40d29ac109a1bfa74418c5d9b7063)
+	NEW_FUNC[2/3]: 0x5b25cf31c1e0  (/home/peter/dev/tl-parse/fuzz/target/x86_64-unknown-linux-gnu/release/parser+0x1621e0) (BuildId: 70534c02dbd40d29ac109a1bfa74418c5d9b7063)
+#59	NEW    cov: 940 ft: 2237 corp: 24/1013b lim: 67 exec/s: 0 rss: 38Mb L: 14/67 MS: 3 ChangeBit-InsertByte-EraseBytes-
+#60	NEW    cov: 940 ft: 2248 corp: 25/1027b lim: 67 exec/s: 0 rss: 38Mb L: 14/67 MS: 1 ChangeBinInt-
+#61	NEW    cov: 942 ft: 2251 corp: 26/1092b lim: 67 exec/s: 0 rss: 38Mb L: 65/67 MS: 1 ShuffleBytes-
+#64	DONE   cov: 942 ft: 2251 corp: 26/1092b lim: 67 exec/s: 0 rss: 38Mb
+###### Recommended dictionary. ######
+"->" # Uses: 2
+"\000\000\000\000\000\000\007V" # Uses: 0
+###### End of recommended dictionary. ######
+Done 64 runs in 0 second(s)
+warning[wildcard]: found 1 wildcard dependency for crate 'tl-parse'
+   ┌─ /home/peter/dev/tl-parse/Cargo.toml:23:13
+   │
+23 │ tl-syntax = { git = "https://github.com/agent-ix/tl-syntax.git", rev = "740182f13b84858008d6f176f75136737d405c1b", features = ["serde"] }
+   │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ wildcard dependency
+   │
+   ├ tl-parse v0.1.0
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:6:6
+  │
+6 │     "BSD-2-Clause",
+  │      ━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:7:6
+  │
+7 │     "BSD-3-Clause",
+  │      ━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:8:6
+  │
+8 │     "CDLA-Permissive-2.0",
+  │      ━━━━━━━━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:9:6
+  │
+9 │     "ISC",
+  │      ━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/peter/dev/tl-parse/deny.toml:11:6
+   │
+11 │     "Zlib",
+   │      ━━━━ unmatched license allowance
+
+DuplicateArchetype: 'ADR' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Plan' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Review' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'SpecReview' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Standard' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateInverseEdge: inverse label 'part_of' declared by verbs ["aggregates", "contains"]; first-wins
+DuplicateArchetype: 'ADR' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Plan' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Review' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'SpecReview' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Standard' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateInverseEdge: inverse label 'part_of' declared by verbs ["aggregates", "contains"]; first-wins
+    Checking tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.20s
+ Documenting tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.46s
+   Generated /home/peter/dev/tl-parse/target/doc/tl_parse/index.html
+assurance argument names a source older than the reviewed tree
+make: *** [Makefile:97: verify-evidence] Error 1

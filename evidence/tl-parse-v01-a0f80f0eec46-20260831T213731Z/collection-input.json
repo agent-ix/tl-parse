@@ -1,0 +1,108 @@
+{
+  "commands": [
+    "make ci",
+    "make spec",
+    "python3 scripts/check_traceability_coverage.py",
+    "RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features",
+    "cargo tree --no-default-features --edges normal",
+    "make check-corpus",
+    "git diff --check origin/main...a0f80f0eec46e4f2d3e4d1f4da106113a0eb582d -- . :(exclude)evidence/**",
+    "validate local evidence schemas and exact merged PGM-01 envelope",
+    "python3 scripts/build_evidence_envelope.py EVIDENCE_DIR final",
+    "validate exact finalized PGM-01 envelope",
+    "python3 scripts/finalize_collection.py EVIDENCE_DIR"
+  ],
+  "corpus": {
+    "checksumDigest": {
+      "algorithm": "sha256",
+      "value": "7ef9210c07a25ded07fc77a6c0c1e6668016006b98dbeb5bcee9f768f2028f51"
+    },
+    "fuzzChecksumDigest": {
+      "algorithm": "sha256",
+      "value": "4b807d3384e29dcc889893b869be3e8bac6663ddeb8651293a7461253aa4ef43"
+    },
+    "manifestDigest": {
+      "algorithm": "sha256",
+      "value": "cefb1b5f1ad68f7c7155be153cd5cfd6180ceade3206691120fa8c6c5bb376d0"
+    },
+    "revision": "tl-parse-corpus/v1"
+  },
+  "dependency": {
+    "cargoLockDigest": {
+      "algorithm": "sha256",
+      "value": "4f6eaf0c647acab71baf842bcbff741507dab9a902262f5423b2cd78810b780a"
+    },
+    "tlSyntaxRevision": "740182f13b84858008d6f176f75136737d405c1b"
+  },
+  "dialect": {
+    "documentDigest": {
+      "algorithm": "sha256",
+      "value": "2004663070c53bda7aa1bf54f0057d83835c3afdbccb91de7ddb312e1e6a6f24"
+    },
+    "recordDigest": {
+      "algorithm": "sha256",
+      "value": "22959d4df6c7a1230172289903f1c31f36859b6f2a0e4556e886bdb7ebc9ae11"
+    },
+    "revision": "tl-parse.clean-ascii/v1"
+  },
+  "limits": {
+    "depth": 256,
+    "diagnostics": 64,
+    "formatWork": 4194304,
+    "nodes": 10000,
+    "outputBytes": 1048576,
+    "parseWork": 1000000,
+    "sourceBytes": 1048576,
+    "tokens": 100000
+  },
+  "pgm01": {
+    "candidateRevision": "7dac9d8c19952412b56a0347387666e2ca81e01d",
+    "envelopeSchema": "quire.derivation-evidence/v1",
+    "envelopeSchemaDigest": {
+      "algorithm": "sha256",
+      "value": "0946e235e9e4b0fa79e9b9ec27ae157b303c17de0a9408d3cc04968fb7152256"
+    },
+    "policy": "ix://agent-ix/quire-contract-ir/PGM-01"
+  },
+  "qualificationProfile": "tl-parse.evidence-qualification/v2",
+  "schemaVersion": "tl-parse.evidence-input/v1",
+  "sourceRevision": "a0f80f0eec46e4f2d3e4d1f4da106113a0eb582d",
+  "sourceState": "clean",
+  "tools": {
+    "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+    "identities": {
+      "bash": {
+        "path": "/usr/bin/bash",
+        "sha256": "59474588a312b6b6e73e5a42a59bf71e62b55416b6c9d5e4a6e1c630c2a9ecd4"
+      },
+      "cargo": {
+        "path": "/home/peter/.cargo/bin/cargo",
+        "sha256": "4acc9acc76d5079515b46346a485974457b5a79893cfb01112423c89aeb5aa10"
+      },
+      "git": {
+        "path": "/usr/bin/git",
+        "sha256": "587ef21868c948b883993e23209b86a72a6ddc06aab1545c697ffc31075acd4a"
+      },
+      "make": {
+        "path": "/usr/bin/make",
+        "sha256": "92f646030615cd98490a68a94c0aefd87b552be3158b941c02e43b0bfdb576db"
+      },
+      "python3": {
+        "path": "/usr/bin/python3",
+        "sha256": "7d51cd6b48b521277f5caa4610a82126e315fa2be4df069823a8b1eeb5bd4a86"
+      },
+      "quire": {
+        "path": "/home/peter/.npm-global/bin/quire",
+        "sha256": "96ce25fe91ab75ee96505b343b251a3e1db16de430a524aabef1f5590dbc02b3"
+      },
+      "sha256sum": {
+        "path": "/usr/bin/sha256sum",
+        "sha256": "7645c8e76d75515ccb75c9086bdcf0d4071f2985f380f249253ead7d7c6810b3"
+      }
+    },
+    "jsonschema": "3.2.0",
+    "python": "Python 3.10.12",
+    "quire": "0.31.0",
+    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)"
+  }
+}
