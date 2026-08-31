@@ -46,6 +46,12 @@ fi
 trusted_path="$(/usr/bin/python3 scripts/tool_identity.py --trusted-path)"
 real_home="$(/usr/bin/python3 scripts/tool_identity.py --home)"
 staging_root="$(/usr/bin/mktemp -d -p . .tl-parse-evidence-stage.XXXXXX)"
+cleanup_staging() {
+  if [[ -n "${staging_root:-}" && -d "$staging_root" ]]; then
+    /usr/bin/rm -rf -- "$staging_root"
+  fi
+}
+trap cleanup_staging EXIT
 evidence_dir="$staging_root/$(basename "$final_evidence_dir")"
 /usr/bin/mkdir -p "$evidence_dir"
 collection_failed=0
@@ -85,12 +91,10 @@ echo clean >"$evidence_dir/source-state.txt"
 "${clean_env[@]}" quire provenance --pretty >"$evidence_dir/quire-provenance.json"
 "${clean_env[@]}" cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
 for tool in bash cargo git make python3 quire rustc sha256sum; do
-  "${clean_env[@]}" python3 -c \
-    'import sys, tool_identity; _, tools = tool_identity.load_lock(); print(tools[sys.argv[1]]["path"])' \
-    "$tool" >"$evidence_dir/tool-${tool}-path.txt"
-  "${clean_env[@]}" python3 -c \
-    'import sys, tool_identity; _, tools = tool_identity.load_lock(); print(tools[sys.argv[1]]["sha256"])' \
-    "$tool" >"$evidence_dir/tool-${tool}-sha256.txt"
+  "${clean_env[@]}" python3 scripts/tool_identity.py --tool-path "$tool" \
+    >"$evidence_dir/tool-${tool}-path.txt"
+  "${clean_env[@]}" python3 scripts/tool_identity.py --tool-sha256 "$tool" \
+    >"$evidence_dir/tool-${tool}-sha256.txt"
 done
 
 # The candidate cannot already carry an AA-001 record for itself. Run every
@@ -149,6 +153,7 @@ fi
 /usr/bin/mkdir -p "$(/usr/bin/dirname "$final_evidence_dir")"
 /usr/bin/mv "$evidence_dir" "$final_evidence_dir"
 /usr/bin/rmdir "$staging_root"
+staging_root=""
 evidence_dir="$final_evidence_dir"
 
 /usr/bin/find "$evidence_dir" -type f -print0 \

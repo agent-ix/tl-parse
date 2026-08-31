@@ -114,6 +114,19 @@ def main() -> int:
     lock_value, locked_tools = MODULE.tool_identity.load_lock()
     unavailable, mismatches = MODULE.tool_identity.verify_live(lock_value, locked_tools)
     assert unavailable == [] and mismatches == []
+    qualified_environment = MODULE.tool_identity.qualified_environment(
+        lock_value, locked_tools
+    )
+    for name, identity in locked_tools.items():
+        for option, field in (("--tool-path", "path"), ("--tool-sha256", "sha256")):
+            result = subprocess.run(
+                ["python3", "scripts/tool_identity.py", option, name],
+                cwd=ROOT, check=False, capture_output=True, text=True,
+                env=qualified_environment,
+            )
+            assert result.returncode == 0 and result.stdout.strip() == identity[field], (
+                f"clean-environment tool identity lookup failed for {name} {field}"
+            )
     forged_tools = {name: dict(identity) for name, identity in locked_tools.items()}
     forged_tools["cargo"]["sha256"] = "0" * 64
     assert MODULE.tool_identity.verify_live(lock_value, forged_tools)[1], (

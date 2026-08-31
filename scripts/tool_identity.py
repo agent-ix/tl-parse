@@ -109,8 +109,17 @@ def verify_live(
 
 
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in {"--verify-live", "--trusted-path", "--home"}:
-        print("usage: tool_identity.py {--verify-live|--trusted-path|--home}", file=sys.stderr)
+    simple_options = {"--verify-live", "--trusted-path", "--home"}
+    tool_options = {"--tool-path", "--tool-sha256"}
+    if not (
+        (len(sys.argv) == 2 and sys.argv[1] in simple_options)
+        or (len(sys.argv) == 3 and sys.argv[1] in tool_options and sys.argv[2] in REQUIRED)
+    ):
+        print(
+            "usage: tool_identity.py {--verify-live|--trusted-path|--home|"
+            "--tool-path NAME|--tool-sha256 NAME}",
+            file=sys.stderr,
+        )
         return 2
     try:
         value, tools = load_lock()
@@ -122,6 +131,12 @@ def main() -> int:
         return 0
     if sys.argv[1] == "--home":
         print(value["environment"]["home"])
+        return 0
+    if sys.argv[1] == "--tool-path":
+        print(tools[sys.argv[2]]["path"])
+        return 0
+    if sys.argv[1] == "--tool-sha256":
+        print(tools[sys.argv[2]]["sha256"])
         return 0
     unavailable, mismatches = verify_live(value, tools)
     for error in unavailable + mismatches:
