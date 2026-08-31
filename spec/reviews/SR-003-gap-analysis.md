@@ -11,7 +11,7 @@ review_set: all
 
 ## Summary
 
-Strict coverage maps every criterion to executable or retained inspection
+Strict coverage maps all 55 rows to executable or retained inspection
 evidence. Tests cover the complete dialect, exact graph/profile mapping,
 stable malformed reports, every declared logical limit, canonical formatting,
 generated round trips, compilation and bounded execution of the actual fuzz

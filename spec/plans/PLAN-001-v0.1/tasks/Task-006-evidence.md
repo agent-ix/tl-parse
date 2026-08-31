@@ -21,7 +21,7 @@ record.
 
 ## Completion Evidence
 
-The retained `64b2b1e610fb` record has a passing post-seal collection summary,
+The retained `fc8e742cfb51` record has a passing post-seal collection summary,
 two passing sealed PGM-01 validations, and a checksum manifest covering every
 artifact. The envelope remains non-self-attesting; its separate post-seal
 summary records exact finalized-envelope validation.

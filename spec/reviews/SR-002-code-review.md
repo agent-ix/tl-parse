@@ -22,7 +22,9 @@ source-size/UTF-8 boundary, CLI misuse paths, behavioral Make targets, evidence
 artifact tampering, and clean-room provenance bindings. Review corrected
 canonical adjacency tokenization, exact amended tl-syntax pins, limit-test
 construction, corpus integrity gates, formatter depth growth, fuzz-target
-dependency drift, and evidence false-success handling. No unresolved code
+dependency drift, evidence false-success handling, streamed source-size
+reporting, per-node formatter budgeting, failure propagation, strict
+traceability completeness, and evidence-anchor cross-checking. No unresolved code
 defect or blocking requirement was found. Independent human review remains
 mandatory.
 
@@ -43,3 +45,5 @@ mandatory.
 | FND-211 | medium | Resolved: retained evidence re-derivation, per-artifact manifest verification, behavioral Make probes, whole-document dialect/provenance digests, and exact consulted-file hashes reject previously viable false-positive mutations. | FR-005, NFR-002 |
 | FND-212 | low | Defensive graph-validation errors remain intentionally typed at internal invariant boundaries even though safe public constructors prevent callers from manufacturing those states. | FR-003, FR-004 |
 | FND-213 | medium | The dialect deliberately associates unparenthesized `U`/`R` chains to the left; the normative record now calls out the interoperability risk and requires explicit parentheses across unlike dialects. | FR-001, NFR-002 |
+| FND-214 | medium | Resolved: oversized streams are counted to EOF without retaining or fabricating source bytes; diagnostics report the true submitted byte count. | FR-005, NFR-001, TC-021 |
+| FND-215 | medium | Resolved: local failure sentinels, JSON traceability completeness, mandatory summaries, AA-to-anchor agreement, per-node formatter work, and scratch-only fuzz artifacts reject the exact-head review mutations. | FR-004, FR-005, NFR-001, NFR-002, TC-017, TC-022 |
