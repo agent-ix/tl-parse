@@ -343,6 +343,14 @@ def validate_envelope_result(evidence_dir: Path, value: dict[str, object]) -> li
         else "inconclusive"
     )
     errors = [] if actual == expected else [f"envelope result {actual!r} disagrees with {expected!r}"]
+    if actual != expected:
+        failed = sorted(
+            str(item.get("name"))
+            for item in outcomes
+            if isinstance(item, dict) and item.get("status") == "failed"
+        )
+        if failed:
+            errors.append(f"failed retained outcomes: {', '.join(failed)}")
     errors.extend(validate_parameter_identity(evidence_dir, envelope, revision))
     errors.extend(validate_tool_identity(evidence_dir, revision))
     return errors
