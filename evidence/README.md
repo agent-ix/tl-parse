@@ -6,6 +6,11 @@ retains command stdout, stderr, status, identities, limitations, a canonical
 `quire.derivation-evidence/v1` envelope, a post-seal validation summary, and an
 external SHA-256 manifest.
 
+`evidence/ANCHORS` binds each retained outer manifest from the reviewed source
+tree. `make verify-evidence` checks this second-level anchor before rechecking
+the outer manifest, every manifest-listed artifact, and the derived collection
+summary.
+
 Set `PGM01_SCHEMA` and `PGM01_VALIDATOR` to the exact merged PGM-01 Draft 7
 schema and validator. Set `PGM01_PYTHON` when the validator uses a dedicated
 interpreter. Missing external gates are status 125 and non-conclusive, never a

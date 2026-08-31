@@ -125,6 +125,9 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         assert_eq!(value["additionalProperties"], false);
     }
     assert!(fs::metadata(root_path("scripts/verify_evidence_manifest.py")).is_ok());
+    assert!(fs::read_to_string(root_path("scripts/verify_evidence.sh"))
+        .unwrap()
+        .contains("sha256sum --check evidence/ANCHORS"));
 
     let behavior = Command::new("python3")
         .arg(root_path("scripts/test_evidence_tool.py"))
