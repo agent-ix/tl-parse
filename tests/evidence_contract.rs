@@ -70,7 +70,11 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     }
 
     let sentinel = Command::new("make")
-        .args(["--no-print-directory", "MAKEFLAGS=", "check-failure-propagation"])
+        .args([
+            "--no-print-directory",
+            "MAKEFLAGS=",
+            "check-failure-propagation",
+        ])
         .env_remove("MAKEFLAGS")
         .env_remove("MAKELEVEL")
         .env_remove("MFLAGS")
