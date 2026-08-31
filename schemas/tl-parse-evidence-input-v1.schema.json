@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/agent-ix/tl-parse/schemas/tl-parse-evidence-input-v1.schema.json",
+  "title": "tl-parse evidence collection input v1",
+  "description": "SPDX-License-Identifier: MIT OR Apache-2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sourceRevision", "sourceState", "commands", "tools", "pgm01", "dependency", "dialect", "corpus", "limits"],
+  "properties": {
+    "schemaVersion": {"const": "tl-parse.evidence-input/v1"},
+    "sourceRevision": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+    "sourceState": {"const": "clean"},
+    "commands": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cargo", "jsonschema", "python", "quire", "rustc"],
+      "properties": {
+        "cargo": {"type": "string", "minLength": 1},
+        "jsonschema": {"type": "string", "minLength": 1},
+        "python": {"type": "string", "minLength": 1},
+        "quire": {"type": "string", "minLength": 1},
+        "rustc": {"type": "string", "minLength": 1}
+      }
+    },
+    "pgm01": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "candidateRevision", "envelopeSchema", "envelopeSchemaDigest"],
+      "properties": {
+        "policy": {"const": "ix://agent-ix/quire-contract-ir/PGM-01"},
+        "candidateRevision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "envelopeSchema": {"const": "quire.derivation-evidence/v1"},
+        "envelopeSchemaDigest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tlSyntaxRevision", "cargoLockDigest"],
+      "properties": {
+        "tlSyntaxRevision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "cargoLockDigest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "dialect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "recordDigest", "documentDigest"],
+      "properties": {
+        "revision": {"const": "tl-parse.clean-ascii/v1"},
+        "recordDigest": {"$ref": "#/definitions/digest"},
+        "documentDigest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "manifestDigest", "checksumDigest", "fuzzChecksumDigest"],
+      "properties": {
+        "revision": {"const": "tl-parse-corpus/v1"},
+        "manifestDigest": {"$ref": "#/definitions/digest"},
+        "checksumDigest": {"$ref": "#/definitions/digest"},
+        "fuzzChecksumDigest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceBytes", "tokens", "nodes", "depth", "diagnostics", "parseWork", "outputBytes", "formatWork"],
+      "properties": {
+        "sourceBytes": {"type": "integer", "minimum": 0},
+        "tokens": {"type": "integer", "minimum": 0},
+        "nodes": {"type": "integer", "minimum": 0},
+        "depth": {"type": "integer", "minimum": 0},
+        "diagnostics": {"type": "integer", "minimum": 0},
+        "parseWork": {"type": "integer", "minimum": 0},
+        "outputBytes": {"type": "integer", "minimum": 0},
+        "formatWork": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "definitions": {
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

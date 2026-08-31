@@ -11,10 +11,19 @@ make lint           # clippy with -D warnings
 make test           # cargo test
 make build          # release build
 make clean          # cargo clean
-make deny           # cargo deny check licenses
+make deny           # cargo deny check licenses and sources
 make audit-unsafe   # check that every unsafe block has a // SAFETY: comment
-make ci             # fmt-check + lint + test + deny + audit-unsafe
+make check-corpus   # verify hostile-input and fuzz-seed checksums
+make evidence-tool  # exercise evidence outcome and schema tooling
+make verify-evidence # verify retained exact-candidate evidence
+make spec           # validate specifications and strict coverage
+make rustdoc        # build warning-free public docs
+make ci             # complete local iteration gate
 ```
+
+GitHub Actions is intentionally manual-only. Do not add `push` or
+`pull_request` triggers. Run local `make ci` while iterating and dispatch the
+hosted workflow once for a finalized PR revision.
 
 ## Safety scaffolding
 
@@ -30,8 +39,19 @@ Backported from `agent-ix/ecaz`:
 
 ```
 src/lib.rs             # crate root
-tests/integration.rs   # end-to-end tests
-benches/               # criterion benchmarks (opt-in; add criterion to dev-deps)
+src/lexer.rs           # bounded closed-dialect lexer
+src/parser.rs          # direct tl-syntax graph parser
+src/format.rs          # iterative bounded canonical formatter
+src/bin/tl-parse.rs    # thin validate/format CLI
+tests/                 # unit, property, corpus, CLI, and evidence contracts
+corpus/v1/             # checksum-protected hostile-input fixtures
+fuzz/                  # isolated cargo-fuzz target and checked seeds
+evidence/              # exact-candidate retained evidence
 spec/                  # requirements artifacts (from /spec-create-spec)
 scripts/               # local tooling
 ```
+
+The exact `tl-syntax` candidate is pinned at
+`740182f13b84858008d6f176f75136737d405c1b`. Its temporary git-source
+exception expires on 2026-09-07 or upstream merge, whichever comes first;
+release requires repinning and regenerating evidence.

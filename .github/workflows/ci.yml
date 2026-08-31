@@ -4,6 +4,20 @@ on:
   workflow_dispatch:
 
 jobs:
+  msrv:
+    name: Rust 1.75 Feature Boundary
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MSRV
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.75.0
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+      - name: Check library, CLI, and integration tests
+        run: cargo check --all-targets --all-features
+
   rust:
     name: Rust Checks
     runs-on: ubuntu-24.04
@@ -18,17 +32,26 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Format
-        run: cargo fmt --all -- --check
+      - name: Install evidence tools
+        run: pip install 'jsonschema==4.25.1'
 
-      - name: Lint
-        run: cargo clippy --all-targets -- -D warnings
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      - name: Test
-        run: cargo test
+      - name: Install specification tools and modules
+        run: |
+          npm install --global '@agent-ix/quire-cli@0.31.0' '@agent-ix/quoin@0.22.5'
+          quoin module ensure-defaults
 
-      - name: Unsafe audit
-        run: bash scripts/check_unsafe_comments.sh
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+
+      - name: Complete local gate
+        run: make ci
 
   licenses:
     name: License Check
@@ -43,5 +66,5 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-deny
-      - name: cargo deny check licenses
-        run: cargo deny check licenses
+      - name: cargo deny policy
+        run: cargo deny check licenses sources

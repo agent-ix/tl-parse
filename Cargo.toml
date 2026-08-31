@@ -14,8 +14,14 @@ name = "tl_parse"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tl-syntax = { git = "https://github.com/agent-ix/tl-syntax.git", rev = "740182f13b84858008d6f176f75136737d405c1b", features = ["serde"] }
 
 [dev-dependencies]
+proptest = "=1.5.0"
+tempfile = "=3.10.1"
 
 [profile.release]
 lto = "thin"

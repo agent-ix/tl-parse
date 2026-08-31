@@ -11,8 +11,9 @@ status: active
 ## Authorship and provenance
 
 This grammar was independently authored for tl-parse from the operator and
-checked-value vocabulary exposed by dual-licensed `agent-ix/tl-syntax` at exact
-revision `5e59a26d71b4b5d79623850cda50010e18a90dad`. No parser implementation,
+checked-value vocabulary exposed by MIT OR Apache-2.0 dual-licensed
+`agent-ix/tl-syntax` at exact
+revision `740182f13b84858008d6f176f75136737d405c1b`. No parser implementation,
 grammar production, or grammar prose from any third-party MLTL tool was used.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
