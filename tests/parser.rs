@@ -1,6 +1,6 @@
 use tl_parse::{
-    format_document, parse, report_json, DiagnosticCode, ExpectedToken, FormatLimits, ParseLimits,
-    RecoveryAction,
+    format_document, parse, report_json, source_limit_report, DiagnosticCode, ExpectedToken,
+    FormatLimits, ParseLimits, RecoveryAction,
 };
 use tl_syntax::{NodeKind, SemanticProfile};
 
@@ -252,6 +252,23 @@ fn source_token_node_and_depth_limits_fail_closed() {
         .diagnostics
         .iter()
         .any(|item| item.code == DiagnosticCode::DepthLimit));
+}
+
+// Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
+#[test]
+fn source_limit_report_is_total_at_every_limit_boundary() {
+    let limits = ParseLimits {
+        max_source_bytes: 4_096,
+        ..ParseLimits::default()
+    };
+    for source_bytes in [0, 1, 4_095, 4_096, 4_097] {
+        let report = source_limit_report(source_bytes, SemanticProfile::ClosedTraceV1, limits);
+        assert_eq!(report.stats.source_bytes, source_bytes);
+        assert_eq!(report.diagnostics[0].code, DiagnosticCode::SourceLimit);
+        let span = report.diagnostics[0].span;
+        assert!(span.start() <= span.end());
+        assert!(span.end() as usize <= source_bytes);
+    }
 }
 
 // Trace: TC-012, FR-003-AC-2, NFR-001-AC-2

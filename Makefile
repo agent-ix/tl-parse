@@ -3,6 +3,10 @@
 # =============================================================================
 
 CARGO ?= cargo
+PYTHON ?= python3
+QUIRE ?= quire
+SHA256SUM ?= sha256sum
+BASH ?= bash
 
 .PHONY: help
 help:
@@ -21,6 +25,7 @@ help:
 	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
 	@echo "  make verify-evidence  - Verify retained evidence SHA-256 manifests"
 	@echo "  make spec             - Validate specification and strict coverage"
+	@echo "  make msrv             - Check all targets and features with Rust 1.75"
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make evidence-tool    - Test evidence tooling and schemas"
 	@echo "  make ci               - Complete local gate, including fuzz build and smoke"
@@ -47,31 +52,24 @@ test:
 
 .PHONY: check-failure-propagation
 check-failure-propagation:
-	@if [ "$(DRY_RUN_INSPECTION)" != "1" ]; then \
-		for target in test deny-licenses deny-sources; do \
-			if $(MAKE) --no-print-directory "$$target" CARGO=false >/dev/null 2>&1; then \
-				echo "$$target swallowed a deliberately failing cargo command" >&2; \
-				exit 1; \
-			fi; \
-		done; \
-	fi
+	$(PYTHON) scripts/check_failure_propagation.py
 
 .PHONY: check-corpus
 check-corpus:
-	cd corpus/v1 && sha256sum --check SHA256SUMS
-	cd fuzz/corpus/parser && sha256sum --check SHA256SUMS
+	cd corpus/v1 && $(SHA256SUM) --check SHA256SUMS
+	cd fuzz/corpus/parser && $(SHA256SUM) --check SHA256SUMS
 
 .PHONY: fuzz-build
 fuzz-build:
-	cargo +nightly fuzz build parser
+	$(CARGO) +nightly fuzz build parser
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	bash scripts/run_fuzz_smoke.sh
+	$(BASH) scripts/run_fuzz_smoke.sh
 
 .PHONY: verify-evidence
 verify-evidence:
-	bash scripts/verify_evidence.sh
+	$(BASH) scripts/verify_evidence.sh
 
 .PHONY: rustdoc
 rustdoc:
@@ -79,9 +77,12 @@ rustdoc:
 
 .PHONY: evidence-tool
 evidence-tool:
-	python3 -m py_compile scripts/build_evidence_envelope.py scripts/check_traceability_coverage.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/test_traceability_gate.py scripts/validate_json_schema.py scripts/verify_evidence_manifest.py
-	python3 scripts/test_evidence_tool.py
-	python3 scripts/test_traceability_gate.py
+	$(PYTHON) -m compileall -q scripts
+	$(PYTHON) scripts/check_attribution.py
+	$(PYTHON) scripts/test_evidence_tool.py
+	$(PYTHON) scripts/test_failure_propagation.py
+	$(PYTHON) scripts/test_json_schema_gate.py
+	$(PYTHON) scripts/test_traceability_gate.py
 
 .PHONY: build
 build:
@@ -95,8 +96,14 @@ clean:
 # Supply chain & safety
 # =============================================================================
 
-.PHONY: deny deny-licenses deny-sources
-deny: deny-licenses deny-sources
+.PHONY: deny deny-advisories deny-bans deny-licenses deny-sources
+deny: deny-advisories deny-bans deny-licenses deny-sources
+
+deny-advisories:
+	$(CARGO) deny check advisories
+
+deny-bans:
+	$(CARGO) deny check bans
 
 deny-licenses:
 	$(CARGO) deny check licenses
@@ -110,20 +117,24 @@ cargo-audit:
 
 .PHONY: audit-unsafe
 audit-unsafe:
-	bash scripts/check_unsafe_comments.sh
+	$(BASH) scripts/check_unsafe_comments.sh
 
 .PHONY: spec-validate
 spec-validate:
-	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/*.md'
 
 .PHONY: spec
 spec:
-	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
-	python3 scripts/check_traceability_coverage.py
+	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/*.md'
+	$(PYTHON) scripts/check_traceability_coverage.py
+
+.PHONY: msrv
+msrv:
+	$(CARGO) +1.75.0 check --all-targets --all-features
 
 # =============================================================================
 # Composite
 # =============================================================================
 
 .PHONY: ci
-ci: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec rustdoc verify-evidence
+ci: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec msrv rustdoc verify-evidence

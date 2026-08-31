@@ -100,7 +100,7 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     let report = format_document(&deep, FormatLimits::default());
     assert!(report.error.is_none());
     assert_eq!(report.stats.nodes, 1_001);
-    assert_eq!(report.stats.work, report.stats.nodes);
+    assert_eq!(report.stats.work, 2_005);
 
     let shared = FormulaDocument::new(
         SemanticProfile::ClosedTraceV1,
@@ -119,6 +119,7 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     let report = format_document(&shared, FormatLimits::default());
     assert_eq!(report.text.as_deref(), Some("p3&p3"));
     assert_eq!(report.stats.nodes, 2);
+    assert_eq!(report.stats.work, 8);
 
     for (limits, expected) in [
         (
@@ -161,7 +162,7 @@ fn accepted_node_ceiling_is_reachable_with_default_formatter_limits() {
     let report = format_document(&document, FormatLimits::default());
     assert!(report.error.is_none(), "{:?}", report.error);
     assert_eq!(report.stats.nodes, 9_999);
-    assert_eq!(report.stats.work, 9_999);
+    assert_eq!(report.stats.work, 24_998);
     assert_eq!(report.text.as_deref(), Some(source.as_str()));
 }
 

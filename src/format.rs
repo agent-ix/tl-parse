@@ -1,5 +1,3 @@
-use std::fmt::Write as _;
-
 use tl_syntax::{Formula, FormulaDocument, Interval, NodeId, NodeKind};
 
 use crate::{FormatError, FormatErrorCode, FormatLimits, FormatReport, FormatStats};
@@ -42,89 +40,118 @@ pub fn format_formula(formula: Formula<'_>, limits: FormatLimits) -> FormatRepor
         }
     }
 
-    let mut rendered: Vec<Option<Rendered>> = vec![None; nodes.len()];
-    let mut stats = FormatStats::default();
-    for (index, node) in nodes.iter().enumerate() {
-        if !reachable[index] {
-            continue;
-        }
-        let text = match render_node(node.kind, &rendered, limits, &mut stats) {
-            Ok(text) => text,
-            Err(error) => {
-                return FormatReport {
-                    limits,
-                    stats,
-                    text: None,
-                    error: Some(error),
+    let mut stats = FormatStats {
+        nodes: reachable.iter().filter(|item| **item).count(),
+        ..FormatStats::default()
+    };
+    let mut text = String::new();
+    let mut actions = vec![Action::Node(formula.root(), Context::Root)];
+    while let Some(action) = actions.pop() {
+        let result = match action {
+            Action::Static(value) => append(&mut text, value, limits, &mut stats),
+            Action::Owned(value) => append(&mut text, &value, limits, &mut stats),
+            Action::Node(id, context) => {
+                let Some(node) = formula.node(id) else {
+                    return failed_report(
+                        limits,
+                        stats,
+                        FormatErrorCode::InvalidGraph,
+                        format!("formula references absent node {}", id.0),
+                    );
                 };
+                if let Err(error) = charge(&mut stats, 1, limits) {
+                    Err(error)
+                } else {
+                    let grouped = context.groups(precedence(node.kind));
+                    if grouped {
+                        if let Err(error) = append(&mut text, "(", limits, &mut stats) {
+                            return FormatReport {
+                                limits,
+                                stats,
+                                text: None,
+                                error: Some(error),
+                            };
+                        }
+                        actions.push(Action::Static(")"));
+                    }
+                    push_node_actions(&mut actions, node.kind);
+                    Ok(())
+                }
             }
         };
-        stats.nodes += 1;
-        rendered[index] = Some(text);
+        if let Err(error) = result {
+            return FormatReport {
+                limits,
+                stats,
+                text: None,
+                error: Some(error),
+            };
+        }
     }
-
-    let root = formula.root().0 as usize;
-    let Some(rendered_root) = rendered.get_mut(root).and_then(Option::take) else {
-        return failed_report(
-            limits,
-            stats,
-            FormatErrorCode::InvalidGraph,
-            "formula root was not rendered".to_owned(),
-        );
-    };
-    stats.output_bytes = rendered_root.text.len();
+    stats.output_bytes = text.len();
     FormatReport {
         limits,
         stats,
-        text: Some(rendered_root.text),
+        text: Some(text),
         error: None,
     }
 }
 
-fn render_node(
-    kind: NodeKind,
-    rendered: &[Option<Rendered>],
+#[derive(Clone, Copy)]
+enum Context {
+    Root,
+    Prefix,
+    Binary { precedence: u8, group_equal: bool },
+}
+
+impl Context {
+    fn groups(self, child_precedence: u8) -> bool {
+        match self {
+            Self::Root => false,
+            Self::Prefix => child_precedence < 6,
+            Self::Binary {
+                precedence,
+                group_equal,
+            } => child_precedence < precedence || (group_equal && child_precedence == precedence),
+        }
+    }
+}
+
+enum Action {
+    Node(NodeId, Context),
+    Static(&'static str),
+    Owned(String),
+}
+
+fn append(
+    output: &mut String,
+    value: &str,
     limits: FormatLimits,
     stats: &mut FormatStats,
-) -> Result<Rendered, FormatError> {
-    let rendered_node = match kind {
-        NodeKind::False => Rendered::atom("false".to_owned()),
-        NodeKind::True => Rendered::atom("true".to_owned()),
-        NodeKind::Proposition { proposition } => Rendered::atom(format!("p{}", proposition.0)),
-        NodeKind::Not { operand } => {
-            let operand = child(rendered, operand)?;
-            Rendered::prefix(assemble(&["!", &prefix_operand(operand)]))
-        }
-        NodeKind::And { left, right } => binary(rendered, left, "&", right, 4, false)?,
-        NodeKind::Or { left, right } => binary(rendered, left, "|", right, 3, false)?,
-        NodeKind::Implies { left, right } => binary(rendered, left, "->", right, 2, true)?,
-        NodeKind::Equivalent { left, right } => binary(rendered, left, "<->", right, 1, false)?,
-        NodeKind::Future { interval, operand } => unary_temporal(rendered, "F", interval, operand)?,
-        NodeKind::Globally { interval, operand } => {
-            unary_temporal(rendered, "G", interval, operand)?
-        }
-        NodeKind::Until {
-            interval,
-            left,
-            right,
-        } => binary_temporal(rendered, left, "U", interval, right)?,
-        NodeKind::Release {
-            interval,
-            left,
-            right,
-        } => binary_temporal(rendered, left, "R", interval, right)?,
-    };
-    if rendered_node.text.len() > limits.max_output_bytes {
+) -> Result<(), FormatError> {
+    let length = output
+        .len()
+        .checked_add(value.len())
+        .ok_or_else(|| FormatError {
+            code: FormatErrorCode::OutputLimit,
+            message: "canonical text length overflowed".to_owned(),
+        })?;
+    if length > limits.max_output_bytes {
         return Err(FormatError {
             code: FormatErrorCode::OutputLimit,
             message: format!(
                 "canonical text length {} exceeds effective limit {}",
-                rendered_node.text.len(),
-                limits.max_output_bytes
+                length, limits.max_output_bytes
             ),
         });
     }
-    let Some(work) = stats.work.checked_add(1) else {
+    charge(stats, value.len(), limits)?;
+    output.push_str(value);
+    Ok(())
+}
+
+fn charge(stats: &mut FormatStats, amount: usize, limits: FormatLimits) -> Result<(), FormatError> {
+    let Some(work) = stats.work.checked_add(amount) else {
         return Err(FormatError {
             code: FormatErrorCode::WorkLimit,
             message: "formatter work counter overflowed".to_owned(),
@@ -134,126 +161,126 @@ fn render_node(
         return Err(FormatError {
             code: FormatErrorCode::WorkLimit,
             message: format!(
-                "formatter node work {} exceeds effective limit {}",
+                "formatter work {} exceeds effective limit {}",
                 work, limits.max_work
             ),
         });
     }
     stats.work = work;
-    Ok(rendered_node)
+    Ok(())
 }
 
-#[derive(Clone, Debug)]
-struct Rendered {
-    text: String,
-    precedence: u8,
-}
-
-impl Rendered {
-    fn atom(text: String) -> Self {
-        Self {
-            text,
-            precedence: 7,
-        }
-    }
-
-    fn prefix(text: String) -> Self {
-        Self {
-            text,
-            precedence: 6,
-        }
-    }
-}
-
-fn child(rendered: &[Option<Rendered>], id: NodeId) -> Result<&Rendered, FormatError> {
-    rendered
-        .get(id.0 as usize)
-        .and_then(Option::as_ref)
-        .ok_or_else(|| FormatError {
-            code: FormatErrorCode::InvalidGraph,
-            message: format!("operand {} was not rendered before its owner", id.0),
-        })
-}
-
-fn binary(
-    rendered: &[Option<Rendered>],
+fn binary_actions(
+    actions: &mut Vec<Action>,
     left: NodeId,
-    operator: &str,
+    operator: &'static str,
     right: NodeId,
     precedence: u8,
     right_associative: bool,
-) -> Result<Rendered, FormatError> {
-    let left = child(rendered, left)?;
-    let right = child(rendered, right)?;
-    let left = binary_operand(left, precedence, right_associative);
-    let right = binary_operand(right, precedence, !right_associative);
-    Ok(Rendered {
-        text: assemble(&[&left, operator, &right]),
-        precedence,
-    })
+) {
+    actions.push(Action::Node(
+        right,
+        Context::Binary {
+            precedence,
+            group_equal: !right_associative,
+        },
+    ));
+    actions.push(Action::Static(operator));
+    actions.push(Action::Node(
+        left,
+        Context::Binary {
+            precedence,
+            group_equal: right_associative,
+        },
+    ));
 }
 
-fn unary_temporal(
-    rendered: &[Option<Rendered>],
-    operator: &str,
-    interval: Interval,
-    operand: NodeId,
-) -> Result<Rendered, FormatError> {
-    let mut prefix = String::new();
-    let _ = write!(
-        prefix,
-        "{operator}[{},{}]",
-        interval.start(),
-        interval.end()
-    );
-    Ok(Rendered::prefix(assemble(&[
-        &prefix,
-        &prefix_operand(child(rendered, operand)?),
-    ])))
+fn interval_operator(operator: &str, interval: Interval) -> String {
+    format!("{operator}[{},{}]", interval.start(), interval.end())
 }
 
-fn binary_temporal(
-    rendered: &[Option<Rendered>],
-    left: NodeId,
-    operator: &str,
-    interval: Interval,
-    right: NodeId,
-) -> Result<Rendered, FormatError> {
-    let mut middle = String::new();
-    let _ = write!(
-        middle,
-        "{operator}[{},{}]",
-        interval.start(),
-        interval.end()
-    );
-    binary(rendered, left, &middle, right, 5, false)
-}
-
-fn prefix_operand(operand: &Rendered) -> String {
-    if operand.precedence < 6 {
-        assemble(&["(", &operand.text, ")"])
-    } else {
-        operand.text.clone()
+fn push_node_actions(actions: &mut Vec<Action>, kind: NodeKind) {
+    match kind {
+        NodeKind::False => actions.push(Action::Static("false")),
+        NodeKind::True => actions.push(Action::Static("true")),
+        NodeKind::Proposition { proposition } => {
+            actions.push(Action::Owned(format!("p{}", proposition.0)));
+        }
+        NodeKind::Not { operand } => {
+            actions.push(Action::Node(operand, Context::Prefix));
+            actions.push(Action::Static("!"));
+        }
+        NodeKind::And { left, right } => binary_actions(actions, left, "&", right, 4, false),
+        NodeKind::Or { left, right } => binary_actions(actions, left, "|", right, 3, false),
+        NodeKind::Implies { left, right } => {
+            binary_actions(actions, left, "->", right, 2, true);
+        }
+        NodeKind::Equivalent { left, right } => {
+            binary_actions(actions, left, "<->", right, 1, false);
+        }
+        NodeKind::Future { interval, operand } => {
+            actions.push(Action::Node(operand, Context::Prefix));
+            actions.push(Action::Owned(interval_operator("F", interval)));
+        }
+        NodeKind::Globally { interval, operand } => {
+            actions.push(Action::Node(operand, Context::Prefix));
+            actions.push(Action::Owned(interval_operator("G", interval)));
+        }
+        NodeKind::Until {
+            interval,
+            left,
+            right,
+        } => {
+            actions.push(Action::Node(
+                right,
+                Context::Binary {
+                    precedence: 5,
+                    group_equal: true,
+                },
+            ));
+            actions.push(Action::Owned(interval_operator("U", interval)));
+            actions.push(Action::Node(
+                left,
+                Context::Binary {
+                    precedence: 5,
+                    group_equal: false,
+                },
+            ));
+        }
+        NodeKind::Release {
+            interval,
+            left,
+            right,
+        } => {
+            actions.push(Action::Node(
+                right,
+                Context::Binary {
+                    precedence: 5,
+                    group_equal: true,
+                },
+            ));
+            actions.push(Action::Owned(interval_operator("R", interval)));
+            actions.push(Action::Node(
+                left,
+                Context::Binary {
+                    precedence: 5,
+                    group_equal: false,
+                },
+            ));
+        }
     }
 }
 
-fn binary_operand(operand: &Rendered, parent_precedence: u8, parent_side_groups: bool) -> String {
-    if operand.precedence < parent_precedence
-        || (operand.precedence == parent_precedence && parent_side_groups)
-    {
-        assemble(&["(", &operand.text, ")"])
-    } else {
-        operand.text.clone()
+fn precedence(kind: NodeKind) -> u8 {
+    match kind {
+        NodeKind::False | NodeKind::True | NodeKind::Proposition { .. } => 7,
+        NodeKind::Not { .. } | NodeKind::Future { .. } | NodeKind::Globally { .. } => 6,
+        NodeKind::Until { .. } | NodeKind::Release { .. } => 5,
+        NodeKind::And { .. } => 4,
+        NodeKind::Or { .. } => 3,
+        NodeKind::Implies { .. } => 2,
+        NodeKind::Equivalent { .. } => 1,
     }
-}
-
-fn assemble(parts: &[&str]) -> String {
-    let capacity = parts.iter().map(|part| part.len()).sum();
-    let mut output = String::with_capacity(capacity);
-    for part in parts {
-        output.push_str(part);
-    }
-    output
 }
 
 fn operands(kind: NodeKind) -> [Option<NodeId>; 2] {

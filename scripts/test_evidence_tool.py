@@ -163,6 +163,10 @@ def main() -> int:
         (evidence_dir / "pgm01-validator.stderr").write_text("", encoding="utf-8")
         (evidence_dir / "rustdoc.status.txt").write_text("1\n", encoding="utf-8")
         assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
+        (evidence_dir / "msrv.status.txt").write_text("1\n", encoding="utf-8")
+        censused = FINALIZER.summary(evidence_dir)
+        assert any(item["name"] == "msrv" for item in censused["outcomes"])
+        assert censused["overallStatus"] == "failed"
 
         artifact = evidence_dir / "make-ci.stdout"
         artifact.write_text("passed\n", encoding="utf-8")
@@ -178,7 +182,19 @@ def main() -> int:
         (evidence_dir / "evidence-manifest.json").write_text(
             json.dumps(manifest), encoding="utf-8"
         )
+        evidence_dir.with_suffix(".sha256").write_text(
+            "".join(
+                f"{VERIFIER.sha256(path)}  {path}\n"
+                for path in sorted(evidence_dir.iterdir())
+                if path.is_file()
+            ),
+            encoding="utf-8",
+        )
         assert VERIFIER.verify(evidence_dir) == []
+        added = evidence_dir / "PLANTED-EXTRA.txt"
+        added.write_text("FABRICATED\n", encoding="utf-8")
+        assert any("unlisted" in error for error in VERIFIER.verify(evidence_dir))
+        added.unlink()
         artifact.write_text("FABRICATED\n", encoding="utf-8")
         assert VERIFIER.verify(evidence_dir)
     print("evidence outcome behavior is valid")

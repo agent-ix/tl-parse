@@ -44,4 +44,4 @@ conformance criterion.
 | ID | Criteria | Verification |
 |---|---|---|
 | NFR-001-AC-1 | Repeated parse, diagnostic, canonical-format, and CLI operations are byte-identical. | Test (TC-013, TC-015, TC-021) |
-| NFR-001-AC-2 | Source, token, node, depth, diagnostic, parser-work, per-reachable-node formatter-work, and output-byte limits are explicit, checked, and independently tested. | Test (TC-011, TC-012, TC-017) |
+| NFR-001-AC-2 | Source, token, node, depth, diagnostic, parser-work, formatter node/byte work, and output-byte limits are explicit, checked, and independently tested. | Test (TC-011, TC-012, TC-017) |

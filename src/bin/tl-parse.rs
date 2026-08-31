@@ -65,8 +65,21 @@ fn run() -> Result<ExitCode, String> {
     let input = read_bounded(path.as_deref().unwrap_or("-"))?;
     let report = match input {
         BoundedInput::Source(source) => parse(&source, profile, ParseLimits::default()),
-        BoundedInput::SourceLimit { source_bytes } => {
-            source_limit_report(source_bytes, profile, ParseLimits::default())
+        BoundedInput::SourceLimit {
+            source_bytes,
+            exact,
+        } => {
+            let limits = ParseLimits::default();
+            let mut report = source_limit_report(source_bytes, profile, limits);
+            if !exact {
+                if let Some(diagnostic) = report.diagnostics.first_mut() {
+                    diagnostic.message = format!(
+                        "source length is at least {source_bytes}, exceeding effective limit {}",
+                        limits.max_source_bytes
+                    );
+                }
+            }
+            report
         }
     };
     if json && (command == "validate" || report.document.is_none()) {
@@ -116,7 +129,7 @@ fn run() -> Result<ExitCode, String> {
 
 enum BoundedInput {
     Source(String),
-    SourceLimit { source_bytes: usize },
+    SourceLimit { source_bytes: usize, exact: bool },
 }
 
 fn read_bounded(path: &str) -> Result<BoundedInput, String> {
@@ -126,34 +139,31 @@ fn read_bounded(path: &str) -> Result<BoundedInput, String> {
             .map_err(|error| format!("cannot read stdin: {error}"))
     } else {
         let file = File::open(path).map_err(|error| format!("cannot open {path:?}: {error}"))?;
+        let source_bytes = file
+            .metadata()
+            .map_err(|error| format!("cannot inspect {path:?}: {error}"))?
+            .len();
+        if source_bytes > byte_limit as u64 {
+            return Ok(BoundedInput::SourceLimit {
+                source_bytes: usize::try_from(source_bytes).unwrap_or(usize::MAX),
+                exact: true,
+            });
+        }
         read_bounded_reader(file, byte_limit)
             .map_err(|error| format!("cannot read {path:?}: {error}"))
     }
 }
 
-fn read_bounded_reader(mut reader: impl Read, byte_limit: usize) -> io::Result<BoundedInput> {
-    let mut retained = Vec::with_capacity(byte_limit.min(64 * 1024));
-    let mut buffer = [0_u8; 16 * 1024];
-    let mut source_bytes = 0_usize;
-    loop {
-        let read = reader.read(&mut buffer)?;
-        if read == 0 {
-            break;
-        }
-        source_bytes = source_bytes.checked_add(read).ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                "input byte count overflowed usize",
-            )
-        })?;
-        if source_bytes <= byte_limit {
-            retained.extend_from_slice(&buffer[..read]);
-        } else {
-            retained.clear();
-        }
-    }
+fn read_bounded_reader(reader: impl Read, byte_limit: usize) -> io::Result<BoundedInput> {
+    let read_limit = byte_limit.saturating_add(1);
+    let mut retained = Vec::with_capacity(read_limit.min(64 * 1024));
+    reader.take(read_limit as u64).read_to_end(&mut retained)?;
+    let source_bytes = retained.len();
     if source_bytes > byte_limit {
-        return Ok(BoundedInput::SourceLimit { source_bytes });
+        return Ok(BoundedInput::SourceLimit {
+            source_bytes,
+            exact: false,
+        });
     }
     String::from_utf8(retained)
         .map(BoundedInput::Source)
@@ -172,4 +182,39 @@ fn render_diagnostic(diagnostic: &Diagnostic) -> String {
 
 fn usage() -> String {
     "usage: tl-parse <validate|format> [--profile <closed|online>] [--json] [FILE|-]".to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::{self, Read};
+
+    use super::{read_bounded_reader, BoundedInput};
+
+    struct NonClosingReader {
+        reads: usize,
+    }
+
+    impl Read for NonClosingReader {
+        fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+            self.reads += 1;
+            buffer.fill(b'p');
+            Ok(buffer.len())
+        }
+    }
+
+    // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
+    #[test]
+    fn bounded_reader_stops_without_waiting_for_eof() {
+        let input = read_bounded_reader(NonClosingReader { reads: 0 }, 4_096).unwrap();
+        match input {
+            BoundedInput::SourceLimit {
+                source_bytes,
+                exact,
+            } => {
+                assert_eq!(source_bytes, 4_097);
+                assert!(!exact);
+            }
+            BoundedInput::Source(_) => panic!("non-closing oversized input was accepted"),
+        }
+    }
 }

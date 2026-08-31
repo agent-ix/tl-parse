@@ -10,6 +10,7 @@ else
 fi
 checksum_path="${evidence_dir}.sha256"
 pgm01_python="${PGM01_PYTHON:-python3}"
+pgm01_schema_digest="0946e235e9e4b0fa79e9b9ec27ae157b303c17de0a9408d3cc04968fb7152256"
 
 if [[ -e "$evidence_dir" || -e "$checksum_path" ]]; then
   echo "refusing to overwrite retained evidence: $evidence_dir" >&2
@@ -21,6 +22,11 @@ if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
 fi
 if ! python3 -c 'import jsonschema' >/dev/null 2>&1; then
   echo "jsonschema is required for evidence collection" >&2
+  exit 2
+fi
+if [[ -n "${PGM01_SCHEMA:-}" ]] && \
+   [[ "$(sha256sum "$PGM01_SCHEMA" | cut -d' ' -f1)" != "$pgm01_schema_digest" ]]; then
+  echo "PGM-01 schema digest does not match the pinned envelope schema" >&2
   exit 2
 fi
 
@@ -64,6 +70,7 @@ cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
 run_and_retain make-ci make ci
 run_and_retain make-spec make spec
 run_and_retain quire-coverage python3 scripts/check_traceability_coverage.py
+run_and_retain msrv cargo +1.75.0 check --all-targets --all-features
 run_and_retain rustdoc env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
 run_and_retain default-dependencies cargo tree --no-default-features --edges normal
 run_and_retain corpus-integrity make check-corpus

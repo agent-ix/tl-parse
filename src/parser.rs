@@ -107,14 +107,19 @@ pub fn source_limit_report(
     limits: ParseLimits,
 ) -> ParseReport {
     let limits = limits.clamped();
-    let start = limits.max_source_bytes;
+    let start = limits.max_source_bytes.min(source_bytes);
     let end = start.saturating_add(1).min(source_bytes);
     let mut report = ParseReport::empty(profile, limits, source_bytes);
+    let Ok(span) = SourceSpan::new(start as u32, end as u32) else {
+        // The clamped offsets above are ordered and bounded by the hard u32
+        // source limit. If those invariants ever change, preserve a total,
+        // fail-closed report instead of panicking in this public helper.
+        return report;
+    };
     report.diagnostics.push(Diagnostic {
         code: DiagnosticCode::SourceLimit,
         severity: DiagnosticSeverity::Error,
-        span: SourceSpan::new(start as u32, end as u32)
-            .expect("hard source limit and adjacent span fit u32"),
+        span,
         found: "<source>".to_owned(),
         expected: Vec::new(),
         recovery: RecoveryAction::Stopped,

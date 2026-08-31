@@ -59,6 +59,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "audit-unsafe",
         "evidence-tool",
         "spec",
+        "msrv",
         "rustdoc",
         "verify-evidence",
     ] {
@@ -68,7 +69,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         );
     }
     let dry_run = Command::new("make")
-        .args(["-n", "ci", "DRY_RUN_INSPECTION=1"])
+        .args(["-n", "ci"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()
         .unwrap();
@@ -83,10 +84,15 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "bash scripts/run_fuzz_smoke.sh",
         "cargo deny check licenses",
         "cargo deny check sources",
+        "cargo deny check advisories",
+        "cargo deny check bans",
         "bash scripts/check_unsafe_comments.sh",
         "python3 scripts/test_evidence_tool.py",
+        "python3 scripts/test_failure_propagation.py",
+        "python3 scripts/test_json_schema_gate.py",
         "quire validate --scope . 'spec/**/*.md' 'docs/*.md'",
         "python3 scripts/check_traceability_coverage.py",
+        "cargo +1.75.0 check --all-targets --all-features",
         "RUSTDOCFLAGS=-Dwarnings",
         "doc --no-deps --all-features",
         "bash scripts/verify_evidence.sh",
@@ -103,7 +109,12 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     );
     assert_eq!(
         observed_cargo_arguments("deny"),
-        ["deny check licenses", "deny check sources"]
+        [
+            "deny check advisories",
+            "deny check bans",
+            "deny check licenses",
+            "deny check sources"
+        ]
     );
     let sentinel = Command::new("make")
         .args(["--no-print-directory", "check-failure-propagation"])

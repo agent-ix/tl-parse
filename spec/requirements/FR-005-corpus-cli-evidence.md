@@ -35,7 +35,7 @@ exact source candidate.
 |---|---|---|
 | FR-005-AC-1 | The malformed/resource corpus is checksum-valid and every fixture produces its declared bounded outcome. | Test (TC-018) |
 | FR-005-AC-2 | The checked-in fuzz target compiles, a bounded libFuzzer smoke run consumes every seed, and successful seeds round-trip under declared limits. | Test (TC-019, SUITE-003) |
-| FR-005-AC-3 | CLI validation/formatting outputs and exit classes match the library for valid, invalid, profile, stdin, source-limit, and usage cases; an oversized stream reports its complete submitted byte count without parsing fabricated text. | Test (TC-020, TC-021) |
+| FR-005-AC-3 | CLI validation/formatting outputs and exit classes match the library for valid, invalid, profile, stdin, source-limit, and usage cases; an oversized seekable file reports its metadata byte count, while a non-closing stream is read only through the first byte beyond the limit, without parsing fabricated text. | Test (TC-020, TC-021) |
 | FR-005-AC-4 | Evidence schemas, manifest, envelope, hashes, and human-authority boundary are machine-checkable and immutable. | Test (TC-022) |
 
 ## Dependencies

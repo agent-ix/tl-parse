@@ -25,10 +25,12 @@ whitespace-free representation within declared output and work limits.
   except the value zero.
 - Formatting ignores source spans and preserves node kinds, bounds,
   proposition identities, root meaning, and semantic profile on reparse.
-- Output bytes are checked before emission. Formatter work charges one unit per
-  reachable graph node, so every formula within the declared node ceiling can
-  reach canonical formatting under the default work limit when its final text
-  fits the output limit.
+- Canonical text is emitted into one iterative output buffer rather than
+  retaining a complete string for every intermediate node. Output bytes are
+  checked before emission. Formatter work charges one unit per expanded node
+  plus one per emitted byte, so every formula within the declared node ceiling
+  can reach canonical formatting under the default work limit when its final
+  text fits the output limit.
 
 ## Acceptance Criteria
 

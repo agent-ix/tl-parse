@@ -32,7 +32,12 @@ def sha256(path: Path) -> str:
 
 def summary(evidence_dir: Path) -> dict[str, object]:
     outcomes = []
-    for name in CHECKS:
+    observed = {
+        path.name[: -len(".status.txt")]
+        for path in evidence_dir.glob("*.status.txt")
+        if path.is_file()
+    }
+    for name in list(CHECKS) + sorted(observed - set(CHECKS)):
         status_path = evidence_dir / f"{name}.status.txt"
         if not status_path.exists():
             outcomes.append({"name": name, "status": "inconclusive", "exitCode": None})

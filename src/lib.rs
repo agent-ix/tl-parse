@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Deterministic, bounded parsing and canonical formatting for bounded MLTL.
 //!
 //! The crate implements the independently authored ASCII dialect identified by

@@ -303,7 +303,7 @@ impl Default for FormatLimits {
 pub struct FormatStats {
     /// Reachable graph nodes rendered.
     pub nodes: usize,
-    /// Deterministic work units consumed, one per reachable node rendered.
+    /// Deterministic work units consumed: one per expanded node plus one per emitted byte.
     pub work: usize,
     /// Bytes in the final canonical output, or zero on error.
     pub output_bytes: usize,
