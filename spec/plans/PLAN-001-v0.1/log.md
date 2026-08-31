@@ -8,7 +8,7 @@ description: "Chronological changes to the tl-parse v0.1 plan bundle."
 ## History
 
 - **2026-08-31** - Closed exact-head review follow-ups: failure propagation is
-  behaviorally proved, traceability is 55/55 under a stable JSON completeness
+  behaviorally proved, traceability is 62/62 under a stable JSON completeness
   policy, oversized CLI input reports its true streamed byte count, formatter
   work is per node through the 9,999-node accepted boundary, evidence anchors
   are cross-checked against AA-001, and fuzz artifacts remain in scratch space.

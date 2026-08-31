@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 from jsonschema import Draft7Validator
@@ -37,6 +38,23 @@ VERIFIER = importlib.util.module_from_spec(VERIFIER_SPEC)
 VERIFIER_SPEC.loader.exec_module(VERIFIER)
 
 
+@contextmanager
+def temporary_worktree():
+    with tempfile.TemporaryDirectory() as directory:
+        checkout = Path(directory) / "checkout"
+        subprocess.run(
+            ["/usr/bin/git", "worktree", "add", "--detach", "-q", str(checkout), "HEAD"],
+            cwd=ROOT, check=True,
+        )
+        try:
+            yield checkout
+        finally:
+            subprocess.run(
+                ["/usr/bin/git", "worktree", "remove", "--force", str(checkout)],
+                cwd=ROOT, check=True,
+            )
+
+
 def healthy_ci_output() -> str:
     tests = "test result: ok. 1 passed; 0 failed; 0 ignored\n" * 8
     tests += "test result: ok. 17 passed; 0 failed; 0 ignored\n"
@@ -44,9 +62,21 @@ def healthy_ci_output() -> str:
     signatures = (
         "all 13 mandatory local-CI targets propagate failures\n"
         "all 6 policy behavior tests passed\n"
-        "strict traceability coverage is complete: 55/55\n"
+        "strict traceability coverage is complete: 62/62\n"
         "clean-room attribution digests match the pinned Cargo source\n"
         "LeakSanitizer enabled\n"
+        "fmt-check gate passed\n"
+        "lint gate passed\n"
+        "Rust test gate passed\n"
+        "corpus-integrity gate passed\n"
+        "fuzz-build gate passed\n"
+        "fuzz-smoke gate passed\n"
+        "deny gate passed\n"
+        "audit-unsafe gate passed\n"
+        "evidence-tool gate passed\n"
+        "spec gate passed\n"
+        "msrv gate passed\n"
+        "rustdoc gate passed\n"
     )
     return tests + corpus + signatures
 
@@ -188,9 +218,13 @@ def main() -> int:
         source_builder = FINALIZER.git_bytes(revision, MODULE.BUILDER)
         parameters = FINALIZER.historical_parameters_digest(revision, source_builder)
         (evidence_dir / "source-revision.txt").write_text(revision + "\n", encoding="utf-8")
+        _, locked_tools = FINALIZER.tool_identity.load_lock()
+        collection_input = {
+            "qualificationProfile": "tl-parse.evidence-qualification/v2",
+            "tools": {"identities": locked_tools},
+        }
         (evidence_dir / "collection-input.json").write_text(
-            json.dumps({"qualificationProfile": "tl-parse.evidence-qualification/v2"}) + "\n",
-            encoding="utf-8",
+            json.dumps(collection_input) + "\n", encoding="utf-8",
         )
         (evidence_dir / "evidence-envelope.json").write_text(
             json.dumps({
@@ -219,6 +253,17 @@ def main() -> int:
         )
         (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         assert FINALIZER.validate_envelope_result(evidence_dir, retained) == []
+        forged_collection = json.loads(json.dumps(collection_input))
+        forged_collection["tools"]["identities"]["cargo"]["sha256"] = "0" * 64
+        (evidence_dir / "collection-input.json").write_text(
+            json.dumps(forged_collection) + "\n", encoding="utf-8",
+        )
+        assert FINALIZER.validate_tool_identity(evidence_dir, revision), (
+            "a forged retained tool digest escaped source-lock re-derivation"
+        )
+        (evidence_dir / "collection-input.json").write_text(
+            json.dumps(collection_input) + "\n", encoding="utf-8",
+        )
         (evidence_dir / "evidence-envelope.json").write_text(
             json.dumps({"result": {"status": "conclusive"}}) + "\n", encoding="utf-8"
         )
@@ -333,50 +378,58 @@ def main() -> int:
             )
             assert result.returncode != 0, f"{script} main accepted a corrupt fixture"
 
-    attribution = ROOT / "docs" / "ATTRIBUTION.md"
-    original_attribution = attribution.read_text(encoding="utf-8")
-    try:
-        attribution.write_text(original_attribution + "\n| `fabricated` | `" + "0" * 64 + "` |\n", encoding="utf-8")
+    with temporary_worktree() as checkout:
+        attribution = checkout / "docs" / "ATTRIBUTION.md"
+        attribution.write_text(
+            attribution.read_text(encoding="utf-8") + "\n| `fabricated` | `" + "0" * 64 + "` |\n",
+            encoding="utf-8",
+        )
         result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "check_attribution.py")],
-            cwd=ROOT, check=False, capture_output=True,
+            ["/usr/bin/python3", "scripts/check_attribution.py"],
+            cwd=checkout, check=False, capture_output=True,
         )
         assert result.returncode != 0, "attribution gate main accepted a fabricated file"
-    finally:
-        attribution.write_text(original_attribution, encoding="utf-8")
 
-    planted = ROOT / "evidence" / f"PLANTED-EXIT-CONTRACT-{os.getpid()}.txt"
-    planted.write_text("FABRICATED\n", encoding="utf-8")
-    try:
+    with temporary_worktree() as checkout:
+        planted = checkout / "evidence" / f"PLANTED-EXIT-CONTRACT-{os.getpid()}.txt"
+        planted.write_text("FABRICATED\n", encoding="utf-8")
+        subprocess.run(["/usr/bin/git", "add", str(planted)], cwd=checkout, check=True)
+        subprocess.run(
+            ["/usr/bin/git", "-c", "user.name=Policy Test", "-c",
+             "user.email=policy@example.invalid", "commit", "-qm", "plant fixture"],
+            cwd=checkout, check=True,
+        )
         shell = subprocess.run(
-            ["bash", "scripts/verify_evidence.sh"], cwd=ROOT, check=False,
+            ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=checkout, check=False,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         assert shell.returncode != 0, "evidence shell verifier exit contract was gutted"
-    finally:
-        planted.unlink(missing_ok=True)
 
-    assurance = ROOT / "spec" / "assurance" / "AA-001.md"
-    original_assurance = assurance.read_text(encoding="utf-8")
-    old_record = ROOT / "evidence" / "tl-parse-v01-64b2b1e610fb-20260831T051027Z"
-    old_source = (old_record / "source-revision.txt").read_text(encoding="utf-8").strip()
-    old_outer = hashlib.sha256(old_record.with_suffix(".sha256").read_bytes()).hexdigest()
-    old_envelope = hashlib.sha256((old_record / "evidence-envelope.json").read_bytes()).hexdigest()
-    rebound = re.sub(r"- Source candidate: `[0-9a-f]+`\.", f"- Source candidate: `{old_source}`.", original_assurance)
-    rebound = re.sub(r"- Record: `evidence/[^`]+`\.", f"- Record: `{old_record.relative_to(ROOT)}`.", rebound)
-    rebound = re.sub(r"(?s)(- Final envelope SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_envelope}\2", rebound)
-    rebound = re.sub(r"(?s)(- Outer manifest SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_outer}\2", rebound)
-    try:
+    with temporary_worktree() as checkout:
+        assurance = checkout / "spec" / "assurance" / "AA-001.md"
+        original_assurance = assurance.read_text(encoding="utf-8")
+        old_record = checkout / "evidence" / "tl-parse-v01-64b2b1e610fb-20260831T051027Z"
+        old_source = (old_record / "source-revision.txt").read_text(encoding="utf-8").strip()
+        old_outer = hashlib.sha256(old_record.with_suffix(".sha256").read_bytes()).hexdigest()
+        old_envelope = hashlib.sha256((old_record / "evidence-envelope.json").read_bytes()).hexdigest()
+        rebound = re.sub(r"- Source candidate: `[0-9a-f]+`\.", f"- Source candidate: `{old_source}`.", original_assurance)
+        rebound = re.sub(r"- Record: `evidence/[^`]+`\.", f"- Record: `{old_record.relative_to(checkout)}`.", rebound)
+        rebound = re.sub(r"(?s)(- Final envelope SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_envelope}\2", rebound)
+        rebound = re.sub(r"(?s)(- Outer manifest SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_outer}\2", rebound)
         assurance.write_text(rebound, encoding="utf-8")
+        subprocess.run(["/usr/bin/git", "add", str(assurance)], cwd=checkout, check=True)
+        subprocess.run(
+            ["/usr/bin/git", "-c", "user.name=Policy Test", "-c",
+             "user.email=policy@example.invalid", "commit", "-qm", "rebind fixture"],
+            cwd=checkout, check=True,
+        )
         stale = subprocess.run(
-            ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=ROOT, check=False,
+            ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=checkout, check=False,
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
         )
         assert stale.returncode != 0 and "older than the reviewed tree" in stale.stderr, (
             "assurance gate accepted a passing pre-remediation source record"
         )
-    finally:
-        assurance.write_text(original_assurance, encoding="utf-8")
     print("evidence outcome behavior is valid")
     return 0
 

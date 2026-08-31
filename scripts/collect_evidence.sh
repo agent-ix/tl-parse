@@ -4,8 +4,8 @@ set -euo pipefail
 if [[ $# -gt 0 ]]; then
   final_evidence_dir="$1"
 else
-  evidence_revision="$(git rev-parse --short=12 HEAD)"
-  evidence_timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  evidence_revision="$(/usr/bin/git rev-parse --short=12 HEAD)"
+  evidence_timestamp="$(/usr/bin/date -u +%Y%m%dT%H%M%SZ)"
   final_evidence_dir="evidence/tl-parse-v01-${evidence_revision}-${evidence_timestamp}"
 fi
 checksum_path="${final_evidence_dir}.sha256"
@@ -16,7 +16,7 @@ if [[ -e "$final_evidence_dir" || -e "$checksum_path" ]]; then
   echo "refusing to overwrite retained evidence: $final_evidence_dir" >&2
   exit 2
 fi
-if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+if [[ -n "$(/usr/bin/git status --porcelain --untracked-files=all)" ]]; then
   echo "refusing to collect evidence from a modified or untracked source tree" >&2
   exit 2
 fi
@@ -39,14 +39,17 @@ if [[ -n "${PGM01_VALIDATOR:-}" ]] && \
   exit 2
 fi
 
-staging_root="$(mktemp -d -p . .tl-parse-evidence-stage.XXXXXX)"
+if ! /usr/bin/python3 scripts/tool_identity.py --verify-live; then
+  echo "qualified tool identities do not match tools.lock" >&2
+  exit 2
+fi
+trusted_path="$(/usr/bin/python3 scripts/tool_identity.py --trusted-path)"
+real_home="$(/usr/bin/python3 scripts/tool_identity.py --home)"
+staging_root="$(/usr/bin/mktemp -d -p . .tl-parse-evidence-stage.XXXXXX)"
 evidence_dir="$staging_root/$(basename "$final_evidence_dir")"
-mkdir -p "$evidence_dir"
+/usr/bin/mkdir -p "$evidence_dir"
 collection_failed=0
-real_home="$(/usr/bin/getent passwd "$(/usr/bin/id -u)" | /usr/bin/cut -d: -f6)"
-quire_path="$(command -v quire)"
-trusted_path="$real_home/.cargo/bin:$(/usr/bin/dirname "$quire_path"):/usr/local/bin:/usr/bin:/bin"
-clean_env=(env -i PATH="$trusted_path" HOME="$real_home" USER="${USER:-}" LANG="${LANG:-C}" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
+clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" USER="${USER:-}" LANG="${LANG:-C}" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
 
 run_and_retain() {
   local name="$1"
@@ -81,10 +84,13 @@ echo clean >"$evidence_dir/source-state.txt"
 "${clean_env[@]}" python3 -c 'import importlib.metadata; print(importlib.metadata.version("jsonschema"))' >"$evidence_dir/jsonschema-version.txt"
 "${clean_env[@]}" quire provenance --pretty >"$evidence_dir/quire-provenance.json"
 "${clean_env[@]}" cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
-for tool in bash cargo git make python3 quire sha256sum; do
-  resolved="$(PATH="$trusted_path" command -v "$tool")"
-  printf '%s\n' "$resolved" >"$evidence_dir/tool-${tool}-path.txt"
-  /usr/bin/sha256sum "$resolved" | /usr/bin/cut -d' ' -f1 >"$evidence_dir/tool-${tool}-sha256.txt"
+for tool in bash cargo git make python3 quire rustc sha256sum; do
+  "${clean_env[@]}" python3 -c \
+    'import sys, tool_identity; _, tools = tool_identity.load_lock(); print(tools[sys.argv[1]]["path"])' \
+    "$tool" >"$evidence_dir/tool-${tool}-path.txt"
+  "${clean_env[@]}" python3 -c \
+    'import sys, tool_identity; _, tools = tool_identity.load_lock(); print(tools[sys.argv[1]]["sha256"])' \
+    "$tool" >"$evidence_dir/tool-${tool}-sha256.txt"
 done
 
 # The candidate cannot already carry an AA-001 record for itself. Run every
@@ -101,7 +107,7 @@ run_and_retain corpus-integrity "${clean_env[@]}" make check-corpus
 # trailing spaces. Their bytes are protected by the evidence manifests; this
 # gate checks the authored source/specification diff.
 run_and_retain diff-integrity "${clean_env[@]}" git diff --check \
-  "origin/main...$(git rev-parse HEAD)" -- . ':(exclude)evidence/**'
+  "origin/main...$(/usr/bin/git rev-parse HEAD)" -- . ':(exclude)evidence/**'
 
 "${clean_env[@]}" python3 scripts/build_evidence_envelope.py "$evidence_dir" provisional
 run_and_retain input-schema "${clean_env[@]}" python3 scripts/validate_json_schema.py schemas/tl-parse-evidence-input-v1.schema.json "$evidence_dir/collection-input.json"
@@ -140,9 +146,9 @@ fi
 
 "${clean_env[@]}" python3 scripts/finalize_collection.py "$evidence_dir"
 
-mkdir -p "$(dirname "$final_evidence_dir")"
-mv "$evidence_dir" "$final_evidence_dir"
-rmdir "$staging_root"
+/usr/bin/mkdir -p "$(/usr/bin/dirname "$final_evidence_dir")"
+/usr/bin/mv "$evidence_dir" "$final_evidence_dir"
+/usr/bin/rmdir "$staging_root"
 evidence_dir="$final_evidence_dir"
 
 /usr/bin/find "$evidence_dir" -type f -print0 \

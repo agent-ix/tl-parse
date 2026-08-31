@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 
 import build_evidence_envelope as builder
+import evidence_profile
+import tool_identity
 
 
 CHECKS = (
@@ -59,21 +61,34 @@ def git_bytes(revision: str, path: Path) -> bytes:
     ).stdout
 
 
-def positive_ci_census(output: str) -> bool:
+def positive_ci_census(output: str, require_verify: bool = False) -> bool:
     lines = set(output.splitlines())
     passed = [int(value) for value in TEST_SUCCESS.findall(output)]
     required_signatures = (
         r"all 13 mandatory local-CI targets propagate failures",
         r"all [1-9][0-9]* policy behavior tests passed",
-        r"strict traceability coverage is complete: 55/55",
+        r"strict traceability coverage is complete: 62/62",
         r"clean-room attribution digests match the pinned Cargo source",
         r"LeakSanitizer enabled",
+        r"fmt-check gate passed",
+        r"lint gate passed",
+        r"Rust test gate passed",
+        r"corpus-integrity gate passed",
+        r"fuzz-build gate passed",
+        r"fuzz-smoke gate passed",
+        r"deny gate passed",
+        r"audit-unsafe gate passed",
+        r"evidence-tool gate passed",
+        r"spec gate passed",
+        r"msrv gate passed",
+        r"rustdoc gate passed",
     )
     return (
         len(passed) >= 8
         and sum(passed) >= 25
         and REQUIRED_CORPUS_LINES <= lines
         and all(re.search(pattern, output) for pattern in required_signatures)
+        and (not require_verify or "verify-evidence gate passed" in output)
     )
 
 
@@ -106,12 +121,28 @@ def positive_output(evidence_dir: Path, name: str) -> bool:
         return positive_ci_census(combined)
     if name == "diff-integrity":
         return True
-    return bool(combined.strip())
+    if name in {"make-spec", "quire-coverage"}:
+        return "strict traceability coverage is complete: 62/62" in combined
+    if name == "rustdoc":
+        return "Generated " in combined and "/doc/tl_parse/index.html" in combined
+    if name == "default-dependencies":
+        return "tl-parse v0.1.0" in combined
+    if name == "corpus-integrity":
+        return REQUIRED_CORPUS_LINES <= set(combined.splitlines())
+    if name in {
+        "input-schema", "manifest-schema", "pgm01-schema", "pgm01-validator",
+        "sealed-pgm01-schema", "sealed-pgm01-validator",
+    }:
+        return bool(re.search(r'"errors"\s*:\s*\[\]\s*,?\s*"valid"\s*:\s*true', combined))
+    return False
 
 
 def summary(evidence_dir: Path) -> dict[str, object]:
+    profile_state = evidence_profile.resolve_profile(evidence_dir)
+    if profile_state != "v2":
+        raise ValueError("active evidence lacks the qualified v2 profile and source tool lock")
     profile = qualification_profile(evidence_dir)
-    require_positive = profile is not None or source_requires_v2(evidence_dir)
+    require_positive = True
     outcomes = []
     observed = {
         path.name[: -len(".status.txt")]
@@ -161,7 +192,7 @@ def summary(evidence_dir: Path) -> dict[str, object]:
             }
         )
     statuses = {item["status"] for item in outcomes}
-    if source_requires_v2(evidence_dir) and profile != "tl-parse.evidence-qualification/v2":
+    if profile != "tl-parse.evidence-qualification/v2":
         statuses.add("failed")
     if "failed" in statuses:
         overall = "failed"
@@ -198,6 +229,8 @@ def historical_parameters_digest(revision: str, source_builder: bytes) -> str:
         if b"def parameter_paths" in source_builder
         else source_builder.find(b"def parameters_digest")
     )
+    if start < 0:
+        raise OSError("historical builder has no parameter digest function")
     end = source_builder.find(b"\ndef build", start)
     function = source_builder[start:end]
     ordered = [
@@ -206,6 +239,7 @@ def historical_parameters_digest(revision: str, source_builder: bytes) -> str:
         (b'ROOT / "Makefile"', "Makefile"),
         (b'ROOT / "deny.toml"', "deny.toml"),
         (b'ROOT / "rust-toolchain.toml"', "rust-toolchain.toml"),
+        (b"TOOLS_LOCK", "tools.lock"),
         (b'ROOT / ".github" / "workflows" / "ci.yml"', ".github/workflows/ci.yml"),
         (b'ROOT / "src" / "diagnostic.rs"', "src/diagnostic.rs"),
         (b'ROOT / "src" / "format.rs"', "src/format.rs"),
@@ -233,6 +267,7 @@ def historical_parameters_digest(revision: str, source_builder: bytes) -> str:
         (b"TRACEABILITY_VALIDATOR", "scripts/check_traceability_coverage.py"),
         (b"EVIDENCE_SHELL_VERIFIER", "scripts/verify_evidence.sh"),
         (b"EVIDENCE_ANCHORS", "evidence/ANCHORS"),
+        (b"EVIDENCE_RETRACTIONS", "evidence/RETRACTIONS.json"),
         (b"ASSURANCE_ARGUMENT", "spec/assurance/AA-001.md"),
         (b"INPUT_SCHEMA", "schemas/tl-parse-evidence-input-v1.schema.json"),
         (b"MANIFEST_SCHEMA", "schemas/tl-parse-evidence-manifest-v1.schema.json"),
@@ -255,6 +290,21 @@ def historical_parameters_digest(revision: str, source_builder: bytes) -> str:
         state.update(git_bytes(revision, builder.ROOT / relative))
         state.update(b"\0")
     return state.hexdigest()
+
+
+def validate_tool_identity(evidence_dir: Path, revision: str | None) -> list[str]:
+    if not revision:
+        return ["retained tool identity has no source revision"]
+    try:
+        lock_value = json.loads(git_bytes(revision, builder.TOOLS_LOCK))
+        locked_tools = tool_identity.validate_lock(lock_value)
+        collection = json.loads(
+            (evidence_dir / "collection-input.json").read_text(encoding="utf-8")
+        )
+        retained = collection["tools"]["identities"]
+    except (KeyError, OSError, ValueError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
+        return [f"cannot rederive retained tool identity: {error}"]
+    return [] if retained == locked_tools else ["retained tool identities disagree with source tools.lock"]
 
 
 def validate_parameter_identity(
@@ -294,6 +344,7 @@ def validate_envelope_result(evidence_dir: Path, value: dict[str, object]) -> li
     )
     errors = [] if actual == expected else [f"envelope result {actual!r} disagrees with {expected!r}"]
     errors.extend(validate_parameter_identity(evidence_dir, envelope, revision))
+    errors.extend(validate_tool_identity(evidence_dir, revision))
     return errors
 
 
@@ -303,7 +354,25 @@ def main() -> int:
         print("usage: finalize_collection.py [--check] EVIDENCE_DIR", file=sys.stderr)
         return 2
     evidence_dir = Path(sys.argv[2] if check else sys.argv[1])
-    value = summary(evidence_dir)
+    try:
+        profile = evidence_profile.resolve_profile(evidence_dir)
+    except (OSError, ValueError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
+        print(f"cannot resolve evidence qualification profile: {error}", file=sys.stderr)
+        return 2
+    if profile == "retracted":
+        if not check:
+            print(f"refusing to rewrite explicitly retracted evidence: {evidence_dir}", file=sys.stderr)
+            return 2
+        print(f"retained evidence is explicitly retracted: {evidence_dir}")
+        return 0
+    if profile != "v2":
+        print(f"active evidence is inconclusive without qualification-v2: {evidence_dir}", file=sys.stderr)
+        return 1
+    try:
+        value = summary(evidence_dir)
+    except (OSError, ValueError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
+        print(f"cannot derive retained collection summary: {error}", file=sys.stderr)
+        return 2
     envelope_errors = validate_envelope_result(evidence_dir, value)
     if envelope_errors:
         for error in envelope_errors:

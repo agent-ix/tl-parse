@@ -2,6 +2,10 @@
 set -euo pipefail
 
 found=0
+if [[ -n "$(/usr/bin/git status --porcelain --untracked-files=all)" ]]; then
+  echo "evidence verification requires a clean source tree" >&2
+  exit 1
+fi
 if [[ ! -f evidence/ANCHORS ]]; then
   echo "retained evidence anchor manifest is missing" >&2
   exit 1
@@ -15,7 +19,7 @@ while IFS= read -r -d '' entry; do
     exit 1
   fi
   case "$entry" in
-    evidence/ANCHORS|evidence/README.md|evidence/REQUIRED|evidence/*.sha256) ;;
+    evidence/ANCHORS|evidence/README.md|evidence/REQUIRED|evidence/RETRACTIONS.json|evidence/*.sha256) ;;
     *)
       echo "unrecognized evidence-root file: $entry" >&2
       exit 1

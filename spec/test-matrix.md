@@ -32,6 +32,7 @@ relationships:
 |---|---|---|---|
 | NFR-001 | deterministic and resource-bound tests | TC-011 through TC-017, TC-021 | ✅ covered |
 | NFR-002 | dialect and evidence inspection | TC-020, TC-022 | ✅ covered |
+| NFR-003 | qualification integrity and fail-closed evidence | TC-022 through TC-025 | ✅ covered |
 
 ## Test Case Summary
 
@@ -58,4 +59,7 @@ relationships:
 | TC-019 | Consume checked-in fuzz target seeds | Fuzz | P0 | FR-005-AC-2, StR-002-VC-2 | ✅ implemented |
 | TC-020 | Validate dialect provenance and CLI valid paths | Integration | P0 | FR-001-AC-3, FR-005-AC-3, NFR-002-AC-1 | ✅ implemented |
 | TC-021 | Validate CLI invalid/usage paths and determinism | Integration | P0 | FR-005-AC-3, NFR-001-AC-1 | ✅ implemented |
-| TC-022 | Validate immutable evidence and human boundary | Integration | P0 | FR-005-AC-4, NFR-002-AC-2 | ✅ implemented |
+| TC-022 | Validate retained evidence and human boundary | Integration | P0 | FR-005-AC-4, NFR-002-AC-2, NFR-003-AC-4 | ✅ implemented |
+| TC-023 | Re-derive source-locked executable identities | Integration | P0 | NFR-003-AC-1 | ✅ implemented |
+| TC-024 | Require complete self-censusing local CI | Integration | P0 | NFR-003-AC-2 | ✅ implemented |
+| TC-025 | Distinguish active, inconclusive, and retracted evidence | Integration | P0 | NFR-003-AC-3 | ✅ implemented |

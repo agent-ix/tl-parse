@@ -5,13 +5,13 @@ from __future__ import annotations
 
 import argparse
 import os
-import pwd
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+import tool_identity
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,7 +26,7 @@ TARGET = re.compile(r"^([A-Za-z0-9_.-]+):(?:\s+(.*?))?\s*$")
 SHELL_CONTROL = re.compile(r"&&|\|\||&(?!&)|[;|]")
 ATTRIBUTE_IGNORE = re.compile(r"#\s*\[\s*(?:ignore\b|cfg_attr\([^\]]*,\s*ignore\b)")
 MAKEFLAGS_ASSIGNMENT = re.compile(
-    r"^\s*(?:(?:export|override|unexport)\s+)?MAKEFLAGS\s*(?::|\+|\?)?="
+    r"^\s*(?:(?:export|override|unexport)\s+)*MAKEFLAGS\s*(?::|\+|\?)?="
 )
 
 
@@ -60,21 +60,17 @@ def inspect_ignored_tests(root: Path) -> list[str]:
 def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
     lines = path.read_text(encoding="utf-8").splitlines()
     errors: list[str] = []
-    ci = next((line for line in lines if line.startswith("ci:")), "")
-    observed = set(ci.removeprefix("ci:").split())
-    expected = PROBES | {GUARD_TARGET}
-    if observed != expected:
-        errors.append(
-            f"ci prerequisite census drift: expected {sorted(expected)}, observed {sorted(observed)}"
-        )
-    candidate = next((line for line in lines if line.startswith("ci-for-evidence:")), "")
-    candidate_observed = set(candidate.removeprefix("ci-for-evidence:").split())
-    candidate_expected = COLLECTION_PROBES | {GUARD_TARGET}
-    if candidate_observed != candidate_expected:
-        errors.append(
-            "candidate CI prerequisite census drift: "
-            f"expected {sorted(candidate_expected)}, observed {sorted(candidate_observed)}"
-        )
+    defined = recipes(path)
+    expected_composites = {
+        "ci": ["/usr/bin/python3 scripts/run_local_ci.py --include-verify"],
+        "ci-for-evidence": ["/usr/bin/python3 scripts/run_local_ci.py"],
+    }
+    for target, expected_recipes in expected_composites.items():
+        if defined.get(target) != expected_recipes:
+            errors.append(
+                f"{target} runner drift: expected {expected_recipes}, "
+                f"observed {defined.get(target, [])}"
+            )
     for number, line in enumerate(lines, start=1):
         if re.match(r"^\s*\.(?:IGNORE|SILENT)\s*(?::|$)", line):
             errors.append(f"Makefile:{number} declares a recipe-control directive")
@@ -92,35 +88,17 @@ def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
 
 
 def clean_environment() -> dict[str, str]:
-    environment = dict(os.environ)
-    for name in (
-        "MAKEFLAGS", "CARGO", "PYTHON", "QUIRE", "SHA256SUM", "BASH",
-        "PYTHONOPTIMIZE", "TL_PARSE_FUZZ_DISABLE_LEAKS",
-        "ASAN_OPTIONS",
-    ):
-        environment.pop(name, None)
-    return environment
+    value, tools = tool_identity.load_lock()
+    return tool_identity.qualified_environment(value, tools)
 
 
 def verify_tool_identities() -> list[str]:
-    errors: list[str] = []
-    real_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
-    expected = {
-        "bash": "/usr/bin/bash",
-        "cargo": str(real_home / ".cargo" / "bin" / "cargo"),
-        "git": "/usr/bin/git",
-        "make": "/usr/bin/make",
-        "python3": "/usr/bin/python3",
-        "sha256sum": "/usr/bin/sha256sum",
-    }
-    for name, path in expected.items():
-        if shutil.which(name) != path:
-            errors.append(f"{name} must resolve to {path}, got {shutil.which(name)}")
-    quire = shutil.which("quire")
-    prefixes = (real_home / ".npm-global" / "bin", Path("/opt/hostedtoolcache/node"))
-    if quire is None or not any(Path(quire).is_relative_to(prefix) for prefix in prefixes):
-        errors.append(f"quire must resolve under a declared npm tool prefix, got {quire}")
-    return errors
+    try:
+        value, tools = tool_identity.load_lock()
+        unavailable, mismatches = tool_identity.verify_live(value, tools)
+    except (OSError, ValueError) as error:
+        return [f"cannot load qualified tool identities: {error}"]
+    return unavailable + mismatches
 
 
 def inspect_expanded_recipes(makefile: Path, root: Path = ROOT) -> list[str]:

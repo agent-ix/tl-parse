@@ -19,6 +19,7 @@ TL_SYNTAX_REVISION = "740182f13b84858008d6f176f75136737d405c1b"
 DIALECT_RECORD_DIGEST = "22959d4df6c7a1230172289903f1c31f36859b6f2a0e4556e886bdb7ebc9ae11"
 INPUT_SCHEMA = ROOT / "schemas" / "tl-parse-evidence-input-v1.schema.json"
 MANIFEST_SCHEMA = ROOT / "schemas" / "tl-parse-evidence-manifest-v1.schema.json"
+TOOLS_LOCK = ROOT / "tools.lock"
 COLLECTOR = ROOT / "scripts" / "collect_evidence.sh"
 BUILDER = Path(__file__).resolve()
 VALIDATOR = ROOT / "scripts" / "validate_json_schema.py"
@@ -26,6 +27,7 @@ FINALIZER = ROOT / "scripts" / "finalize_collection.py"
 EVIDENCE_VERIFIER = ROOT / "scripts" / "verify_evidence_manifest.py"
 TRACEABILITY_VALIDATOR = ROOT / "scripts" / "check_traceability_coverage.py"
 EVIDENCE_SHELL_VERIFIER = ROOT / "scripts" / "verify_evidence.sh"
+EVIDENCE_RETRACTIONS = ROOT / "evidence" / "RETRACTIONS.json"
 COMMANDS = (
     "make-ci",
     "make-spec",
@@ -105,6 +107,7 @@ def parameter_paths() -> tuple[Path, ...]:
         ROOT / "Makefile",
         ROOT / "deny.toml",
         ROOT / "rust-toolchain.toml",
+        TOOLS_LOCK,
         ROOT / ".github" / "workflows" / "ci.yml",
         ROOT / "src" / "diagnostic.rs",
         ROOT / "src" / "format.rs",
@@ -131,6 +134,7 @@ def parameter_paths() -> tuple[Path, ...]:
         EVIDENCE_VERIFIER,
         TRACEABILITY_VALIDATOR,
         EVIDENCE_SHELL_VERIFIER,
+        EVIDENCE_RETRACTIONS,
         INPUT_SCHEMA,
         MANIFEST_SCHEMA,
     }
@@ -191,7 +195,7 @@ def build(directory: Path, phase: str) -> None:
                     "path": (directory / f"tool-{name}-path.txt").read_text().strip(),
                     "sha256": (directory / f"tool-{name}-sha256.txt").read_text().strip(),
                 }
-                for name in ("bash", "cargo", "git", "make", "python3", "quire", "sha256sum")
+                for name in ("bash", "cargo", "git", "make", "python3", "quire", "rustc", "sha256sum")
             },
         },
         "pgm01": {

@@ -41,8 +41,16 @@ def main() -> int:
         original + "\noverride MAKEFLAGS = -i\n",
         original + "\nunexport MAKEFLAGS = -i\n",
         original.replace("\tcargo test --all-targets --all-features", "\tcargo test --all-targets --all-features &", 1),
-        original.replace("ci: ", "ci: fabricated ", 1),
-        original.replace("ci-for-evidence: ", "ci-for-evidence: fabricated ", 1),
+        original.replace(
+            "\t/usr/bin/python3 scripts/run_local_ci.py --include-verify",
+            "\t/usr/bin/python3 scripts/run_local_ci.py",
+            1,
+        ),
+        original.replace(
+            "\t/usr/bin/python3 scripts/run_local_ci.py\n",
+            "\t/usr/bin/python3 scripts/run_local_ci.py --include-verify\n",
+            1,
+        ),
     ]
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -103,6 +111,14 @@ def main() -> int:
         )
         assert result.returncode != 0, f"make {' '.join(arguments)} produced false success"
     assert MODULE.probe_command_positions(ROOT / "Makefile") == []
+    lock_value, locked_tools = MODULE.tool_identity.load_lock()
+    unavailable, mismatches = MODULE.tool_identity.verify_live(lock_value, locked_tools)
+    assert unavailable == [] and mismatches == []
+    forged_tools = {name: dict(identity) for name, identity in locked_tools.items()}
+    forged_tools["cargo"]["sha256"] = "0" * 64
+    assert MODULE.tool_identity.verify_live(lock_value, forged_tools)[1], (
+        "a mismatched mandatory-tool digest escaped qualification"
+    )
     with tempfile.TemporaryDirectory() as directory:
         shim = Path(directory)
         for name in ("cargo", "python3"):

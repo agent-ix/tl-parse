@@ -6,16 +6,14 @@ fn root_path(relative: &str) -> String {
     format!("{}/{}", env!("CARGO_MANIFEST_DIR"), relative)
 }
 
-// Trace: TC-022, FR-005-AC-4, NFR-002-AC-2, SUITE-001, SUITE-002, SUITE-003
+// Trace: TC-022, TC-023, TC-024, TC-025, FR-005-AC-4, NFR-002-AC-2
+// Trace: NFR-003-AC-1, NFR-003-AC-2, NFR-003-AC-3, NFR-003-AC-4, SUITE-001, SUITE-002, SUITE-003
 // Trace: SUITE-004, SUITE-005, SUITE-006
 // Trace: SUITE-007, SUITE-008, SUITE-009
 #[test]
 fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     let makefile = fs::read_to_string(root_path("Makefile")).unwrap();
-    let ci_line = makefile
-        .lines()
-        .find(|line| line.starts_with("ci:"))
-        .expect("Makefile has a composite local gate");
+    let runner = fs::read_to_string(root_path("scripts/run_local_ci.py")).unwrap();
     for gate in [
         "check-failure-propagation",
         "fmt-check",
@@ -32,27 +30,12 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "rustdoc",
         "verify-evidence",
     ] {
-        assert!(
-            ci_line.split_whitespace().any(|item| item == gate),
-            "local gate omits {gate}"
-        );
+        assert!(runner.contains("propagation.PROBES"), "local runner omits the gate census");
+        assert!(makefile.contains(&format!("{gate}:")), "Makefile omits {gate}");
     }
-    let candidate_line = makefile
-        .lines()
-        .find(|line| line.starts_with("ci-for-evidence:"))
-        .expect("Makefile has a pre-assurance candidate gate");
-    for gate in ci_line
-        .split_whitespace()
-        .filter(|gate| *gate != "ci:" && *gate != "verify-evidence")
-    {
-        assert!(
-            candidate_line.split_whitespace().any(|item| item == gate),
-            "candidate gate omits {gate}"
-        );
-    }
-    assert!(!candidate_line
-        .split_whitespace()
-        .any(|item| item == "verify-evidence"));
+    assert!(runner.contains("positive_ci_census"));
+    assert!(makefile.contains("scripts/run_local_ci.py --include-verify"));
+    assert!(makefile.contains("ci-for-evidence:\n\t/usr/bin/python3 scripts/run_local_ci.py"));
     for command in [
         "cargo fmt --all -- --check",
         "cargo clippy --all-targets --all-features -- -D warnings",
@@ -117,8 +100,9 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     let collector = fs::read_to_string(root_path("scripts/collect_evidence.sh")).unwrap();
     assert!(collector.contains("git diff --check"));
     assert!(collector.contains("':(exclude)evidence/**'"));
-    assert!(collector.contains("clean_env=(env -i PATH="));
-    assert!(collector.contains("for tool in bash cargo git make python3 quire sha256sum"));
+    assert!(collector.contains("clean_env=(/usr/bin/env -i PATH="));
+    assert!(collector.contains("for tool in bash cargo git make python3 quire rustc sha256sum"));
+    assert!(collector.contains("scripts/tool_identity.py --verify-live"));
     assert!(collector.contains("pgm01_validator_digest="));
     assert!(collector.contains("make ci-for-evidence"));
     let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();
@@ -130,7 +114,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         assert!(verifier.contains(required));
     }
 
-    let behavior = Command::new("python3")
+    let behavior = Command::new("/usr/bin/python3")
         .arg(root_path("scripts/test_evidence_tool.py"))
         .output()
         .unwrap();

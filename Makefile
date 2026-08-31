@@ -67,14 +67,17 @@ fmt:
 .PHONY: fmt-check
 fmt-check:
 	cargo fmt --all -- --check
+	@/usr/bin/printf 'fmt-check gate passed\n'
 
 .PHONY: lint
 lint:
 	cargo clippy --all-targets --all-features -- -D warnings
+	@/usr/bin/printf 'lint gate passed\n'
 
 .PHONY: test
 test:
 	cargo test --all-targets --all-features
+	@/usr/bin/printf 'Rust test gate passed\n'
 
 .PHONY: check-failure-propagation
 check-failure-propagation:
@@ -84,28 +87,34 @@ check-failure-propagation:
 check-corpus:
 	/usr/bin/python3 scripts/check_checksum_manifest.py corpus/v1
 	/usr/bin/python3 scripts/check_checksum_manifest.py fuzz/corpus/parser
+	@/usr/bin/printf 'corpus-integrity gate passed\n'
 
 .PHONY: fuzz-build
 fuzz-build:
 	cargo +nightly fuzz build parser
+	@/usr/bin/printf 'fuzz-build gate passed\n'
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
 	/usr/bin/bash scripts/run_fuzz_smoke.sh
+	@/usr/bin/printf 'fuzz-smoke gate passed\n'
 
 .PHONY: verify-evidence
 verify-evidence:
 	/usr/bin/bash scripts/verify_evidence.sh
+	@/usr/bin/printf 'verify-evidence gate passed\n'
 
 .PHONY: rustdoc
 rustdoc:
 	RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
+	@/usr/bin/printf 'rustdoc gate passed\n'
 
 .PHONY: evidence-tool
 evidence-tool:
 	/usr/bin/python3 -m compileall -q scripts
 	/usr/bin/python3 scripts/check_attribution.py
 	/usr/bin/python3 scripts/run_policy_tests.py
+	@/usr/bin/printf 'evidence-tool gate passed\n'
 
 .PHONY: build
 build:
@@ -121,6 +130,7 @@ clean:
 
 .PHONY: deny deny-advisories deny-bans deny-licenses deny-sources
 deny: deny-advisories deny-bans deny-licenses deny-sources
+	@/usr/bin/printf 'deny gate passed\n'
 
 deny-advisories:
 	cargo deny check advisories
@@ -141,6 +151,7 @@ cargo-audit:
 .PHONY: audit-unsafe
 audit-unsafe:
 	/usr/bin/bash scripts/check_unsafe_comments.sh
+	@/usr/bin/printf 'audit-unsafe gate passed\n'
 
 .PHONY: spec-validate
 spec-validate:
@@ -150,16 +161,20 @@ spec-validate:
 spec:
 	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
 	/usr/bin/python3 scripts/check_traceability_coverage.py
+	@/usr/bin/printf 'spec gate passed\n'
 
 .PHONY: msrv
 msrv:
 	cargo +1.75.0 check --all-targets --all-features
+	@/usr/bin/printf 'msrv gate passed\n'
 
 # =============================================================================
 # Composite
 # =============================================================================
 
 .PHONY: ci ci-for-evidence
-ci-for-evidence: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec msrv rustdoc
+ci-for-evidence:
+	/usr/bin/python3 scripts/run_local_ci.py
 
-ci: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec msrv rustdoc verify-evidence
+ci:
+	/usr/bin/python3 scripts/run_local_ci.py --include-verify

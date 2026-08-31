@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bind retained evidence record identities and census to Git history."""
+"""Bind retained evidence identities to the history presented by this checkout."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def verify(root: Path = ROOT) -> list[str]:
             errors.append(f"envelope recordId disagrees with directory name: {record_id}")
 
     if not (root / ".git").exists():
-        return errors
+        return errors + [f"cannot verify retained evidence without Git metadata: {root}"]
     try:
         historical = {
             Path(line)

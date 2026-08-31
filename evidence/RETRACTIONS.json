@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "tl-parse.evidence-retractions/v1",
+  "records": {
+    "tl-parse-v01-316cc5b593e5-20260831T162241Z": {"reason": "superseded failed collection before qualification-v2 controls"},
+    "tl-parse-v01-64b2b1e610fb-20260831T051027Z": {"reason": "legacy record without the active qualification profile"},
+    "tl-parse-v01-a0f80f0eec46-20260831T213731Z": {"reason": "superseded failed qualification-v2 collection"},
+    "tl-parse-v01-a5a51453e121-20260831T184713Z": {"reason": "legacy record without the active qualification profile"},
+    "tl-parse-v01-e11a68e4c540-20260831T200633Z": {"reason": "legacy record without the active qualification profile"},
+    "tl-parse-v01-e5e8a4d9b33b-20260831T060018Z": {"reason": "legacy record without the active qualification profile"},
+    "tl-parse-v01-f58ed6473841-20260831T162638Z": {"reason": "superseded failed collection before qualification-v2 controls"},
+    "tl-parse-v01-f8e2c52b4f1f-20260831T174125Z": {"reason": "legacy record without the active qualification profile"},
+    "tl-parse-v01-fc8e742cfb51-20260831T162742Z": {"reason": "legacy record without the active qualification profile"}
+  }
+}

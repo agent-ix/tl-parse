@@ -37,7 +37,7 @@ def main() -> int:
         )
         manifest = evidence / f"{record_id}.sha256"
         manifest.write_text("introduced\n", encoding="utf-8")
-        assert MODULE.verify(root) == []
+        assert any("without Git metadata" in error for error in MODULE.verify(root))
         (record / "evidence-envelope.json").write_text(
             json.dumps({"recordId": record_id + "-clone"}) + "\n", encoding="utf-8"
         )
@@ -55,7 +55,6 @@ def main() -> int:
         subprocess.run(["/usr/bin/git", "add", "."], cwd=root, check=True)
         subprocess.run(["/usr/bin/git", "commit", "-qm", "introduce"], cwd=root, check=True)
         assert MODULE.verify(root), "missing record directory should fail identity verification"
-        assert MODULE.verify(root), "history fixture unexpectedly passed"
         manifest.unlink()
         assert any("removed" in error for error in MODULE.verify(root)), (
             "a historically introduced record deletion was accepted"
