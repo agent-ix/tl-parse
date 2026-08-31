@@ -23,6 +23,7 @@ COLLECTOR = ROOT / "scripts" / "collect_evidence.sh"
 BUILDER = Path(__file__).resolve()
 VALIDATOR = ROOT / "scripts" / "validate_json_schema.py"
 FINALIZER = ROOT / "scripts" / "finalize_collection.py"
+EVIDENCE_VERIFIER = ROOT / "scripts" / "verify_evidence_manifest.py"
 COMMANDS = (
     "make-ci",
     "make-spec",
@@ -62,15 +63,11 @@ def command_outcomes(directory: Path) -> list[dict[str, object]]:
     values = []
     for name in COMMANDS:
         status_path = directory / f"{name}.status.txt"
-        stdout_path = directory / f"{name}.stdout"
         if not status_path.exists():
             values.append({"name": name, "status": "inconclusive", "exitCode": None})
             continue
         code = int(status_path.read_text().strip())
-        skipped = (
-            stdout_path.exists()
-            and stdout_path.read_text(encoding="utf-8").strip() == "skipped-unavailable"
-        )
+        skipped = code == 125
         values.append(
             {
                 "name": name,
@@ -113,18 +110,22 @@ def parameters_digest() -> str:
         ROOT / "src" / "parser.rs",
         ROOT / "src" / "bin" / "tl-parse.rs",
         ROOT / "docs" / "DIALECT-001-clean-room-mltl-v1.md",
+        ROOT / "docs" / "ATTRIBUTION.md",
         ROOT / "corpus" / "README.md",
         ROOT / "corpus" / "v1" / "SHA256SUMS",
         ROOT / "corpus" / "v1" / "manifest.json",
         ROOT / "fuzz" / "README.md",
         ROOT / "fuzz" / "Cargo.toml",
+        ROOT / "fuzz" / "Cargo.lock",
         ROOT / "fuzz" / "corpus" / "parser" / "SHA256SUMS",
         ROOT / "fuzz" / "fuzz_targets" / "parser.rs",
+        ROOT / "scripts" / "run_fuzz_smoke.sh",
         ROOT / "evidence" / "README.md",
         COLLECTOR,
         BUILDER,
         VALIDATOR,
         FINALIZER,
+        EVIDENCE_VERIFIER,
         INPUT_SCHEMA,
         MANIFEST_SCHEMA,
     )

@@ -19,8 +19,10 @@ exact source candidate.
 
 - Corpus files and manifest are checksum-protected and identify expected
   diagnostic codes or success results.
-- The fuzz target exercises parsing, diagnostic serialization, and successful
-  canonical round trips under small fixed budgets.
+- The complete local gate compiles the checked-in fuzz target and executes a
+  bounded libFuzzer smoke run over every checksum-protected seed. The target
+  exercises parsing, diagnostic serialization, and successful canonical round
+  trips under small fixed budgets.
 - `tl-parse validate` and `tl-parse format` accept a profile and file/stdin,
   use the library report, and have stable success, invalid-input, and usage
   exit classes.
@@ -32,7 +34,7 @@ exact source candidate.
 | ID | Criteria | Verification |
 |---|---|---|
 | FR-005-AC-1 | The malformed/resource corpus is checksum-valid and every fixture produces its declared bounded outcome. | Test (TC-018) |
-| FR-005-AC-2 | The checked-in fuzz target consumes every seed and successful seeds round-trip under declared limits. | Test (TC-019) |
+| FR-005-AC-2 | The checked-in fuzz target compiles, a bounded libFuzzer smoke run consumes every seed, and successful seeds round-trip under declared limits. | Test (TC-019, SUITE-003) |
 | FR-005-AC-3 | CLI validation/formatting outputs and exit classes match the library for valid, invalid, profile, stdin, and usage cases. | Test (TC-020, TC-021) |
 | FR-005-AC-4 | Evidence schemas, manifest, envelope, hashes, and human-authority boundary are machine-checkable and immutable. | Test (TC-022) |
 

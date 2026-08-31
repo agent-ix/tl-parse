@@ -15,6 +15,9 @@ checked-value vocabulary exposed by MIT OR Apache-2.0 dual-licensed
 `agent-ix/tl-syntax` at exact
 revision `740182f13b84858008d6f176f75136737d405c1b`. No parser implementation,
 grammar production, or grammar prose from any third-party MLTL tool was used.
+The separately retained `ATTRIBUTION.md` binds the exact tl-syntax files and
+license texts consulted by SHA-256 and records the negative clean-room
+declaration as a reviewable artifact.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
 a SHA-256 digest over the normative production and precedence record so drift
@@ -49,6 +52,11 @@ Parentheses may group any expression. Prefix `!`, `F`, and `G` bind tightest.
 Infix `U` and `R` bind next, then `&`, then `|`, then right-associative `->`,
 then `<->`; infix operators other than `->` associate left.
 
+The left association of `U` and `R` is specific to this dialect. Consumers
+targeting grammars that associate those operators to the right must preserve
+the intended tree with explicit parentheses when exchanging text; unparenthesized
+chains are not assumed to be portable between dialects.
+
 The accepted syntax is equivalent to the following independently authored
 precedence description:
 
@@ -67,3 +75,11 @@ Every accepted interval is inclusive and is rejected when start exceeds end.
 The selected semantic profile is an API/CLI parameter, never inferred from
 text. Application proposition names and Unicode syntax are deliberately out of
 profile rather than silently normalized.
+
+## Canonical rendering
+
+Canonical text is whitespace-free and uses the precedence and associativity
+above. Parentheses appear only when their removal would change the syntax tree;
+prefix operands are parenthesized only when they are infix expressions. This
+keeps accepted prefix and same-associativity chains within the same parser depth
+budget after formatting.

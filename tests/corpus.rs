@@ -118,7 +118,7 @@ fn every_checked_fuzz_seed_is_bounded_and_successes_round_trip() {
         .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("txt"))
         .collect::<Vec<_>>();
     paths.sort();
-    assert_eq!(paths.len(), 3);
+    assert_eq!(paths.len(), 4);
     for path in paths {
         let source = fs::read_to_string(&path).unwrap();
         let report = parse(&source, SemanticProfile::ClosedTraceV1, limits);

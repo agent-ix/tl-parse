@@ -17,8 +17,10 @@ whitespace-free representation within declared output and work limits.
 ## Behavior
 
 - Constants and propositions are canonical atoms.
-- Prefix operators include their interval where applicable and parenthesize
-  their operand; every binary operator is fully parenthesized.
+- Prefix operators include their interval where applicable. Canonical output
+  uses the authored precedence and associativity with parentheses only where
+  removing them would change the syntax tree, so formatting does not consume a
+  deeper parse budget than the accepted source.
 - Decimal proposition and interval values contain no sign or leading zero
   except the value zero.
 - Formatting ignores source spans and preserves node kinds, bounds,

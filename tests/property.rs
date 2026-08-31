@@ -8,17 +8,23 @@ fn source_strategy() -> impl Strategy<Value = String> {
         Just("true".to_owned()),
         (0_u32..=8).prop_map(|value| format!("p{value}")),
     ];
-    leaf.prop_recursive(4, 48, 3, |inner| {
+    let recursive = leaf.prop_recursive(4, 48, 3, |inner| {
         prop_oneof![
-            inner.clone().prop_map(|value| format!("!({value})")),
+            inner.clone().prop_map(|value| format!("!{value}")),
             (0_u32..=3, 0_u32..=3, inner.clone()).prop_map(|(start, width, value)| {
                 let end = start + width;
-                format!("F[{start},{end}]({value})")
+                format!("F[{start},{end}]{value}")
             }),
             (0_u32..=3, 0_u32..=3, inner.clone()).prop_map(|(start, width, value)| {
                 let end = start + width;
-                format!("G[{start},{end}]({value})")
+                format!("G[{start},{end}]{value}")
             }),
+            (
+                inner.clone(),
+                prop_oneof![Just("&"), Just("|"), Just("->"), Just("<->")],
+                inner.clone(),
+            )
+                .prop_map(|(left, operator, right)| format!("{left}{operator}{right}")),
             (
                 inner.clone(),
                 prop_oneof![Just("&"), Just("|"), Just("->"), Just("<->")],
@@ -30,14 +36,35 @@ fn source_strategy() -> impl Strategy<Value = String> {
                 prop_oneof![Just("U"), Just("R")],
                 0_u32..=3,
                 0_u32..=3,
-                inner,
+                inner.clone(),
+            )
+                .prop_map(|(left, operator, start, width, right)| {
+                    let end = start + width;
+                    format!("{left}{operator}[{start},{end}]{right}")
+                }),
+            (
+                inner.clone(),
+                prop_oneof![Just("U"), Just("R")],
+                0_u32..=3,
+                0_u32..=3,
+                inner.clone(),
             )
                 .prop_map(|(left, operator, start, width, right)| {
                     let end = start + width;
                     format!("({left}{operator}[{start},{end}]{right})")
                 }),
         ]
-    })
+    });
+    prop_oneof![
+        recursive,
+        (0_usize..=128).prop_map(|count| format!("{}p0", "!".repeat(count))),
+        (1_usize..=256).prop_map(|count| {
+            (0..count)
+                .map(|index| format!("p{}", index % 9))
+                .collect::<Vec<_>>()
+                .join("&")
+        }),
+    ]
 }
 
 fn structural(document: &FormulaDocument) -> (SemanticProfile, u32, Vec<NodeKind>) {

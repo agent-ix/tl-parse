@@ -66,14 +66,11 @@ fn complete_dialect_vocabulary_maps_to_exact_node_kinds() {
 fn precedence_and_associativity_are_unambiguous() {
     assert_eq!(
         canonical("p0 <-> p1 -> p2 | p3 & p4 U[1,2] p5"),
-        "(p0<->(p1->(p2|(p3&(p4U[1,2]p5)))))"
+        "p0<->p1->p2|p3&p4U[1,2]p5"
     );
-    assert_eq!(canonical("p0 -> p1 -> p2"), "(p0->(p1->p2))");
-    assert_eq!(canonical("p0 <-> p1 <-> p2"), "((p0<->p1)<->p2)");
-    assert_eq!(
-        canonical("p0 U[0,1] p1 U[2,3] p2"),
-        "((p0U[0,1]p1)U[2,3]p2)"
-    );
+    assert_eq!(canonical("p0 -> p1 -> p2"), "p0->p1->p2");
+    assert_eq!(canonical("p0 <-> p1 <-> p2"), "p0<->p1<->p2");
+    assert_eq!(canonical("p0 U[0,1] p1 U[2,3] p2"), "p0U[0,1]p1U[2,3]p2");
 }
 
 // Trace: TC-003, FR-001-AC-2
@@ -210,6 +207,11 @@ fn diagnostics_have_stable_golden_fields_and_versioned_json() {
     assert!(json.starts_with("{\"schema_version\":\"tl-parse.diagnostics/v1\""));
     assert!(json.contains("\"code\":\"invalid_interval\""));
     assert!(json.contains("\"semantic_profile\":\"mltl.closed-trace/v1\""));
+    let decoded: tl_parse::ParseReport = serde_json::from_str(&json).unwrap();
+    assert_eq!(decoded, report);
+    let with_unknown = json.replacen('{', "{\"fabricated\":true,", 1);
+    assert!(serde_json::from_str::<tl_parse::ParseReport>(&with_unknown).is_err());
+    assert!(diagnostic.to_string().contains("invalid_interval"));
 }
 
 // Trace: TC-011, FR-003-AC-2, NFR-001-AC-2

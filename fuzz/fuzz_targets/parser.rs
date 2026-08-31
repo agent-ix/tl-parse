@@ -1,9 +1,10 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
+use tl_parse::tl_syntax::SemanticProfile;
 use tl_parse::{format_document, parse, report_json, FormatLimits, ParseLimits};
-use tl_syntax::SemanticProfile;
 
+// Trace: TC-019, FR-005-AC-2, StR-002-VC-2
 fuzz_target!(|data: &[u8]| {
     let Ok(source) = std::str::from_utf8(data) else {
         return;
@@ -36,6 +37,14 @@ fuzz_target!(|data: &[u8]| {
         assert_eq!(formatted.text.is_some(), formatted.error.is_none());
         let text = formatted.text.expect("default-sized valid graph formats");
         let reparsed = parse(&text, SemanticProfile::ClosedTraceV1, limits);
-        assert!(reparsed.document.is_some());
+        let reparsed = reparsed.document.expect("canonical text reparses");
+        assert_eq!(document.semantic_profile(), reparsed.semantic_profile());
+        assert_eq!(document.root(), reparsed.root());
+        assert_eq!(document.nodes().len(), reparsed.nodes().len());
+        assert!(document
+            .nodes()
+            .iter()
+            .zip(reparsed.nodes())
+            .all(|(left, right)| left.kind == right.kind));
     }
 });

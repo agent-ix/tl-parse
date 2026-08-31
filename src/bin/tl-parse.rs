@@ -108,22 +108,25 @@ fn run() -> Result<ExitCode, String> {
 }
 
 fn read_bounded(path: &str) -> Result<String, String> {
-    let byte_limit = (ParseLimits::default().max_source_bytes as u64).saturating_add(1);
-    let mut source = String::new();
+    let byte_limit = ParseLimits::default().max_source_bytes;
+    let mut bytes = Vec::new();
     if path == "-" {
         io::stdin()
             .lock()
-            .take(byte_limit)
-            .read_to_string(&mut source)
-            .map_err(|error| format!("cannot read UTF-8 stdin: {error}"))?;
+            .take((byte_limit as u64).saturating_add(1))
+            .read_to_end(&mut bytes)
+            .map_err(|error| format!("cannot read stdin: {error}"))?;
     } else {
         File::open(path)
             .map_err(|error| format!("cannot open {path:?}: {error}"))?
-            .take(byte_limit)
-            .read_to_string(&mut source)
-            .map_err(|error| format!("cannot read UTF-8 {path:?}: {error}"))?;
+            .take((byte_limit as u64).saturating_add(1))
+            .read_to_end(&mut bytes)
+            .map_err(|error| format!("cannot read {path:?}: {error}"))?;
     }
-    Ok(source)
+    if bytes.len() > byte_limit {
+        return Ok(" ".repeat(bytes.len()));
+    }
+    String::from_utf8(bytes).map_err(|error| format!("cannot read UTF-8 {path:?}: {error}"))
 }
 
 fn render_diagnostic(diagnostic: &Diagnostic) -> String {

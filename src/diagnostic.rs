@@ -1,4 +1,6 @@
-use serde::Serialize;
+use std::fmt;
+
+use serde::{Deserialize, Serialize};
 use tl_syntax::{FormulaDocument, SemanticProfile, SourceSpan};
 
 use crate::{DIAGNOSTIC_SCHEMA_VERSION, DIALECT_REVISION, TL_SYNTAX_REVISION};
@@ -21,7 +23,8 @@ pub const HARD_MAX_OUTPUT_BYTES: usize = 1_048_576;
 pub const HARD_MAX_FORMAT_WORK: usize = 4_194_304;
 
 /// Caller-selectable parse limits, clamped to process-safe hard maxima.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ParseLimits {
     /// Maximum source bytes examined.
     pub max_source_bytes: usize,
@@ -64,7 +67,8 @@ impl Default for ParseLimits {
 }
 
 /// Deterministic observations retained for every parse attempt.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ParseStats {
     /// Bytes in the submitted source, including bytes beyond a source limit.
     pub source_bytes: usize,
@@ -83,7 +87,7 @@ pub struct ParseStats {
 }
 
 /// Stable error codes for lexical, syntactic, validation, and limit failures.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DiagnosticCode {
     /// Source exceeds the effective byte limit.
@@ -138,8 +142,14 @@ impl DiagnosticCode {
     }
 }
 
+impl fmt::Display for DiagnosticCode {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
 /// Closed diagnostic severity set for v0.1.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DiagnosticSeverity {
     /// The report cannot contain a successful formula document.
@@ -147,7 +157,7 @@ pub enum DiagnosticSeverity {
 }
 
 /// Stable expected-token categories.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpectedToken {
     /// Any valid expression prefix.
@@ -167,7 +177,7 @@ pub enum ExpectedToken {
 }
 
 /// Deterministic recovery action associated with a diagnostic.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RecoveryAction {
     /// No token stream change was required.
@@ -181,7 +191,8 @@ pub enum RecoveryAction {
 }
 
 /// One stable, source-located parse diagnostic.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Diagnostic {
     /// Machine-readable stable code.
     pub code: DiagnosticCode,
@@ -199,15 +210,31 @@ pub struct Diagnostic {
     pub message: String,
 }
 
+impl fmt::Display for Diagnostic {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "{} at {}..{}: {}",
+            self.code,
+            self.span.start(),
+            self.span.end(),
+            self.message
+        )
+    }
+}
+
+impl std::error::Error for Diagnostic {}
+
 /// Complete versioned result of one parse attempt.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ParseReport {
     /// Diagnostic report schema identity.
-    pub schema_version: &'static str,
+    pub schema_version: String,
     /// Text dialect identity.
-    pub dialect_revision: &'static str,
+    pub dialect_revision: String,
     /// Exact compiled tl-syntax source revision.
-    pub tl_syntax_revision: &'static str,
+    pub tl_syntax_revision: String,
     /// Requested and preserved semantic profile.
     pub semantic_profile: SemanticProfile,
     /// Effective limits after process-safe clamping.
@@ -227,9 +254,9 @@ impl ParseReport {
         source_bytes: usize,
     ) -> Self {
         Self {
-            schema_version: DIAGNOSTIC_SCHEMA_VERSION,
-            dialect_revision: DIALECT_REVISION,
-            tl_syntax_revision: TL_SYNTAX_REVISION,
+            schema_version: DIAGNOSTIC_SCHEMA_VERSION.to_owned(),
+            dialect_revision: DIALECT_REVISION.to_owned(),
+            tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
             semantic_profile: profile,
             limits,
             stats: ParseStats {
@@ -243,7 +270,8 @@ impl ParseReport {
 }
 
 /// Caller-selectable canonical-format limits, clamped to hard maxima.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormatLimits {
     /// Maximum final canonical output bytes.
     pub max_output_bytes: usize,
@@ -270,7 +298,8 @@ impl Default for FormatLimits {
 }
 
 /// Formatter observations.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormatStats {
     /// Reachable graph nodes rendered.
     pub nodes: usize,
@@ -281,7 +310,7 @@ pub struct FormatStats {
 }
 
 /// Stable canonical-format failure codes.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FormatErrorCode {
     /// Input document did not validate through tl-syntax.
@@ -292,8 +321,20 @@ pub enum FormatErrorCode {
     WorkLimit,
 }
 
+impl fmt::Display for FormatErrorCode {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = match self {
+            Self::InvalidGraph => "invalid_graph",
+            Self::OutputLimit => "output_limit",
+            Self::WorkLimit => "work_limit",
+        };
+        formatter.write_str(value)
+    }
+}
+
 /// Typed canonical-format failure.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormatError {
     /// Machine-readable stable code.
     pub code: FormatErrorCode,
@@ -301,8 +342,17 @@ pub struct FormatError {
     pub message: String,
 }
 
+impl fmt::Display for FormatError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "{}: {}", self.code, self.message)
+    }
+}
+
+impl std::error::Error for FormatError {}
+
 /// Complete result of bounded canonical formatting.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormatReport {
     /// Effective limits after process-safe clamping.
     pub limits: FormatLimits,

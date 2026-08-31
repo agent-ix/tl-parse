@@ -24,16 +24,16 @@ fn every_operator_has_one_exact_canonical_rendering() {
         ("false", "false"),
         ("true", "true"),
         ("p4294967295", "p4294967295"),
-        ("!p0", "!(p0)"),
-        ("p0 & p1", "(p0&p1)"),
-        ("p0 | p1", "(p0|p1)"),
-        ("p0 -> p1", "(p0->p1)"),
-        ("p0 <-> p1", "(p0<->p1)"),
-        ("F[0,2]p0", "F[0,2](p0)"),
-        ("G[1,3]p0", "G[1,3](p0)"),
-        ("p0 U[1,2] p1", "(p0U[1,2]p1)"),
-        ("p0 R[2,4] p1", "(p0R[2,4]p1)"),
-        ("true U[1,2] false", "(trueU[1,2]false)"),
+        ("!p0", "!p0"),
+        ("p0 & p1", "p0&p1"),
+        ("p0 | p1", "p0|p1"),
+        ("p0 -> p1", "p0->p1"),
+        ("p0 <-> p1", "p0<->p1"),
+        ("F[0,2]p0", "F[0,2]p0"),
+        ("G[1,3]p0", "G[1,3]p0"),
+        ("p0 U[1,2] p1", "p0U[1,2]p1"),
+        ("p0 R[2,4] p1", "p0R[2,4]p1"),
+        ("true U[1,2] false", "trueU[1,2]false"),
     ];
     for (source, expected) in cases {
         assert_eq!(canonical(source), expected, "{source}");
@@ -46,6 +46,45 @@ fn canonical_format_is_parseable_and_idempotent() {
     let first = canonical("!(p0 U[1,2] true) <-> G[0,3](p1 -> false)");
     let second = canonical(&first);
     assert_eq!(first, second);
+
+    for (source, expected) in [
+        ("!(p0&p1)", "!(p0&p1)"),
+        ("(p0|p1)&p2", "(p0|p1)&p2"),
+        ("p0&(p1&p2)", "p0&(p1&p2)"),
+        ("(p0->p1)->p2", "(p0->p1)->p2"),
+        ("p0->(p1->p2)", "p0->p1->p2"),
+        ("p0<->(p1<->p2)", "p0<->(p1<->p2)"),
+        ("p0U[0,1](p1R[0,1]p2)", "p0U[0,1](p1R[0,1]p2)"),
+    ] {
+        assert_eq!(canonical(source), expected, "{source}");
+    }
+}
+
+// Trace: TC-016, FR-004-AC-2, StR-002-VC-1
+#[test]
+fn accepted_depth_and_chain_boundaries_reparse_under_the_same_limits() {
+    for source in [
+        format!("{}p0", "!".repeat(128)),
+        (0..256)
+            .map(|index| format!("p{}", index % 9))
+            .collect::<Vec<_>>()
+            .join("&"),
+    ] {
+        let first = parse_closed(&source);
+        let text = format_document(&first, FormatLimits::default())
+            .text
+            .expect("accepted input formats");
+        let second = parse_closed(&text);
+        let kinds = |document: &FormulaDocument| {
+            document
+                .nodes()
+                .iter()
+                .map(|node| node.kind)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(first.root(), second.root());
+        assert_eq!(kinds(&first), kinds(&second));
+    }
 }
 
 // Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
@@ -77,7 +116,7 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     )
     .unwrap();
     let report = format_document(&shared, FormatLimits::default());
-    assert_eq!(report.text.as_deref(), Some("(p3&p3)"));
+    assert_eq!(report.text.as_deref(), Some("p3&p3"));
     assert_eq!(report.stats.nodes, 2);
 
     for (limits, expected) in [
@@ -99,6 +138,11 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
         let report = format_document(&shared, limits);
         assert!(report.text.is_none());
         assert_eq!(report.stats.output_bytes, 0);
-        assert_eq!(report.error.unwrap().code, expected);
+        let json = serde_json::to_string(&report).unwrap();
+        let decoded: tl_parse::FormatReport = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded, report);
+        let error = report.error.unwrap();
+        assert_eq!(error.code, expected);
+        assert!(error.to_string().contains(&expected.to_string()));
     }
 }

@@ -5,7 +5,7 @@
     {
       "path": "valid-canonical.txt",
       "profile": "closed",
-      "expectedCanonical": "G[0,2]((p0->F[1,1](p1)))"
+      "expectedCanonical": "G[0,2](p0->F[1,1]p1)"
     },
     {
       "path": "unexpected-unicode.txt",

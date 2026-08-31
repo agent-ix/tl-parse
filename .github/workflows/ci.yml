@@ -29,6 +29,9 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Install nightly fuzz toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
@@ -48,7 +51,7 @@ jobs:
       - name: Install cargo-deny
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-deny
+          tool: cargo-deny,cargo-fuzz
 
       - name: Complete local gate
         run: make ci

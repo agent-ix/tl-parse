@@ -18,6 +18,18 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+FINALIZER_SPEC = importlib.util.spec_from_file_location(
+    "finalize_collection", ROOT / "scripts" / "finalize_collection.py"
+)
+assert FINALIZER_SPEC is not None and FINALIZER_SPEC.loader is not None
+FINALIZER = importlib.util.module_from_spec(FINALIZER_SPEC)
+FINALIZER_SPEC.loader.exec_module(FINALIZER)
+VERIFIER_SPEC = importlib.util.spec_from_file_location(
+    "verify_evidence_manifest", ROOT / "scripts" / "verify_evidence_manifest.py"
+)
+assert VERIFIER_SPEC is not None and VERIFIER_SPEC.loader is not None
+VERIFIER = importlib.util.module_from_spec(VERIFIER_SPEC)
+VERIFIER_SPEC.loader.exec_module(VERIFIER)
 
 
 def assert_schema_contracts() -> None:
@@ -105,7 +117,7 @@ def main() -> int:
         (evidence_dir / "make-ci.stdout").write_text("passed\n", encoding="utf-8")
         (evidence_dir / "pgm01-schema.status.txt").write_text("125\n", encoding="utf-8")
         (evidence_dir / "pgm01-schema.stdout").write_text(
-            "skipped-unavailable\n", encoding="utf-8"
+            "ordinary-output\n", encoding="utf-8"
         )
         (evidence_dir / "pgm01-validator.status.txt").write_text("3\n", encoding="utf-8")
         outcomes = {item["name"]: item for item in MODULE.command_outcomes(evidence_dir)}
@@ -134,6 +146,32 @@ def main() -> int:
         assert MODULE.classify_result("sealed-failed", [outcomes["make-ci"]])[0] == "error"
         assert MODULE.classify_result("final", [outcomes["pgm01-schema"]])[0] == "inconclusive"
         assert MODULE.classify_result("final", [outcomes["pgm01-validator"]])[0] == "error"
+
+        (evidence_dir / "evidence-envelope.json").write_text("{}\n", encoding="utf-8")
+        for name in FINALIZER.CHECKS:
+            (evidence_dir / f"{name}.status.txt").write_text("0\n", encoding="utf-8")
+        retained = FINALIZER.summary(evidence_dir)
+        assert retained["overallStatus"] == "passed"
+        (evidence_dir / "rustdoc.status.txt").write_text("1\n", encoding="utf-8")
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
+
+        artifact = evidence_dir / "make-ci.stdout"
+        artifact.write_text("passed\n", encoding="utf-8")
+        manifest = {
+            "artifacts": [
+                {
+                    "path": artifact.name,
+                    "sha256": VERIFIER.sha256(artifact),
+                    "size": artifact.stat().st_size,
+                }
+            ]
+        }
+        (evidence_dir / "evidence-manifest.json").write_text(
+            json.dumps(manifest), encoding="utf-8"
+        )
+        assert VERIFIER.verify(evidence_dir) == []
+        artifact.write_text("FABRICATED\n", encoding="utf-8")
+        assert VERIFIER.verify(evidence_dir)
     print("evidence outcome behavior is valid")
     return 0
 

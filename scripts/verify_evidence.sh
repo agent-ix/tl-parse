@@ -5,6 +5,11 @@ found=0
 while IFS= read -r -d '' checksum; do
   found=1
   sha256sum --check "$checksum"
+  evidence_dir="${checksum%.sha256}"
+  python3 scripts/verify_evidence_manifest.py "$evidence_dir"
+  if [[ -e "$evidence_dir/collection-summary.json" ]]; then
+    python3 scripts/finalize_collection.py --check "$evidence_dir"
+  fi
 done < <(find evidence -maxdepth 1 -type f -name '*.sha256' -print0 | sort -z)
 
 if [[ $found -eq 0 ]]; then

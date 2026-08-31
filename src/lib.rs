@@ -38,11 +38,31 @@ pub const DIALECT_RECORD: &str = concat!(
     "whitespace:space,tab,cr,lf|profile:external"
 );
 
+/// Complete normative dialect document retained with the implementation.
+pub const DIALECT_DOCUMENT: &str = include_str!("../docs/DIALECT-001-clean-room-mltl-v1.md");
+
+/// Complete clean-room source and license attribution record.
+pub const ATTRIBUTION_DOCUMENT: &str = include_str!("../docs/ATTRIBUTION.md");
+
 /// Returns the lowercase SHA-256 digest of the normative dialect record.
 pub fn dialect_digest() -> String {
     use sha2::{Digest, Sha256};
 
     format!("{:x}", Sha256::digest(DIALECT_RECORD.as_bytes()))
+}
+
+/// Returns the SHA-256 digest of the complete normative dialect document.
+pub fn dialect_document_digest() -> String {
+    use sha2::{Digest, Sha256};
+
+    format!("{:x}", Sha256::digest(DIALECT_DOCUMENT.as_bytes()))
+}
+
+/// Returns the SHA-256 digest of the complete attribution boundary document.
+pub fn attribution_document_digest() -> String {
+    use sha2::{Digest, Sha256};
+
+    format!("{:x}", Sha256::digest(ATTRIBUTION_DOCUMENT.as_bytes()))
 }
 
 /// Serializes a parse report as compact, stable-key-order JSON.

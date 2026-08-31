@@ -16,11 +16,13 @@ help:
 	@echo "  make deny             - cargo deny check licenses and sources"
 	@echo "  make audit-unsafe     - Enforce // SAFETY: comments on unsafe blocks"
 	@echo "  make check-corpus     - Verify malformed and fuzz-seed corpus bytes"
+	@echo "  make fuzz-build       - Compile the checked-in cargo-fuzz target"
+	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
 	@echo "  make verify-evidence  - Verify retained evidence SHA-256 manifests"
 	@echo "  make spec             - Validate specification and strict coverage"
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make evidence-tool    - Test evidence tooling and schemas"
-	@echo "  make ci               - All CI gates locally (fmt-check + lint + test + deny + audit-unsafe)"
+	@echo "  make ci               - Complete local gate, including fuzz build and smoke"
 
 # =============================================================================
 # Format / Lint / Test
@@ -47,6 +49,14 @@ check-corpus:
 	cd corpus/v1 && sha256sum --check SHA256SUMS
 	cd fuzz/corpus/parser && sha256sum --check SHA256SUMS
 
+.PHONY: fuzz-build
+fuzz-build:
+	cargo +nightly fuzz build parser
+
+.PHONY: fuzz-smoke
+fuzz-smoke:
+	bash scripts/run_fuzz_smoke.sh
+
 .PHONY: verify-evidence
 verify-evidence:
 	bash scripts/verify_evidence.sh
@@ -57,7 +67,7 @@ rustdoc:
 
 .PHONY: evidence-tool
 evidence-tool:
-	python3 -m py_compile scripts/build_evidence_envelope.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/validate_json_schema.py
+	python3 -m py_compile scripts/build_evidence_envelope.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/validate_json_schema.py scripts/verify_evidence_manifest.py
 	python3 scripts/test_evidence_tool.py
 
 .PHONY: build
@@ -99,4 +109,4 @@ spec:
 # =============================================================================
 
 .PHONY: ci
-ci: fmt-check lint test check-corpus deny audit-unsafe evidence-tool spec rustdoc verify-evidence
+ci: fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec rustdoc verify-evidence

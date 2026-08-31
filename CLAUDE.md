@@ -14,6 +14,8 @@ make clean          # cargo clean
 make deny           # cargo deny check licenses and sources
 make audit-unsafe   # check that every unsafe block has a // SAFETY: comment
 make check-corpus   # verify hostile-input and fuzz-seed checksums
+make fuzz-build     # compile the checked-in cargo-fuzz target locally
+make fuzz-smoke     # execute a bounded local libFuzzer seed smoke run
 make evidence-tool  # exercise evidence outcome and schema tooling
 make verify-evidence # verify retained exact-candidate evidence
 make spec           # validate specifications and strict coverage

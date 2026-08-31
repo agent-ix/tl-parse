@@ -1,9 +1,40 @@
-use std::{fs, process::Command};
+use std::{fs, os::unix::fs::PermissionsExt, process::Command};
 
 use serde_json::Value;
 
 fn root_path(relative: &str) -> String {
     format!("{}/{}", env!("CARGO_MANIFEST_DIR"), relative)
+}
+
+fn observed_cargo_arguments(target: &str) -> Vec<String> {
+    let directory = tempfile::tempdir().unwrap();
+    let probe = directory.path().join("cargo-probe");
+    let log = directory.path().join("cargo.log");
+    fs::write(
+        &probe,
+        "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$PROBE_LOG\"\n",
+    )
+    .unwrap();
+    let mut permissions = fs::metadata(&probe).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&probe, permissions).unwrap();
+    let output = Command::new("make")
+        .arg(target)
+        .arg(format!("CARGO={}", probe.display()))
+        .env("PROBE_LOG", &log)
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "make {target} probe failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    fs::read_to_string(log)
+        .unwrap()
+        .lines()
+        .map(str::to_owned)
+        .collect()
 }
 
 // Trace: TC-022, FR-005-AC-4, NFR-002-AC-2, SUITE-001, SUITE-002, SUITE-003
@@ -21,6 +52,8 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "lint",
         "test",
         "check-corpus",
+        "fuzz-build",
+        "fuzz-smoke",
         "deny",
         "audit-unsafe",
         "evidence-tool",
@@ -45,6 +78,8 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "cargo clippy --all-targets --all-features -- -D warnings",
         "cargo test --all-targets --all-features",
         "sha256sum --check SHA256SUMS",
+        "cargo +nightly fuzz build parser",
+        "bash scripts/run_fuzz_smoke.sh",
         "cargo deny check licenses",
         "cargo deny check sources",
         "bash scripts/check_unsafe_comments.sh",
@@ -60,6 +95,15 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
             "local gate omits exact command {command}"
         );
     }
+
+    assert_eq!(
+        observed_cargo_arguments("test"),
+        ["test --all-targets --all-features"]
+    );
+    assert_eq!(
+        observed_cargo_arguments("deny"),
+        ["deny check licenses", "deny check sources"]
+    );
 
     let workflow = fs::read_to_string(root_path(".github/workflows/ci.yml")).unwrap();
     let trigger = workflow
@@ -80,6 +124,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         assert_eq!(value["$schema"], "http://json-schema.org/draft-07/schema#");
         assert_eq!(value["additionalProperties"], false);
     }
+    assert!(fs::metadata(root_path("scripts/verify_evidence_manifest.py")).is_ok());
 
     let behavior = Command::new("python3")
         .arg(root_path("scripts/test_evidence_tool.py"))

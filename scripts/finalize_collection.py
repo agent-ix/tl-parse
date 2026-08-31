@@ -30,23 +30,15 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: finalize_collection.py EVIDENCE_DIR", file=sys.stderr)
-        return 2
-    evidence_dir = Path(sys.argv[1])
+def summary(evidence_dir: Path) -> dict[str, object]:
     outcomes = []
     for name in CHECKS:
         status_path = evidence_dir / f"{name}.status.txt"
-        stdout_path = evidence_dir / f"{name}.stdout"
         if not status_path.exists():
             outcomes.append({"name": name, "status": "inconclusive", "exitCode": None})
             continue
         exit_code = int(status_path.read_text(encoding="utf-8").strip())
-        skipped = (
-            stdout_path.exists()
-            and stdout_path.read_text(encoding="utf-8").strip() == "skipped-unavailable"
-        )
+        skipped = exit_code == 125
         outcomes.append(
             {
                 "name": name,
@@ -66,7 +58,7 @@ def main() -> int:
     else:
         overall = "passed"
     envelope = evidence_dir / "evidence-envelope.json"
-    value = {
+    return {
         "schemaVersion": "tl-parse.collection-summary/v1",
         "overallStatus": overall,
         "finalEnvelopeSha256": sha256(envelope),
@@ -77,7 +69,23 @@ def main() -> int:
         ),
         "outcomes": outcomes,
     }
-    (evidence_dir / "collection-summary.json").write_text(
+
+
+def main() -> int:
+    check = len(sys.argv) == 3 and sys.argv[1] == "--check"
+    if len(sys.argv) != 2 and not check:
+        print("usage: finalize_collection.py [--check] EVIDENCE_DIR", file=sys.stderr)
+        return 2
+    evidence_dir = Path(sys.argv[2] if check else sys.argv[1])
+    value = summary(evidence_dir)
+    summary_path = evidence_dir / "collection-summary.json"
+    if check:
+        actual = json.loads(summary_path.read_text(encoding="utf-8"))
+        if actual != value:
+            print(f"retained summary disagrees with status files: {evidence_dir}", file=sys.stderr)
+            return 1
+        return 0
+    summary_path.write_text(
         json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return 0
