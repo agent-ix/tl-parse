@@ -30,8 +30,14 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "rustdoc",
         "verify-evidence",
     ] {
-        assert!(runner.contains("propagation.PROBES"), "local runner omits the gate census");
-        assert!(makefile.contains(&format!("{gate}:")), "Makefile omits {gate}");
+        assert!(
+            runner.contains("propagation.PROBES"),
+            "local runner omits the gate census"
+        );
+        assert!(
+            makefile.contains(&format!("{gate}:")),
+            "Makefile omits {gate}"
+        );
     }
     assert!(runner.contains("positive_ci_census"));
     assert!(makefile.contains("scripts/run_local_ci.py --include-verify"));
