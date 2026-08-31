@@ -117,6 +117,7 @@ def main() -> int:
     qualified_environment = MODULE.tool_identity.qualified_environment(
         lock_value, locked_tools
     )
+    assert qualified_environment["CARGO_TARGET_DIR"] == "/home/peter/.cargo-target"
     for name, identity in locked_tools.items():
         for option, field in (("--tool-path", "path"), ("--tool-sha256", "sha256")):
             result = subprocess.run(

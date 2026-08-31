@@ -45,6 +45,7 @@ if ! /usr/bin/python3 scripts/tool_identity.py --verify-live; then
 fi
 trusted_path="$(/usr/bin/python3 scripts/tool_identity.py --trusted-path)"
 real_home="$(/usr/bin/python3 scripts/tool_identity.py --home)"
+cargo_target_dir="$real_home/.cargo-target"
 staging_root="$(/usr/bin/mktemp -d -p . .tl-parse-evidence-stage.XXXXXX)"
 cleanup_staging() {
   if [[ -n "${staging_root:-}" && -d "$staging_root" ]]; then
@@ -55,7 +56,7 @@ trap cleanup_staging EXIT
 evidence_dir="$staging_root/$(basename "$final_evidence_dir")"
 /usr/bin/mkdir -p "$evidence_dir"
 collection_failed=0
-clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" USER="${USER:-}" LANG="${LANG:-C}" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
+clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" CARGO_TARGET_DIR="$cargo_target_dir" USER="${USER:-}" LANG="${LANG:-C}" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
 
 run_and_retain() {
   local name="$1"

@@ -41,7 +41,11 @@ def validate_lock(value: Any) -> dict[str, dict[str, str]]:
             raise ValueError(f"tools.lock digest for {name} is malformed")
         validated[name] = {"path": path, "sha256": digest}
     environment = value.get("environment")
-    if not isinstance(environment, dict) or environment.get("home") != "/home/peter":
+    if (
+        not isinstance(environment, dict)
+        or environment.get("home") != "/home/peter"
+        or environment.get("cargoTargetDir") != "/home/peter/.cargo-target"
+    ):
         raise ValueError("tools.lock has an unknown qualification home")
     return validated
 
@@ -64,6 +68,7 @@ def qualified_environment(value: dict[str, Any], tools: dict[str, dict[str, str]
     environment = dict(os.environ)
     environment["HOME"] = value["environment"]["home"]
     environment["PATH"] = trusted_path(tools)
+    environment["CARGO_TARGET_DIR"] = value["environment"]["cargoTargetDir"]
     for name in (
         "MAKE", "MAKEFLAGS", "CARGO", "PYTHON", "QUIRE", "SHA256SUM", "BASH",
         "PYTHONOPTIMIZE", "ASAN_OPTIONS", "TL_PARSE_FUZZ_DISABLE_LEAKS",

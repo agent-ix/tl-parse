@@ -1,6 +1,7 @@
 {
   "schemaVersion": "tl-parse.qualified-tools/v1",
   "environment": {
+    "cargoTargetDir": "/home/peter/.cargo-target",
     "home": "/home/peter"
   },
   "tools": {
