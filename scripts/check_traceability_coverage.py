@@ -113,7 +113,12 @@ def validate_verification_references() -> list[str]:
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
             if not line.startswith("|") or not re.search(r"-(?:AC|VC)-[0-9]+\s*\|", line):
                 continue
-            for target in REFERENCE.findall(line):
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            verification = cells[-1] if cells else ""
+            targets = REFERENCE.findall(verification)
+            if not re.match(r"^(?:Test|Inspection)\s+\(", verification) or not targets:
+                errors.append(f"{path}:{number} has no supported verification method and target")
+            for target in targets:
                 if target not in declared:
                     errors.append(f"{path}:{number} references nonexistent verification target {target}")
     return errors

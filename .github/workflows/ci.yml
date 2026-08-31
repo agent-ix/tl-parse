@@ -36,7 +36,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install evidence tools
-        run: pip install 'jsonschema==4.25.1'
+        run: pip install 'jsonschema[format]==4.25.1'
 
       - name: Install Node.js
         uses: actions/setup-node@v4

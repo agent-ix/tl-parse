@@ -101,7 +101,7 @@ def classify_result(
 
 
 def parameters_digest() -> str:
-    paths = (
+    fixed_paths = {
         ROOT / "Cargo.toml",
         ROOT / "Cargo.lock",
         ROOT / "Makefile",
@@ -137,9 +137,14 @@ def parameters_digest() -> str:
         ASSURANCE_ARGUMENT,
         INPUT_SCHEMA,
         MANIFEST_SCHEMA,
-    )
+    }
+    paths = fixed_paths | {
+        path
+        for path in (ROOT / "scripts").iterdir()
+        if path.is_file() and path.suffix in {".py", ".sh"}
+    }
     state = hashlib.sha256()
-    for path in paths:
+    for path in sorted(paths):
         state.update(str(path.relative_to(ROOT)).encode())
         state.update(b"\0")
         state.update(path.read_bytes())

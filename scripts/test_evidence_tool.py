@@ -147,11 +147,23 @@ def main() -> int:
         assert MODULE.classify_result("final", [outcomes["pgm01-schema"]])[0] == "inconclusive"
         assert MODULE.classify_result("final", [outcomes["pgm01-validator"]])[0] == "error"
 
-        (evidence_dir / "evidence-envelope.json").write_text("{}\n", encoding="utf-8")
+        (evidence_dir / "evidence-envelope.json").write_text(
+            json.dumps({"result": {"status": "inconclusive"}}) + "\n", encoding="utf-8"
+        )
         for name in FINALIZER.CHECKS:
             (evidence_dir / f"{name}.status.txt").write_text("0\n", encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
+        assert FINALIZER.validate_envelope_result(evidence_dir, retained) == []
+        (evidence_dir / "evidence-envelope.json").write_text(
+            json.dumps({"result": {"status": "conclusive"}}) + "\n", encoding="utf-8"
+        )
+        assert FINALIZER.validate_envelope_result(evidence_dir, retained), (
+            "a forged conclusive envelope result was accepted"
+        )
+        (evidence_dir / "evidence-envelope.json").write_text(
+            json.dumps({"result": {"status": "inconclusive"}}) + "\n", encoding="utf-8"
+        )
         (evidence_dir / "pgm01-validator.stderr").write_text(
             "governance validation error: fabricated pass\n", encoding="utf-8"
         )
@@ -167,6 +179,27 @@ def main() -> int:
         censused = FINALIZER.summary(evidence_dir)
         assert any(item["name"] == "msrv" for item in censused["outcomes"])
         assert censused["overallStatus"] == "failed"
+
+        (evidence_dir / "rustdoc.status.txt").write_text("0\n", encoding="utf-8")
+        (evidence_dir / "msrv.status.txt").write_text("0\n", encoding="utf-8")
+        (evidence_dir / "make-ci.stdout").write_text(
+            "test result: FAILED. 5 passed; 1 failed; 0 ignored\n", encoding="utf-8"
+        )
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
+        (evidence_dir / "make-ci.stdout").write_text(
+            "test result: ok. 24 passed; 0 failed; 1 ignored\n", encoding="utf-8"
+        )
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
+        (evidence_dir / "make-ci.stdout").write_text(
+            "make: [Makefile:51: test] Error 101 (ignored)\n", encoding="utf-8"
+        )
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
+        (evidence_dir / "make-ci.stdout").write_text(
+            "LeakSanitizer explicitly disabled by TL_PARSE_FUZZ_DISABLE_LEAKS=1\n",
+            encoding="utf-8",
+        )
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
+        (evidence_dir / "make-ci.stdout").write_text("passed\n", encoding="utf-8")
 
         artifact = evidence_dir / "make-ci.stdout"
         artifact.write_text("passed\n", encoding="utf-8")
@@ -195,6 +228,10 @@ def main() -> int:
         added.write_text("FABRICATED\n", encoding="utf-8")
         assert any("unlisted" in error for error in VERIFIER.verify(evidence_dir))
         added.unlink()
+        symlink = evidence_dir / "PLANTED-LINK"
+        symlink.symlink_to("make-ci.stdout")
+        assert any("symlink" in error for error in VERIFIER.verify(evidence_dir))
+        symlink.unlink()
         artifact.write_text("FABRICATED\n", encoding="utf-8")
         assert VERIFIER.verify(evidence_dir)
     print("evidence outcome behavior is valid")

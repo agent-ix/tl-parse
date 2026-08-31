@@ -43,6 +43,9 @@ def verify(evidence_dir: Path) -> list[str]:
         for path in evidence_dir.rglob("*")
         if path.is_file() and not path.is_symlink()
     }
+    for path in evidence_dir.rglob("*"):
+        if path.is_symlink():
+            errors.append(f"retained evidence contains a symlink: {path}")
     for relative in sorted(actual_files - expected_files):
         errors.append(f"unlisted retained artifact: {relative}")
     for relative in sorted(expected_files - actual_files):

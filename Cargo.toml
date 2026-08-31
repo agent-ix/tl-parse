@@ -9,6 +9,9 @@ license = "MIT OR Apache-2.0"
 publish = false
 repository = "https://github.com/agent-ix/tl-parse"
 
+[lints.rust]
+unsafe_code = "forbid"
+
 [lib]
 name = "tl_parse"
 path = "src/lib.rs"

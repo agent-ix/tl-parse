@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +24,10 @@ CHECKS = (
     "pgm01-validator",
     "sealed-pgm01-schema",
     "sealed-pgm01-validator",
+)
+CONTRADICTION = re.compile(
+    r"test result: FAILED|Error [0-9]+ \(ignored\)|\b[1-9][0-9]* ignored\b|"
+    r"LeakSanitizer explicitly disabled"
 )
 
 
@@ -51,6 +56,14 @@ def summary(evidence_dir: Path) -> dict[str, object]:
             and stderr_path.exists()
             and bool(stderr_path.read_text(encoding="utf-8").strip())
         )
+        output_contradiction = any(
+            path.exists()
+            and CONTRADICTION.search(path.read_text(encoding="utf-8", errors="replace"))
+            for path in (
+                evidence_dir / f"{name}.stdout",
+                evidence_dir / f"{name}.stderr",
+            )
+        )
         outcomes.append(
             {
                 "name": name,
@@ -58,7 +71,7 @@ def summary(evidence_dir: Path) -> dict[str, object]:
                     "skipped-unavailable"
                     if skipped
                     else "failed"
-                    if validator_contradiction
+                    if validator_contradiction or output_contradiction
                     else "passed"
                     if exit_code == 0
                     else "failed"
@@ -87,6 +100,26 @@ def summary(evidence_dir: Path) -> dict[str, object]:
     }
 
 
+def validate_envelope_result(evidence_dir: Path, value: dict[str, object]) -> list[str]:
+    try:
+        envelope = json.loads((evidence_dir / "evidence-envelope.json").read_text(encoding="utf-8"))
+        actual = envelope["result"]["status"]
+    except (KeyError, OSError, json.JSONDecodeError) as error:
+        return [f"cannot derive retained envelope result: {error}"]
+    outcomes = value["outcomes"]
+    assert isinstance(outcomes, list)
+    sealed_not_passed = any(
+        item["name"].startswith("sealed-") and item["status"] != "passed"
+        for item in outcomes
+    )
+    expected = (
+        "error"
+        if value["overallStatus"] == "failed" or sealed_not_passed
+        else "inconclusive"
+    )
+    return [] if actual == expected else [f"envelope result {actual!r} disagrees with {expected!r}"]
+
+
 def main() -> int:
     check = len(sys.argv) == 3 and sys.argv[1] == "--check"
     if len(sys.argv) != 2 and not check:
@@ -94,6 +127,11 @@ def main() -> int:
         return 2
     evidence_dir = Path(sys.argv[2] if check else sys.argv[1])
     value = summary(evidence_dir)
+    envelope_errors = validate_envelope_result(evidence_dir, value)
+    if envelope_errors:
+        for error in envelope_errors:
+            print(error, file=sys.stderr)
+        return 1
     summary_path = evidence_dir / "collection-summary.json"
     if check:
         actual = json.loads(summary_path.read_text(encoding="utf-8"))

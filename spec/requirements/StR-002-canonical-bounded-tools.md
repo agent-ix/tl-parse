@@ -21,8 +21,8 @@ cannot panic, recurse without limit, or report partial work as success.
 
 | ID | Criteria | Validation |
 |---|---|---|
-| StR-002-VC-1 | Canonical format is idempotent and valid generated formulas parse, format, and parse without structural drift. | Test |
-| StR-002-VC-2 | Malformed corpora, explicit budget exhaustion, fuzz seeds, and CLI outcomes are retained and reproducible. | Test |
+| StR-002-VC-1 | Canonical format is idempotent and valid generated formulas parse, format, and parse without structural drift. | Test (TC-015, TC-016) |
+| StR-002-VC-2 | Malformed corpora, explicit budget exhaustion, fuzz seeds, and CLI outcomes are retained and reproducible. | Test (TC-018, TC-019, TC-021) |
 
 ## Stakeholders
 

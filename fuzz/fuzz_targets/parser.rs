@@ -1,4 +1,5 @@
 #![no_main]
+#![forbid(unsafe_code)]
 
 use libfuzzer_sys::fuzz_target;
 use tl_parse::tl_syntax::SemanticProfile;

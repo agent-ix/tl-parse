@@ -301,7 +301,7 @@ impl Default for FormatLimits {
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FormatStats {
-    /// Reachable graph nodes rendered.
+    /// Reachable graph nodes selected for rendering, including error paths.
     pub nodes: usize,
     /// Deterministic work units consumed: one per expanded node plus one per emitted byte.
     pub work: usize,

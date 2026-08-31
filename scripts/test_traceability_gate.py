@@ -56,6 +56,14 @@ def main() -> int:
     try:
         requirement.write_text(original.replace("TC-017", "TC-999"), encoding="utf-8")
         assert MODULE.validate_verification_references()
+        requirement.write_text(
+            original.replace("Test (TC-017)", "Inspection"), encoding="utf-8"
+        )
+        assert MODULE.validate_verification_references()
+        requirement.write_text(
+            original.replace("Test (TC-017)", "Test (TC-1017)"), encoding="utf-8"
+        )
+        assert MODULE.validate_verification_references()
     finally:
         requirement.write_text(original, encoding="utf-8")
     print("strict traceability coverage behavior is valid")

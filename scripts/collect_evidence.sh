@@ -31,6 +31,9 @@ if [[ -n "${PGM01_SCHEMA:-}" ]] && \
 fi
 
 mkdir -p "$evidence_dir"
+collection_token="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+export TL_PARSE_COLLECTION_TOKEN="$collection_token"
+python3 scripts/collection_marker.py create "$evidence_dir/.collecting"
 collection_failed=0
 
 run_and_retain() {
@@ -67,7 +70,7 @@ python3 -c 'import importlib.metadata; print(importlib.metadata.version("jsonsch
 quire provenance --pretty >"$evidence_dir/quire-provenance.json"
 cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
 
-run_and_retain make-ci make ci
+run_and_retain make-ci env -u CARGO -u PYTHON -u BASH -u QUIRE -u SHA256SUM -u MAKEFLAGS -u TL_PARSE_FUZZ_DISABLE_LEAKS make ci
 run_and_retain make-spec make spec
 run_and_retain quire-coverage python3 scripts/check_traceability_coverage.py
 run_and_retain msrv cargo +1.75.0 check --all-targets --all-features
@@ -79,6 +82,8 @@ run_and_retain corpus-integrity make check-corpus
 # gate checks the authored source/specification diff.
 run_and_retain diff-integrity git diff --check \
   "origin/main...$(git rev-parse HEAD)" -- . ':(exclude)evidence/**'
+
+rm "$evidence_dir/.collecting"
 
 python3 scripts/build_evidence_envelope.py "$evidence_dir" provisional
 run_and_retain input-schema python3 scripts/validate_json_schema.py schemas/tl-parse-evidence-input-v1.schema.json "$evidence_dir/collection-input.json"

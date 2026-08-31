@@ -8,6 +8,32 @@ QUIRE ?= quire
 SHA256SUM ?= sha256sum
 BASH ?= bash
 
+tl_make_short_flags := $(firstword $(MAKEFLAGS))
+ifneq ($(filter -%,$(tl_make_short_flags)),)
+tl_make_short_flags :=
+endif
+ifneq ($(findstring i,$(tl_make_short_flags)),)
+$(error local CI refuses Make ignore-errors mode)
+endif
+
+ifneq ($(filter ci,$(MAKECMDGOALS)),)
+ifneq ($(notdir $(CARGO)),cargo)
+$(error local CI refuses a CARGO override)
+endif
+ifneq ($(notdir $(PYTHON)),python3)
+$(error local CI refuses a PYTHON override)
+endif
+ifneq ($(notdir $(QUIRE)),quire)
+$(error local CI refuses a QUIRE override)
+endif
+ifneq ($(notdir $(SHA256SUM)),sha256sum)
+$(error local CI refuses a SHA256SUM override)
+endif
+ifneq ($(notdir $(BASH)),bash)
+$(error local CI refuses a BASH override)
+endif
+endif
+
 .PHONY: help
 help:
 	@echo "Available targets:"
