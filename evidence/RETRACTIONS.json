@@ -2,6 +2,7 @@
   "schemaVersion": "tl-parse.evidence-retractions/v1",
   "records": {
     "tl-parse-v01-316cc5b593e5-20260831T162241Z": {"reason": "superseded failed collection before qualification-v2 controls"},
+    "tl-parse-v01-5a970ef11750-20260831T214308Z": {"reason": "superseded by exact-candidate record tl-parse-v01-a44a88071c4b-20260831T232653Z after qualification-v2 review hardening"},
     "tl-parse-v01-64b2b1e610fb-20260831T051027Z": {"reason": "legacy record without the active qualification profile"},
     "tl-parse-v01-a0f80f0eec46-20260831T213731Z": {"reason": "superseded failed qualification-v2 collection"},
     "tl-parse-v01-a5a51453e121-20260831T184713Z": {"reason": "legacy record without the active qualification profile"},
