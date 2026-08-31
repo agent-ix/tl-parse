@@ -87,7 +87,10 @@ for tool in bash cargo git make python3 quire sha256sum; do
   /usr/bin/sha256sum "$resolved" | /usr/bin/cut -d' ' -f1 >"$evidence_dir/tool-${tool}-sha256.txt"
 done
 
-run_and_retain make-ci "${clean_env[@]}" make ci
+# The candidate cannot already carry an AA-001 record for itself. Run every
+# substantive CI prerequisite here; ordinary `make ci` adds verify-evidence
+# after this record and its AA-001 binding are committed.
+run_and_retain make-ci "${clean_env[@]}" make ci-for-evidence
 run_and_retain make-spec "${clean_env[@]}" make spec
 run_and_retain quire-coverage "${clean_env[@]}" python3 scripts/check_traceability_coverage.py
 run_and_retain msrv "${clean_env[@]}" cargo +1.75.0 check --all-targets --all-features

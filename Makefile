@@ -2,7 +2,7 @@
 # TL Parse Makefile
 # =============================================================================
 
-ifneq ($(filter ci,$(MAKECMDGOALS)),)
+ifneq ($(filter ci ci-for-evidence,$(MAKECMDGOALS)),)
 ifneq ($(strip $(MAKEFLAGS)),)
 $(error local CI refuses non-empty MAKEFLAGS)
 endif
@@ -53,6 +53,7 @@ help:
 	@echo "  make msrv             - Check all targets and features with Rust 1.75"
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make evidence-tool    - Test evidence tooling and schemas"
+	@echo "  make ci-for-evidence  - Candidate gates before the candidate can self-anchor"
 	@echo "  make ci               - Complete local gate, including fuzz build and smoke"
 
 # =============================================================================
@@ -158,5 +159,7 @@ msrv:
 # Composite
 # =============================================================================
 
-.PHONY: ci
+.PHONY: ci ci-for-evidence
+ci-for-evidence: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec msrv rustdoc
+
 ci: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec msrv rustdoc verify-evidence

@@ -37,6 +37,22 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
             "local gate omits {gate}"
         );
     }
+    let candidate_line = makefile
+        .lines()
+        .find(|line| line.starts_with("ci-for-evidence:"))
+        .expect("Makefile has a pre-assurance candidate gate");
+    for gate in ci_line
+        .split_whitespace()
+        .filter(|gate| *gate != "ci:" && *gate != "verify-evidence")
+    {
+        assert!(
+            candidate_line.split_whitespace().any(|item| item == gate),
+            "candidate gate omits {gate}"
+        );
+    }
+    assert!(!candidate_line
+        .split_whitespace()
+        .any(|item| item == "verify-evidence"));
     for command in [
         "cargo fmt --all -- --check",
         "cargo clippy --all-targets --all-features -- -D warnings",
@@ -104,6 +120,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     assert!(collector.contains("clean_env=(env -i PATH="));
     assert!(collector.contains("for tool in bash cargo git make python3 quire sha256sum"));
     assert!(collector.contains("pgm01_validator_digest="));
+    assert!(collector.contains("make ci-for-evidence"));
     let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();
     for required in [
         "sha256sum --check evidence/ANCHORS",

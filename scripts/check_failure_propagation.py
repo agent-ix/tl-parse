@@ -20,6 +20,7 @@ PROBES = {
     "deny", "audit-unsafe", "evidence-tool", "spec", "msrv", "rustdoc",
     "verify-evidence",
 }
+COLLECTION_PROBES = PROBES - {"verify-evidence"}
 GUARD_TARGET = "check-failure-propagation"
 TARGET = re.compile(r"^([A-Za-z0-9_.-]+):(?:\s+(.*?))?\s*$")
 SHELL_CONTROL = re.compile(r"&&|\|\||&(?!&)|[;|]")
@@ -65,6 +66,14 @@ def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
     if observed != expected:
         errors.append(
             f"ci prerequisite census drift: expected {sorted(expected)}, observed {sorted(observed)}"
+        )
+    candidate = next((line for line in lines if line.startswith("ci-for-evidence:")), "")
+    candidate_observed = set(candidate.removeprefix("ci-for-evidence:").split())
+    candidate_expected = COLLECTION_PROBES | {GUARD_TARGET}
+    if candidate_observed != candidate_expected:
+        errors.append(
+            "candidate CI prerequisite census drift: "
+            f"expected {sorted(candidate_expected)}, observed {sorted(candidate_observed)}"
         )
     for number, line in enumerate(lines, start=1):
         if re.match(r"^\s*\.(?:IGNORE|SILENT)\s*(?::|$)", line):

@@ -42,6 +42,7 @@ def main() -> int:
         original + "\nunexport MAKEFLAGS = -i\n",
         original.replace("\tcargo test --all-targets --all-features", "\tcargo test --all-targets --all-features &", 1),
         original.replace("ci: ", "ci: fabricated ", 1),
+        original.replace("ci-for-evidence: ", "ci-for-evidence: fabricated ", 1),
     ]
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)

@@ -168,7 +168,7 @@ def build(directory: Path, phase: str) -> None:
         "sourceRevision": revision,
         "sourceState": (directory / "source-state.txt").read_text().strip(),
         "commands": [
-            "make ci",
+            "make ci-for-evidence (all candidate gates; final make ci adds the AA-001 self-binding)",
             "make spec",
             "python3 scripts/check_traceability_coverage.py",
             "RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features",
