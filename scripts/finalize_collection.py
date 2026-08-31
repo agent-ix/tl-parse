@@ -6,8 +6,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
+
+import build_evidence_envelope as builder
 
 
 CHECKS = (
@@ -29,10 +32,44 @@ CONTRADICTION = re.compile(
     r"test result: FAILED|Error [0-9]+ \(ignored\)|\b[1-9][0-9]* ignored\b|"
     r"LeakSanitizer explicitly disabled"
 )
+TEST_SUCCESS = re.compile(r"^test result: ok\.", re.MULTILINE)
+REQUIRED_CORPUS_LINES = {
+    f"corpus/v1/{name}: OK"
+    for name in (
+        "depth-limit.txt", "inverted-interval.txt", "leading-zero.txt",
+        "missing-delimiter.txt", "token-limit.txt", "unexpected-unicode.txt",
+        "valid-canonical.txt", "manifest.json",
+    )
+} | {
+    f"fuzz/corpus/parser/{name}: OK"
+    for name in ("invalid.txt", "resource.txt", "roundtrip-depth.txt", "valid.txt")
+}
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def git_bytes(revision: str, path: Path) -> bytes:
+    return subprocess.run(
+        ["git", "show", f"{revision}:{path.relative_to(builder.ROOT)}"],
+        cwd=builder.ROOT, check=True, capture_output=True,
+    ).stdout
+
+
+def source_has(evidence_dir: Path, marker: bytes) -> bool:
+    source = evidence_dir / "source-revision.txt"
+    if not source.exists():
+        return True
+    try:
+        return marker in git_bytes(source.read_text(encoding="utf-8").strip(), builder.BUILDER)
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
+def positive_ci_census(output: str) -> bool:
+    lines = set(output.splitlines())
+    return len(TEST_SUCCESS.findall(output)) >= 8 and REQUIRED_CORPUS_LINES <= lines
 
 
 def summary(evidence_dir: Path) -> dict[str, object]:
@@ -64,6 +101,18 @@ def summary(evidence_dir: Path) -> dict[str, object]:
                 evidence_dir / f"{name}.stderr",
             )
         )
+        positive_census_missing = (
+            exit_code == 0
+            and name == "make-ci"
+            and source_has(evidence_dir, b"REQUIRED_CORPUS_LINES")
+            and not positive_ci_census(
+                (evidence_dir / "make-ci.stdout").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (evidence_dir / "make-ci.stdout").exists()
+                else ""
+            )
+        )
         outcomes.append(
             {
                 "name": name,
@@ -71,7 +120,7 @@ def summary(evidence_dir: Path) -> dict[str, object]:
                     "skipped-unavailable"
                     if skipped
                     else "failed"
-                    if validator_contradiction or output_contradiction
+                    if validator_contradiction or output_contradiction or positive_census_missing
                     else "passed"
                     if exit_code == 0
                     else "failed"
@@ -104,6 +153,8 @@ def validate_envelope_result(evidence_dir: Path, value: dict[str, object]) -> li
     try:
         envelope = json.loads((evidence_dir / "evidence-envelope.json").read_text(encoding="utf-8"))
         actual = envelope["result"]["status"]
+        revision_path = evidence_dir / "source-revision.txt"
+        revision = revision_path.read_text(encoding="utf-8").strip() if revision_path.exists() else None
     except (KeyError, OSError, json.JSONDecodeError) as error:
         return [f"cannot derive retained envelope result: {error}"]
     outcomes = value["outcomes"]
@@ -117,7 +168,16 @@ def validate_envelope_result(evidence_dir: Path, value: dict[str, object]) -> li
         if value["overallStatus"] == "failed" or sealed_not_passed
         else "inconclusive"
     )
-    return [] if actual == expected else [f"envelope result {actual!r} disagrees with {expected!r}"]
+    errors = [] if actual == expected else [f"envelope result {actual!r} disagrees with {expected!r}"]
+    try:
+        source_builder = git_bytes(revision, builder.BUILDER) if revision else b""
+        if revision and b"def parameter_paths" in source_builder:
+            digest = builder.parameters_digest(lambda path: git_bytes(revision, path))
+            if envelope.get("parametersDigest", {}).get("value") != digest:
+                errors.append("envelope parameters digest disagrees with the source revision")
+    except (OSError, subprocess.CalledProcessError) as error:
+        errors.append(f"cannot rederive retained parameter identity: {error}")
+    return errors
 
 
 def main() -> int:

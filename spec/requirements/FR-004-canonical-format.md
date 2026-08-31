@@ -28,9 +28,10 @@ whitespace-free representation within declared output and work limits.
 - Canonical text is emitted into one iterative output buffer rather than
   retaining a complete string for every intermediate node. Output bytes are
   checked before emission. Formatter work charges one unit per expanded node
-  plus one per emitted byte, so every formula within the declared node ceiling
-  can reach canonical formatting under the default work limit when its final
-  text fits the output limit.
+  plus one per emitted byte. The node, output-byte, and work ceilings are joint
+  limits: depending on graph shape, output or cumulative work may reject a
+  formula below the node ceiling even when another shape at that node count is
+  accepted.
 
 ## Acceptance Criteria
 
@@ -38,7 +39,7 @@ whitespace-free representation within declared output and work limits.
 |---|---|---|
 | FR-004-AC-1 | Every operator has one exact canonical rendering and formatting canonical text twice is idempotent. | Test (TC-014, TC-015) |
 | FR-004-AC-2 | A deterministic generated formula population parse-formats-parses without structural or profile drift. | Test (TC-016) |
-| FR-004-AC-3 | Deep/shared graphs and output/work exhaustion are handled iteratively and return explicit errors without partial output; the 9,999-node accepted boundary formats under default limits. | Test (TC-017) |
+| FR-004-AC-3 | Deep/shared graphs and output/work exhaustion are handled iteratively and return explicit errors without partial output; the tested 9,999-node shared-boundary shape formats under default limits while chain shapes may reach the joint work limit earlier. | Test (TC-017) |
 
 ## Dependencies
 

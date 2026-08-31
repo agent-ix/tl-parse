@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -32,6 +34,9 @@ def complete_report() -> dict[str, object]:
 
 
 def main() -> int:
+    if sys.flags.optimize or os.environ.get("PYTHONOPTIMIZE"):
+        print("optimized Python disables policy assertions", file=sys.stderr)
+        return 2
     assert MODULE.validate_report(complete_report()) == []
     for mutate in (
         lambda value: value.update({"totals": {"backed": 1, "total": 2}}),

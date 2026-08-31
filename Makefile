@@ -2,35 +2,31 @@
 # TL Parse Makefile
 # =============================================================================
 
-CARGO ?= cargo
-PYTHON ?= python3
-QUIRE ?= quire
-SHA256SUM ?= sha256sum
-BASH ?= bash
-
-tl_make_short_flags := $(firstword $(MAKEFLAGS))
-ifneq ($(filter -%,$(tl_make_short_flags)),)
-tl_make_short_flags :=
-endif
-ifneq ($(findstring i,$(tl_make_short_flags)),)
-$(error local CI refuses Make ignore-errors mode)
-endif
-
 ifneq ($(filter ci,$(MAKECMDGOALS)),)
-ifneq ($(notdir $(CARGO)),cargo)
+ifneq ($(strip $(MAKEFLAGS)),)
+$(error local CI refuses non-empty MAKEFLAGS)
+endif
+ifneq ($(strip $(PYTHONOPTIMIZE)),)
+$(error local CI refuses optimized Python policy execution)
+endif
+ifneq ($(origin CARGO),undefined)
 $(error local CI refuses a CARGO override)
 endif
-ifneq ($(notdir $(PYTHON)),python3)
+ifneq ($(origin PYTHON),undefined)
 $(error local CI refuses a PYTHON override)
 endif
-ifneq ($(notdir $(QUIRE)),quire)
+ifneq ($(origin QUIRE),undefined)
 $(error local CI refuses a QUIRE override)
 endif
-ifneq ($(notdir $(SHA256SUM)),sha256sum)
+ifneq ($(origin SHA256SUM),undefined)
 $(error local CI refuses a SHA256SUM override)
 endif
-ifneq ($(notdir $(BASH)),bash)
+ifneq ($(origin BASH),undefined)
 $(error local CI refuses a BASH override)
+endif
+tl_ci_static_status := $(shell env -u PYTHONOPTIMIZE MAKEFLAGS= python3 scripts/check_failure_propagation.py --makefile '$(firstword $(MAKEFILE_LIST))' --static-only >/dev/null 2>&1; echo $$?)
+ifneq ($(tl_ci_static_status),0)
+$(error local CI refuses unsafe Make recipe controls)
 endif
 endif
 
@@ -62,61 +58,58 @@ help:
 
 .PHONY: fmt
 fmt:
-	$(CARGO) fmt --all
+	cargo fmt --all
 
 .PHONY: fmt-check
 fmt-check:
-	$(CARGO) fmt --all -- --check
+	cargo fmt --all -- --check
 
 .PHONY: lint
 lint:
-	$(CARGO) clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-targets --all-features -- -D warnings
 
 .PHONY: test
 test:
-	$(CARGO) test --all-targets --all-features
+	cargo test --all-targets --all-features
 
 .PHONY: check-failure-propagation
 check-failure-propagation:
-	$(PYTHON) scripts/check_failure_propagation.py
+	python3 scripts/check_failure_propagation.py
 
 .PHONY: check-corpus
 check-corpus:
-	cd corpus/v1 && $(SHA256SUM) --check SHA256SUMS
-	cd fuzz/corpus/parser && $(SHA256SUM) --check SHA256SUMS
+	python3 scripts/check_checksum_manifest.py corpus/v1
+	python3 scripts/check_checksum_manifest.py fuzz/corpus/parser
 
 .PHONY: fuzz-build
 fuzz-build:
-	$(CARGO) +nightly fuzz build parser
+	cargo +nightly fuzz build parser
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	$(BASH) scripts/run_fuzz_smoke.sh
+	bash scripts/run_fuzz_smoke.sh
 
 .PHONY: verify-evidence
 verify-evidence:
-	$(BASH) scripts/verify_evidence.sh
+	bash scripts/verify_evidence.sh
 
 .PHONY: rustdoc
 rustdoc:
-	RUSTDOCFLAGS=-Dwarnings $(CARGO) doc --no-deps --all-features
+	RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
 
 .PHONY: evidence-tool
 evidence-tool:
-	$(PYTHON) -m compileall -q scripts
-	$(PYTHON) scripts/check_attribution.py
-	$(PYTHON) scripts/test_evidence_tool.py
-	$(PYTHON) scripts/test_failure_propagation.py
-	$(PYTHON) scripts/test_json_schema_gate.py
-	$(PYTHON) scripts/test_traceability_gate.py
+	python3 -m compileall -q scripts
+	python3 scripts/check_attribution.py
+	python3 scripts/run_policy_tests.py
 
 .PHONY: build
 build:
-	$(CARGO) build --release
+	cargo build --release
 
 .PHONY: clean
 clean:
-	$(CARGO) clean
+	cargo clean
 
 # =============================================================================
 # Supply chain & safety
@@ -126,37 +119,37 @@ clean:
 deny: deny-advisories deny-bans deny-licenses deny-sources
 
 deny-advisories:
-	$(CARGO) deny check advisories
+	cargo deny check advisories
 
 deny-bans:
-	$(CARGO) deny check bans
+	cargo deny check bans
 
 deny-licenses:
-	$(CARGO) deny check licenses
+	cargo deny check licenses
 
 deny-sources:
-	$(CARGO) deny check sources
+	cargo deny check sources
 
 .PHONY: cargo-audit
 cargo-audit:
-	$(CARGO) audit
+	cargo audit
 
 .PHONY: audit-unsafe
 audit-unsafe:
-	$(BASH) scripts/check_unsafe_comments.sh
+	bash scripts/check_unsafe_comments.sh
 
 .PHONY: spec-validate
 spec-validate:
-	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/*.md'
+	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
 
 .PHONY: spec
 spec:
-	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/*.md'
-	$(PYTHON) scripts/check_traceability_coverage.py
+	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+	python3 scripts/check_traceability_coverage.py
 
 .PHONY: msrv
 msrv:
-	$(CARGO) +1.75.0 check --all-targets --all-features
+	cargo +1.75.0 check --all-targets --all-features
 
 # =============================================================================
 # Composite

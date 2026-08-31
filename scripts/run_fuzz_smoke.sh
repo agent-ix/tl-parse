@@ -21,9 +21,9 @@ while read -r _ filename; do
 done < fuzz/corpus/parser/SHA256SUMS
 
 asan_options="${ASAN_OPTIONS:-}"
-if [[ "${TL_PARSE_FUZZ_DISABLE_LEAKS:-0}" == "1" ]]; then
-  asan_options="${asan_options:+$asan_options:}detect_leaks=0"
-  echo "LeakSanitizer explicitly disabled by TL_PARSE_FUZZ_DISABLE_LEAKS=1" >&2
+if [[ -n "${TL_PARSE_FUZZ_DISABLE_LEAKS:-}" ]]; then
+  echo "TL_PARSE_FUZZ_DISABLE_LEAKS is not permitted" >&2
+  exit 2
 elif [[ -r /proc/self/status ]] &&
      grep -Eq '^NoNewPrivs:[[:space:]]+1$' /proc/self/status &&
      grep -Eq '^Seccomp:[[:space:]]+2$' /proc/self/status; then

@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -30,6 +33,12 @@ VERIFIER_SPEC = importlib.util.spec_from_file_location(
 assert VERIFIER_SPEC is not None and VERIFIER_SPEC.loader is not None
 VERIFIER = importlib.util.module_from_spec(VERIFIER_SPEC)
 VERIFIER_SPEC.loader.exec_module(VERIFIER)
+
+
+def healthy_ci_output() -> str:
+    tests = "test result: ok. 1 passed; 0 failed; 0 ignored\n" * 8
+    corpus = "\n".join(sorted(FINALIZER.REQUIRED_CORPUS_LINES)) + "\n"
+    return tests + corpus
 
 
 def assert_schema_contracts() -> None:
@@ -110,11 +119,24 @@ def assert_schema_contracts() -> None:
 
 
 def main() -> int:
+    if sys.flags.optimize or os.environ.get("PYTHONOPTIMIZE"):
+        print("optimized Python disables policy assertions", file=sys.stderr)
+        return 2
     assert_schema_contracts()
+    collector = (ROOT / "scripts" / "collect_evidence.sh").read_text(encoding="utf-8")
+    for retained in (
+        "make-ci", "make-spec", "quire-coverage", "msrv", "rustdoc",
+        "default-dependencies", "corpus-integrity",
+    ):
+        line = next(
+            (item for item in collector.splitlines() if item.startswith(f"run_and_retain {retained} ")),
+            "",
+        )
+        assert '"${clean_env[@]}"' in line, f"{retained} bypasses the clean environment"
     with tempfile.TemporaryDirectory() as directory:
         evidence_dir = Path(directory)
         (evidence_dir / "make-ci.status.txt").write_text("0\n", encoding="utf-8")
-        (evidence_dir / "make-ci.stdout").write_text("passed\n", encoding="utf-8")
+        (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         (evidence_dir / "pgm01-schema.status.txt").write_text("125\n", encoding="utf-8")
         (evidence_dir / "pgm01-schema.stdout").write_text(
             "ordinary-output\n", encoding="utf-8"
@@ -154,6 +176,8 @@ def main() -> int:
             (evidence_dir / f"{name}.status.txt").write_text("0\n", encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
+        assert FINALIZER.positive_ci_census(healthy_ci_output())
+        assert not FINALIZER.positive_ci_census("cargo 1.94.1\n")
         assert FINALIZER.validate_envelope_result(evidence_dir, retained) == []
         (evidence_dir / "evidence-envelope.json").write_text(
             json.dumps({"result": {"status": "conclusive"}}) + "\n", encoding="utf-8"
@@ -161,6 +185,14 @@ def main() -> int:
         assert FINALIZER.validate_envelope_result(evidence_dir, retained), (
             "a forged conclusive envelope result was accepted"
         )
+        (evidence_dir / "collection-summary.json").write_text(
+            json.dumps(retained, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        rejected = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "finalize_collection.py"),
+             "--check", str(evidence_dir)], check=False, capture_output=True,
+        )
+        assert rejected.returncode != 0, "finalizer exit contract accepted a forged result"
         (evidence_dir / "evidence-envelope.json").write_text(
             json.dumps({"result": {"status": "inconclusive"}}) + "\n", encoding="utf-8"
         )
@@ -199,7 +231,7 @@ def main() -> int:
             encoding="utf-8",
         )
         assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
-        (evidence_dir / "make-ci.stdout").write_text("passed\n", encoding="utf-8")
+        (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
 
         artifact = evidence_dir / "make-ci.stdout"
         artifact.write_text("passed\n", encoding="utf-8")
@@ -234,6 +266,26 @@ def main() -> int:
         symlink.unlink()
         artifact.write_text("FABRICATED\n", encoding="utf-8")
         assert VERIFIER.verify(evidence_dir)
+
+    with tempfile.TemporaryDirectory() as directory:
+        test = Path(directory) / "test_fails.py"
+        test.write_text("raise SystemExit(7)\n", encoding="utf-8")
+        runner = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_policy_tests.py"),
+             "--directory", directory], cwd=ROOT, check=False, capture_output=True,
+        )
+        assert runner.returncode != 0, "policy runner swallowed a failing discovered test"
+
+    planted = ROOT / "evidence" / f"PLANTED-EXIT-CONTRACT-{os.getpid()}.txt"
+    planted.write_text("FABRICATED\n", encoding="utf-8")
+    try:
+        shell = subprocess.run(
+            ["bash", "scripts/verify_evidence.sh"], cwd=ROOT, check=False,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        assert shell.returncode != 0, "evidence shell verifier exit contract was gutted"
+    finally:
+        planted.unlink(missing_ok=True)
     print("evidence outcome behavior is valid")
     return 0
 

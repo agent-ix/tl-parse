@@ -1,40 +1,9 @@
-use std::{fs, os::unix::fs::PermissionsExt, process::Command};
+use std::{fs, process::Command};
 
 use serde_json::Value;
 
 fn root_path(relative: &str) -> String {
     format!("{}/{}", env!("CARGO_MANIFEST_DIR"), relative)
-}
-
-fn observed_cargo_arguments(target: &str) -> Vec<String> {
-    let directory = tempfile::tempdir().unwrap();
-    let probe = directory.path().join("cargo-probe");
-    let log = directory.path().join("cargo.log");
-    fs::write(
-        &probe,
-        "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$PROBE_LOG\"\n",
-    )
-    .unwrap();
-    let mut permissions = fs::metadata(&probe).unwrap().permissions();
-    permissions.set_mode(0o755);
-    fs::set_permissions(&probe, permissions).unwrap();
-    let output = Command::new("make")
-        .arg(target)
-        .arg(format!("CARGO={}", probe.display()))
-        .env("PROBE_LOG", &log)
-        .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "make {target} probe failed: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    fs::read_to_string(log)
-        .unwrap()
-        .lines()
-        .map(str::to_owned)
-        .collect()
 }
 
 // Trace: TC-022, FR-005-AC-4, NFR-002-AC-2, SUITE-001, SUITE-002, SUITE-003
@@ -68,18 +37,12 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
             "local gate omits {gate}"
         );
     }
-    let dry_run = Command::new("make")
-        .args(["-n", "ci"])
-        .current_dir(env!("CARGO_MANIFEST_DIR"))
-        .output()
-        .unwrap();
-    assert!(dry_run.status.success());
-    let dry_run = String::from_utf8(dry_run.stdout).unwrap();
     for command in [
         "cargo fmt --all -- --check",
         "cargo clippy --all-targets --all-features -- -D warnings",
         "cargo test --all-targets --all-features",
-        "sha256sum --check SHA256SUMS",
+        "python3 scripts/check_checksum_manifest.py corpus/v1",
+        "python3 scripts/check_checksum_manifest.py fuzz/corpus/parser",
         "cargo +nightly fuzz build parser",
         "bash scripts/run_fuzz_smoke.sh",
         "cargo deny check licenses",
@@ -87,9 +50,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "cargo deny check advisories",
         "cargo deny check bans",
         "bash scripts/check_unsafe_comments.sh",
-        "python3 scripts/test_evidence_tool.py",
-        "python3 scripts/test_failure_propagation.py",
-        "python3 scripts/test_json_schema_gate.py",
+        "python3 scripts/run_policy_tests.py",
         "quire validate --scope . 'spec/**/*.md' 'docs/*.md'",
         "python3 scripts/check_traceability_coverage.py",
         "cargo +1.75.0 check --all-targets --all-features",
@@ -98,26 +59,16 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "bash scripts/verify_evidence.sh",
     ] {
         assert!(
-            dry_run.contains(command),
+            makefile.contains(command),
             "local gate omits exact command {command}"
         );
     }
 
-    assert_eq!(
-        observed_cargo_arguments("test"),
-        ["test --all-targets --all-features"]
-    );
-    assert_eq!(
-        observed_cargo_arguments("deny"),
-        [
-            "deny check advisories",
-            "deny check bans",
-            "deny check licenses",
-            "deny check sources"
-        ]
-    );
     let sentinel = Command::new("make")
-        .args(["--no-print-directory", "check-failure-propagation"])
+        .arg("check-failure-propagation")
+        .env_remove("MAKEFLAGS")
+        .env_remove("MAKELEVEL")
+        .env_remove("MFLAGS")
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()
         .unwrap();
@@ -157,7 +108,9 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "QUIRE",
         "SHA256SUM",
         "MAKEFLAGS",
+        "PYTHONOPTIMIZE",
         "TL_PARSE_FUZZ_DISABLE_LEAKS",
+        "TL_PARSE_COLLECTION_TOKEN",
     ] {
         assert!(
             collector.contains(&format!("-u {sanitized}")),

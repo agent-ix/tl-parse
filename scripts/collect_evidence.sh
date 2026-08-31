@@ -31,10 +31,9 @@ if [[ -n "${PGM01_SCHEMA:-}" ]] && \
 fi
 
 mkdir -p "$evidence_dir"
-collection_token="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
-export TL_PARSE_COLLECTION_TOKEN="$collection_token"
 python3 scripts/collection_marker.py create "$evidence_dir/.collecting"
 collection_failed=0
+clean_env=(env -u CARGO -u PYTHON -u BASH -u QUIRE -u SHA256SUM -u MAKEFLAGS -u PYTHONOPTIMIZE -u TL_PARSE_FUZZ_DISABLE_LEAKS -u TL_PARSE_COLLECTION_TOKEN)
 
 run_and_retain() {
   local name="$1"
@@ -70,13 +69,13 @@ python3 -c 'import importlib.metadata; print(importlib.metadata.version("jsonsch
 quire provenance --pretty >"$evidence_dir/quire-provenance.json"
 cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
 
-run_and_retain make-ci env -u CARGO -u PYTHON -u BASH -u QUIRE -u SHA256SUM -u MAKEFLAGS -u TL_PARSE_FUZZ_DISABLE_LEAKS make ci
-run_and_retain make-spec make spec
-run_and_retain quire-coverage python3 scripts/check_traceability_coverage.py
-run_and_retain msrv cargo +1.75.0 check --all-targets --all-features
-run_and_retain rustdoc env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
-run_and_retain default-dependencies cargo tree --no-default-features --edges normal
-run_and_retain corpus-integrity make check-corpus
+run_and_retain make-ci "${clean_env[@]}" make ci
+run_and_retain make-spec "${clean_env[@]}" make spec
+run_and_retain quire-coverage "${clean_env[@]}" python3 scripts/check_traceability_coverage.py
+run_and_retain msrv "${clean_env[@]}" cargo +1.75.0 check --all-targets --all-features
+run_and_retain rustdoc "${clean_env[@]}" env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
+run_and_retain default-dependencies "${clean_env[@]}" cargo tree --no-default-features --edges normal
+run_and_retain corpus-integrity "${clean_env[@]}" make check-corpus
 # Retained tool logs are immutable evidence and may contain tool-authored
 # trailing spaces. Their bytes are protected by the evidence manifests; this
 # gate checks the authored source/specification diff.

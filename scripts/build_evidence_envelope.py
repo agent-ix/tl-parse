@@ -26,8 +26,6 @@ FINALIZER = ROOT / "scripts" / "finalize_collection.py"
 EVIDENCE_VERIFIER = ROOT / "scripts" / "verify_evidence_manifest.py"
 TRACEABILITY_VALIDATOR = ROOT / "scripts" / "check_traceability_coverage.py"
 EVIDENCE_SHELL_VERIFIER = ROOT / "scripts" / "verify_evidence.sh"
-EVIDENCE_ANCHORS = ROOT / "evidence" / "ANCHORS"
-ASSURANCE_ARGUMENT = ROOT / "spec" / "assurance" / "AA-001.md"
 COMMANDS = (
     "make-ci",
     "make-spec",
@@ -100,7 +98,7 @@ def classify_result(
     return "inconclusive", "unrecognized collection phase cannot be conclusive"
 
 
-def parameters_digest() -> str:
+def parameter_paths() -> tuple[Path, ...]:
     fixed_paths = {
         ROOT / "Cargo.toml",
         ROOT / "Cargo.lock",
@@ -133,8 +131,6 @@ def parameters_digest() -> str:
         EVIDENCE_VERIFIER,
         TRACEABILITY_VALIDATOR,
         EVIDENCE_SHELL_VERIFIER,
-        EVIDENCE_ANCHORS,
-        ASSURANCE_ARGUMENT,
         INPUT_SCHEMA,
         MANIFEST_SCHEMA,
     }
@@ -143,11 +139,16 @@ def parameters_digest() -> str:
         for path in (ROOT / "scripts").iterdir()
         if path.is_file() and path.suffix in {".py", ".sh"}
     }
+    return tuple(sorted(paths, key=lambda path: str(path.relative_to(ROOT))))
+
+
+def parameters_digest(read_bytes: Any | None = None) -> str:
+    reader = read_bytes or (lambda path: path.read_bytes())
     state = hashlib.sha256()
-    for path in sorted(paths):
+    for path in parameter_paths():
         state.update(str(path.relative_to(ROOT)).encode())
         state.update(b"\0")
-        state.update(path.read_bytes())
+        state.update(reader(path))
         state.update(b"\0")
     return state.hexdigest()
 

@@ -1,105 +1,175 @@
 #!/usr/bin/env python3
-"""Prove every mandatory local-CI prerequisite propagates a real failure."""
+"""Prove every mandatory local-CI prerequisite propagates failures."""
 
 from __future__ import annotations
 
 import argparse
 import os
 import re
-import shlex
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-EXPECTED = {
-    "fmt-check": "CARGO",
-    "lint": "CARGO",
-    "test": "CARGO",
-    "check-corpus": "SHA256SUM",
-    "fuzz-build": "CARGO",
-    "fuzz-smoke": "BASH",
-    "deny": "CARGO",
-    "audit-unsafe": "BASH",
-    "evidence-tool": "PYTHON",
-    "spec": "QUIRE",
-    "msrv": "CARGO",
-    "rustdoc": "CARGO",
-    "verify-evidence": "BASH",
+PROBES = {
+    "fmt-check", "lint", "test", "check-corpus", "fuzz-build", "fuzz-smoke",
+    "deny", "audit-unsafe", "evidence-tool", "spec", "msrv", "rustdoc",
+    "verify-evidence",
 }
-TOOL_IDENTITIES = {
-    "CARGO": ("cargo", "--version", re.compile(r"^cargo \d")),
-    "PYTHON": ("python3", "--version", re.compile(r"^Python \d")),
-    "QUIRE": ("quire", "--version", re.compile(r"^quire \d")),
-    "SHA256SUM": (
-        "sha256sum",
-        "--version",
-        re.compile(r"^sha256sum \(GNU coreutils\)"),
-    ),
-    "BASH": ("bash", "--version", re.compile(r"^GNU bash, version \d")),
-}
-ATTRIBUTE_IGNORE = re.compile(r"#\s*\[[^\]]*\bignore\b[^\]]*\]")
+GUARD_TARGET = "check-failure-propagation"
+TARGET = re.compile(r"^([A-Za-z0-9_.-]+):(?:\s+(.*?))?\s*$")
+SHELL_CONTROL = re.compile(r"&&|\|\||[;|]")
+ATTRIBUTE_IGNORE = re.compile(r"#\s*\[\s*(?:ignore\b|cfg_attr\([^\]]*,\s*ignore\b)")
+MAKEFLAGS_ASSIGNMENT = re.compile(r"^\s*MAKEFLAGS\s*(?::|\+|\?)?=")
 
 
-def makeflags_ignore_errors(value: str) -> bool:
-    try:
-        tokens = shlex.split(value)
-    except ValueError:
-        return True
-    return any(
-        token == "--ignore-errors"
-        or (token.startswith("-") and not token.startswith("--") and "i" in token[1:])
-        or (token and not token.startswith("-") and "=" not in token and "i" in token)
-        for token in tokens
-    )
+def recipes(path: Path) -> dict[str, list[str]]:
+    result: dict[str, list[str]] = {}
+    current: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = TARGET.fullmatch(line)
+        if match and not line.startswith(("\t", ".")):
+            current = match.group(1).split()
+            for name in current:
+                result.setdefault(name, [])
+        elif line.startswith("\t"):
+            for name in current:
+                result.setdefault(name, []).append(line[1:])
+        elif line and not line.startswith((" ", "#")):
+            current = []
+    return result
+
+
+def inspect_ignored_tests(root: Path) -> list[str]:
+    errors: list[str] = []
+    for directory in ("src", "tests", "fuzz"):
+        base = root / directory
+        if not base.exists():
+            continue
+        for source in base.rglob("*.rs"):
+            if ATTRIBUTE_IGNORE.search(source.read_text(encoding="utf-8")):
+                errors.append(f"{source.relative_to(root)} disables a Rust test with ignore")
+    return errors
+
+
+def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    errors: list[str] = []
+    ci = next((line for line in lines if line.startswith("ci:")), "")
+    observed = set(ci.removeprefix("ci:").split())
+    expected = PROBES | {GUARD_TARGET}
+    if observed != expected:
+        errors.append(
+            f"ci prerequisite census drift: expected {sorted(expected)}, observed {sorted(observed)}"
+        )
+    for number, line in enumerate(lines, start=1):
+        if re.match(r"^\s*\.(?:IGNORE|SILENT)\s*(?::|$)", line):
+            errors.append(f"Makefile:{number} declares a recipe-control directive")
+        if MAKEFLAGS_ASSIGNMENT.match(line):
+            errors.append(f"Makefile:{number} assigns MAKEFLAGS")
+        if not line.startswith("\t"):
+            continue
+        recipe = line[1:].lstrip("@ ")
+        if recipe.startswith("-"):
+            errors.append(f"Makefile:{number} ignores a recipe failure")
+        if SHELL_CONTROL.search(recipe):
+            errors.append(f"Makefile:{number} uses a forbidden shell control operator")
+    errors.extend(inspect_ignored_tests(root))
+    return errors
+
+
+def clean_environment() -> dict[str, str]:
+    environment = dict(os.environ)
+    for name in (
+        "MAKEFLAGS", "CARGO", "PYTHON", "QUIRE", "SHA256SUM", "BASH",
+        "PYTHONOPTIMIZE", "TL_PARSE_FUZZ_DISABLE_LEAKS",
+    ):
+        environment.pop(name, None)
+    return environment
 
 
 def verify_tool_identities() -> list[str]:
     errors: list[str] = []
-    for variable, (default, argument, identity) in TOOL_IDENTITIES.items():
-        command = os.environ.get(variable, default)
+    expected_cargo = Path.home() / ".cargo" / "bin" / "cargo"
+    observed_cargo = shutil.which("cargo")
+    if observed_cargo is None or Path(observed_cargo) != expected_cargo:
+        errors.append(
+            f"cargo must resolve to the rustup-managed wrapper {expected_cargo}, got {observed_cargo}"
+        )
+    identities = {
+        "cargo": ("--version", re.compile(r"^cargo \d")),
+        "python3": ("--version", re.compile(r"^Python \d")),
+        "quire": ("--version", re.compile(r"^quire \d")),
+        "sha256sum": ("--version", re.compile(r"^sha256sum \(GNU coreutils\)")),
+        "bash": ("--version", re.compile(r"^GNU bash, version \d")),
+    }
+    for command, (argument, identity) in identities.items():
         try:
-            result = subprocess.run(
-                [command, argument], check=False, capture_output=True, text=True
+            value = subprocess.run(
+                [command, argument], check=False, capture_output=True, text=True,
+                env=clean_environment(),
             )
         except FileNotFoundError:
-            errors.append(f"required tool is unavailable: {variable}={command}")
+            errors.append(f"required tool is unavailable: {command}")
             continue
-        output = (result.stdout + result.stderr).strip()
-        if result.returncode != 0 or identity.search(output) is None:
-            errors.append(f"required tool did not self-identify as {default}: {output!r}")
+        output = (value.stdout + value.stderr).strip()
+        if value.returncode != 0 or identity.search(output) is None:
+            errors.append(f"required tool did not self-identify as {command}: {output!r}")
     return errors
 
 
-def inspect(makefile: Path) -> list[str]:
-    lines = makefile.read_text(encoding="utf-8").splitlines()
+def inspect_expanded_recipes(makefile: Path, root: Path = ROOT) -> list[str]:
     errors: list[str] = []
-    ci = next((line for line in lines if line.startswith("ci:")), "")
-    prerequisites = set(ci.removeprefix("ci:").split())
-    required = set(EXPECTED) | {"check-failure-propagation"}
-    if prerequisites != required:
-        errors.append(
-            f"ci prerequisite census drift: expected {sorted(required)}, observed {sorted(prerequisites)}"
+    for target in sorted(PROBES):
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-n", "-f", str(makefile), target],
+            cwd=root, check=False, capture_output=True, text=True,
+            env=clean_environment(),
         )
-    for number, line in enumerate(lines, start=1):
-        if re.match(r"^\s*\.(?:IGNORE|SILENT)\s*(?::|$)", line):
-            errors.append(f"Makefile:{number} declares a global recipe-control directive")
-        if re.match(r"^\s*MAKEFLAGS\s*(?::|\+|\?)?=", line) and makeflags_ignore_errors(
-            line.split("=", 1)[1]
-        ):
-            errors.append(f"Makefile:{number} enables MAKEFLAGS ignore-errors")
-        if not line.startswith("\t"):
+        if result.returncode != 0:
+            errors.append(f"cannot expand mandatory target {target}: {result.stderr.strip()}")
             continue
-        recipe = line[1:].lstrip("@")
-        if recipe.startswith("-"):
-            errors.append(f"Makefile:{number} ignores a recipe failure")
-        if re.search(r"\|\|\s*true(?:\s|$)|;\s*true(?:\s|$)", recipe):
-            errors.append(f"Makefile:{number} contains a false-success command")
-    for path in [ROOT / "src", ROOT / "tests", ROOT / "fuzz"]:
-        for source in path.rglob("*.rs"):
-            if ATTRIBUTE_IGNORE.search(source.read_text(encoding="utf-8")):
-                errors.append(f"{source.relative_to(ROOT)} disables a Rust test with #[ignore]")
+        for command in result.stdout.splitlines():
+            if SHELL_CONTROL.search(command):
+                errors.append(
+                    f"expanded mandatory target {target} uses forbidden shell control operators: {command}"
+                )
+    return errors
+
+
+def probe_command_positions(makefile: Path) -> list[str]:
+    errors: list[str] = []
+    defined = recipes(makefile)
+    with tempfile.TemporaryDirectory() as directory:
+        probe = Path(directory) / "Makefile"
+        for target in sorted(PROBES):
+            commands = defined.get(target, [])
+            for selected in range(len(commands)):
+                lines = [f".PHONY: {target}", f"{target}:"]
+                for index, command in enumerate(commands):
+                    if index != selected:
+                        lines.append("\ttrue")
+                        continue
+                    stripped = command.lstrip("@ ")
+                    make_prefix = "-" if stripped.startswith("-") else ""
+                    shell_suffix = ""
+                    match = SHELL_CONTROL.search(stripped)
+                    if match is not None:
+                        shell_suffix = stripped[match.start():]
+                    lines.append(f"\t{make_prefix}false{shell_suffix}")
+                probe.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                value = subprocess.run(
+                    ["make", "--no-print-directory", "-f", str(probe), target],
+                    cwd=ROOT, check=False, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, env=clean_environment(),
+                )
+                if value.returncode == 0:
+                    errors.append(
+                        f"mandatory target {target} swallowed failure at command {selected + 1}"
+                    )
     return errors
 
 
@@ -107,28 +177,24 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--makefile", type=Path, default=ROOT / "Makefile")
     parser.add_argument("--inspect-only", action="store_true")
+    parser.add_argument("--static-only", action="store_true")
     args = parser.parse_args()
-    errors = inspect(args.makefile)
-    if makeflags_ignore_errors(os.environ.get("MAKEFLAGS", "")):
-        errors.append("ambient MAKEFLAGS enables ignored recipe failures")
-    if not args.inspect_only and not errors:
+    makefile = args.makefile.resolve()
+    errors = inspect_makefile(makefile)
+    if os.environ.get("MAKEFLAGS"):
+        errors.append("ambient MAKEFLAGS is not permitted for local CI")
+    if os.environ.get("PYTHONOPTIMIZE") or sys.flags.optimize:
+        errors.append("optimized Python disables policy assertions")
+    if not errors and not args.static_only:
+        errors.extend(inspect_expanded_recipes(makefile))
+    if not errors and not args.inspect_only and not args.static_only:
         errors.extend(verify_tool_identities())
-    if not args.inspect_only and not errors:
-        for target, variable in EXPECTED.items():
-            result = subprocess.run(
-                ["make", "--no-print-directory", "-f", str(args.makefile), target, f"{variable}=false"],
-                cwd=ROOT,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
-            )
-            if result.returncode == 0:
-                errors.append(f"{target} swallowed a deliberately failing {variable} command")
+        errors.extend(probe_command_positions(makefile))
     for error in errors:
         print(error, file=sys.stderr)
     if errors:
         return 1
-    print(f"all {len(EXPECTED)} mandatory local-CI targets propagate failures")
+    print(f"all {len(PROBES)} mandatory local-CI targets propagate failures")
     return 0
 
 

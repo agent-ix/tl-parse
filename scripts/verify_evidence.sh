@@ -47,6 +47,18 @@ if ! grep -Fqx "${assured_digest}  ${assured_record}.sha256" evidence/ANCHORS; t
   echo "assurance argument and evidence anchors disagree" >&2
   exit 1
 fi
+python3 - "$assured_record" <<'PY'
+import json
+import pathlib
+import sys
+
+record = pathlib.Path(sys.argv[1])
+summary = json.loads((record / "collection-summary.json").read_text(encoding="utf-8"))
+if summary.get("overallStatus") != "passed" or any(
+    item.get("status") != "passed" for item in summary.get("outcomes", [])
+):
+    raise SystemExit("assurance argument names a record that did not fully pass")
+PY
 while IFS= read -r -d '' checksum; do
   found=1
   if ! grep -Fqx "$(sha256sum "$checksum")" evidence/ANCHORS; then

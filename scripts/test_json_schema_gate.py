@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def main() -> int:
+    if sys.flags.optimize or os.environ.get("PYTHONOPTIMIZE"):
+        print("optimized Python disables policy assertions", file=sys.stderr)
+        return 2
     with tempfile.TemporaryDirectory() as temporary:
         directory = Path(temporary)
         schema = directory / "schema.json"
