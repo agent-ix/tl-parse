@@ -67,7 +67,11 @@ run_and_retain quire-coverage python3 scripts/check_traceability_coverage.py
 run_and_retain rustdoc env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
 run_and_retain default-dependencies cargo tree --no-default-features --edges normal
 run_and_retain corpus-integrity make check-corpus
-run_and_retain diff-integrity git diff --check "origin/main...$(git rev-parse HEAD)"
+# Retained tool logs are immutable evidence and may contain tool-authored
+# trailing spaces. Their bytes are protected by the evidence manifests; this
+# gate checks the authored source/specification diff.
+run_and_retain diff-integrity git diff --check \
+  "origin/main...$(git rev-parse HEAD)" -- . ':(exclude)evidence/**'
 
 python3 scripts/build_evidence_envelope.py "$evidence_dir" provisional
 run_and_retain input-schema python3 scripts/validate_json_schema.py schemas/tl-parse-evidence-input-v1.schema.json "$evidence_dir/collection-input.json"

@@ -1,0 +1,201 @@
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-targets --all-features
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+test dialect_provenance_and_cli_valid_paths_are_exact ... ok
+test cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 2 tests
+test malformed_resource_corpus_is_checksummed_and_matches_its_manifest ... ok
+test every_checked_fuzz_seed_is_bounded_and_successes_round_trip ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test evidence_gates_and_manual_ci_boundary_are_machine_checkable ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+
+running 6 tests
+test format_error_display_matches_every_wire_spelling ... ok
+test every_operator_has_one_exact_canonical_rendering ... ok
+test canonical_format_is_parseable_and_idempotent ... ok
+test accepted_depth_and_chain_boundaries_reparse_under_the_same_limits ... ok
+test deep_shared_graphs_and_formatter_limits_are_bounded ... ok
+test accepted_node_ceiling_is_reachable_with_default_formatter_limits ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 11 tests
+test complete_dialect_vocabulary_maps_to_exact_node_kinds ... ok
+test diagnostics_have_stable_golden_fields_and_versioned_json ... ok
+test diagnostic_and_work_limits_fail_closed_without_growth ... ok
+test graph_is_topological_and_nodes_retain_full_source_spans ... ok
+test every_success_validates_and_preserves_the_selected_profile ... ok
+test identical_requests_produce_byte_identical_reports ... ok
+test invalid_characters_and_identifiers_have_utf8_byte_spans ... ok
+test noncanonical_overflowing_and_inverted_numbers_are_rejected ... ok
+test precedence_and_associativity_are_unambiguous ... ok
+test recovery_diagnostics_never_expose_partial_documents ... ok
+test source_token_node_and_depth_limits_fail_closed ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test generated_formulas_parse_format_parse_without_structural_drift ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+cd corpus/v1 && sha256sum --check SHA256SUMS
+depth-limit.txt: OK
+inverted-interval.txt: OK
+leading-zero.txt: OK
+missing-delimiter.txt: OK
+token-limit.txt: OK
+unexpected-unicode.txt: OK
+valid-canonical.txt: OK
+manifest.json: OK
+cd fuzz/corpus/parser && sha256sum --check SHA256SUMS
+invalid.txt: OK
+resource.txt: OK
+roundtrip-depth.txt: OK
+valid.txt: OK
+cargo +nightly fuzz build parser
+bash scripts/run_fuzz_smoke.sh
+cargo deny check licenses
+licenses ok
+cargo deny check sources
+sources ok
+bash scripts/check_unsafe_comments.sh
+python3 -m py_compile scripts/build_evidence_envelope.py scripts/check_traceability_coverage.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/test_traceability_gate.py scripts/validate_json_schema.py scripts/verify_evidence_manifest.py
+python3 scripts/test_evidence_tool.py
+evidence outcome behavior is valid
+python3 scripts/test_traceability_gate.py
+strict traceability coverage behavior is valid
+quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+python3 scripts/check_traceability_coverage.py
+strict traceability coverage is complete: 54/54
+RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
+bash scripts/verify_evidence.sh
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z.sha256: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z.sha256: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/cargo-version.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/collection-input.json: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/collection-summary.json: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/corpus-integrity.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/corpus-integrity.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/corpus-integrity.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/default-dependencies.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/default-dependencies.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/default-dependencies.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/diff-integrity.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/diff-integrity.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/diff-integrity.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/evidence-envelope.json: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/evidence-manifest.json: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/input-schema.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/input-schema.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/input-schema.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/jsonschema-version.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/make-ci.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/make-ci.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/make-ci.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/make-spec.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/make-spec.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/make-spec.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/manifest-schema.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/manifest-schema.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/manifest-schema.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/metadata.json: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/pgm01-schema.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/pgm01-schema.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/pgm01-schema.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/pgm01-validator.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/pgm01-validator.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/pgm01-validator.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/python-version.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/quire-coverage.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/quire-coverage.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/quire-coverage.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/quire-provenance.json: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/rustc-version.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/rustdoc.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/rustdoc.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/rustdoc.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/sealed-pgm01-schema.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/sealed-pgm01-schema.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/sealed-pgm01-schema.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/sealed-pgm01-validator.status.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/sealed-pgm01-validator.stderr: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/sealed-pgm01-validator.stdout: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/source-revision.txt: OK
+evidence/tl-parse-v01-64b2b1e610fb-20260831T051027Z/source-state.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/cargo-version.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/collection-input.json: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/collection-summary.json: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/corpus-integrity.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/corpus-integrity.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/corpus-integrity.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/default-dependencies.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/default-dependencies.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/default-dependencies.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/diff-integrity.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/diff-integrity.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/diff-integrity.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/evidence-envelope.json: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/evidence-manifest.json: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/input-schema.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/input-schema.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/input-schema.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/jsonschema-version.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/make-ci.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/make-ci.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/make-ci.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/make-spec.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/make-spec.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/make-spec.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/manifest-schema.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/manifest-schema.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/manifest-schema.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/metadata.json: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/pgm01-schema.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/pgm01-schema.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/pgm01-schema.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/pgm01-validator.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/pgm01-validator.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/pgm01-validator.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/python-version.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/quire-coverage.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/quire-coverage.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/quire-coverage.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/quire-provenance.json: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/rustc-version.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/rustdoc.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/rustdoc.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/rustdoc.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/sealed-pgm01-schema.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/sealed-pgm01-schema.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/sealed-pgm01-schema.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/sealed-pgm01-validator.status.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/sealed-pgm01-validator.stderr: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/sealed-pgm01-validator.stdout: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/source-revision.txt: OK
+evidence/tl-parse-v01-e5e8a4d9b33b-20260831T060018Z/source-state.txt: OK

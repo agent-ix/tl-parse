@@ -18,7 +18,11 @@ type: SuiteRegistry
 | SUITE-006 | Minimum supported Rust boundary | `cargo +1.75.0 check --all-targets --all-features` | Rust 1.75.0 | Analysis |
 | SUITE-007 | PGM-01 evidence validation | `make evidence-tool` | JSON Schema/PGM validator | Analysis |
 | SUITE-008 | Hosted candidate confirmation | Manual `workflow_dispatch` once for a finalized PR revision | GitHub Actions | Integration |
+| SUITE-009 | Authored diff integrity | `git diff --check origin/main...HEAD -- . ':(exclude)evidence/**'` | Git | Static |
 
 Hosted CI intentionally has no push or pull-request trigger. Local `make ci`
 is the iteration gate; a hosted run is dispatched deliberately for a finalized
 revision so parallel PR work does not generate repeated billable runs.
+Retained evidence payloads are excluded only from SUITE-009 because third-party
+tools may emit trailing spaces; their exact bytes remain covered by the inner
+artifact manifests, outer manifests, and committed anchors.

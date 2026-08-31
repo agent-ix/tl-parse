@@ -136,6 +136,9 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         assert_eq!(value["additionalProperties"], false);
     }
     assert!(fs::metadata(root_path("scripts/verify_evidence_manifest.py")).is_ok());
+    let collector = fs::read_to_string(root_path("scripts/collect_evidence.sh")).unwrap();
+    assert!(collector.contains("git diff --check"));
+    assert!(collector.contains("':(exclude)evidence/**'"));
     let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();
     for required in [
         "sha256sum --check evidence/ANCHORS",

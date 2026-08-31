@@ -166,7 +166,7 @@ def build(directory: Path, phase: str) -> None:
             "RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features",
             "cargo tree --no-default-features --edges normal",
             "make check-corpus",
-            f"git diff --check origin/main...{revision}",
+            f"git diff --check origin/main...{revision} -- . :(exclude)evidence/**",
             "validate local evidence schemas and exact merged PGM-01 envelope",
             "python3 scripts/build_evidence_envelope.py EVIDENCE_DIR final",
             "validate exact finalized PGM-01 envelope",
