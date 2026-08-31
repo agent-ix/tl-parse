@@ -7,6 +7,9 @@ description: "Chronological changes to the tl-parse v0.1 plan bundle."
 
 ## History
 
+- **2026-08-31** - Sealed passing exact-candidate evidence for source revision
+  `64b2b1e610fb`; all 13 collection and post-seal checks passed, all 54 coverage
+  rows are backed, and the retained checksum manifest verifies.
 - **2026-08-31** - Implemented Tasks 001-005, repinned amended tl-syntax,
   completed agent code/gap/PGM-01 reviews, added checksum-protected corpus and
   fuzz seeds, and made the manual-only hosted-CI boundary executable.

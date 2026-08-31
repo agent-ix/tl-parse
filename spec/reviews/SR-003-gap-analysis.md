@@ -16,8 +16,8 @@ evidence. Tests cover the complete dialect, exact graph/profile mapping,
 stable malformed reports, every declared logical limit, canonical formatting,
 generated round trips, checksum-protected hostile and fuzz populations, CLI
 behavior, evidence contracts, and the manual-only hosted-CI boundary. The
-The remaining gates are the exact-candidate evidence record and independent
-human source-release decision. Universal parser correctness, temporal semantics,
+Retained exact-candidate evidence passes all 13 collection and post-seal gates.
+The remaining gate is the independent human source-release decision. Universal parser correctness, temporal semantics,
 application name resolution, and consuming-system qualification remain outside
 the candidate claim.
 

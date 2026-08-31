@@ -2,7 +2,7 @@
 id: Task-006
 title: "Exact-candidate evidence"
 type: Task
-status: in_progress
+status: done
 track: Evidence
 priority: P0
 relationships:
@@ -21,5 +21,7 @@ record.
 
 ## Completion Evidence
 
-Pending. Completion requires passing post-seal PGM-01 validations and a
-checksum manifest covering every retained artifact.
+The retained `64b2b1e610fb` record has a passing post-seal collection summary,
+two passing sealed PGM-01 validations, and a checksum manifest covering every
+artifact. The envelope remains non-self-attesting; its separate post-seal
+summary records exact finalized-envelope validation.

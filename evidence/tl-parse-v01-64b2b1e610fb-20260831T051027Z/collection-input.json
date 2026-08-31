@@ -1,0 +1,77 @@
+{
+  "commands": [
+    "make ci",
+    "make spec",
+    "quire coverage --scope . --strict",
+    "RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features",
+    "cargo tree --no-default-features --edges normal",
+    "make check-corpus",
+    "git diff --check origin/main...64b2b1e610fbf8681c65749cd8618cc1f6385cbb",
+    "validate local evidence schemas and exact merged PGM-01 envelope",
+    "python3 scripts/build_evidence_envelope.py EVIDENCE_DIR final",
+    "validate exact finalized PGM-01 envelope",
+    "python3 scripts/finalize_collection.py EVIDENCE_DIR"
+  ],
+  "corpus": {
+    "checksumDigest": {
+      "algorithm": "sha256",
+      "value": "37f2e18888ade6a5da79d8b1683fed220a64ddf6518a875e0923e93575c995bf"
+    },
+    "fuzzChecksumDigest": {
+      "algorithm": "sha256",
+      "value": "6f46c0dd13e2c63fff62c483b9cfa8952f3ed290c6aa8a6b76ed97528794cdc3"
+    },
+    "manifestDigest": {
+      "algorithm": "sha256",
+      "value": "ab28b8ebe6e57f49a9cd0ac77241c12eebffd80756fdc8a9fd4739c13c122950"
+    },
+    "revision": "tl-parse-corpus/v1"
+  },
+  "dependency": {
+    "cargoLockDigest": {
+      "algorithm": "sha256",
+      "value": "4f6eaf0c647acab71baf842bcbff741507dab9a902262f5423b2cd78810b780a"
+    },
+    "tlSyntaxRevision": "740182f13b84858008d6f176f75136737d405c1b"
+  },
+  "dialect": {
+    "documentDigest": {
+      "algorithm": "sha256",
+      "value": "3bbfdc9060e169b9efedb690730ab73836993149a79291ebdc3a22d1ccb6cfbf"
+    },
+    "recordDigest": {
+      "algorithm": "sha256",
+      "value": "22959d4df6c7a1230172289903f1c31f36859b6f2a0e4556e886bdb7ebc9ae11"
+    },
+    "revision": "tl-parse.clean-ascii/v1"
+  },
+  "limits": {
+    "depth": 256,
+    "diagnostics": 64,
+    "formatWork": 4194304,
+    "nodes": 10000,
+    "outputBytes": 1048576,
+    "parseWork": 1000000,
+    "sourceBytes": 1048576,
+    "tokens": 100000
+  },
+  "pgm01": {
+    "candidateRevision": "7dac9d8c19952412b56a0347387666e2ca81e01d",
+    "envelopeSchema": "quire.derivation-evidence/v1",
+    "envelopeSchemaDigest": {
+      "algorithm": "sha256",
+      "value": "0946e235e9e4b0fa79e9b9ec27ae157b303c17de0a9408d3cc04968fb7152256"
+    },
+    "policy": "ix://agent-ix/quire-contract-ir/PGM-01"
+  },
+  "schemaVersion": "tl-parse.evidence-input/v1",
+  "sourceRevision": "64b2b1e610fbf8681c65749cd8618cc1f6385cbb",
+  "sourceState": "clean",
+  "tools": {
+    "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+    "jsonschema": "3.2.0",
+    "python": "Python 3.10.12",
+    "quire": "0.31.0",
+    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)"
+  }
+}

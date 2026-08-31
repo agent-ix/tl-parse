@@ -29,7 +29,7 @@ pending.
 
 | ID | Severity | Summary | Refs |
 |---|---|---|---|
-| FND-401 | medium | PGM-01 is merged and exactly reconciled; exact-candidate collection and the independent human release decision remain open. | PGM-01, AP-001, AA-001 |
+| FND-401 | medium | PGM-01 is merged and exactly reconciled; the retained exact-candidate record passes all 13 collection/post-seal checks, while the independent human release decision remains open. | PGM-01, AP-001, AA-001 |
 
 ## Policy mapping
 
