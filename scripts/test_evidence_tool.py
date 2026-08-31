@@ -81,6 +81,25 @@ def healthy_ci_output() -> str:
     return tests + corpus + signatures
 
 
+def healthy_retained_output(name: str) -> str:
+    if name == "make-ci":
+        return healthy_ci_output()
+    if name in {"make-spec", "quire-coverage"}:
+        return "strict traceability coverage is complete: 62/62\n"
+    if name == "rustdoc":
+        return "Generated /tmp/doc/tl_parse/index.html\n"
+    if name == "default-dependencies":
+        return "tl-parse v0.1.0 (/tmp/tl-parse)\n"
+    if name == "corpus-integrity":
+        return "\n".join(sorted(FINALIZER.REQUIRED_CORPUS_LINES)) + "\n"
+    if name in {
+        "input-schema", "manifest-schema", "pgm01-schema", "pgm01-validator",
+        "sealed-pgm01-schema", "sealed-pgm01-validator",
+    }:
+        return '{"errors": [], "valid": true}\n'
+    return "verified\n"
+
+
 def assert_schema_contracts() -> None:
     digest = {"algorithm": "sha256", "value": "a" * 64}
     source = "b" * 40
@@ -235,9 +254,10 @@ def main() -> int:
         )
         for name in FINALIZER.CHECKS:
             (evidence_dir / f"{name}.status.txt").write_text("0\n", encoding="utf-8")
-            (evidence_dir / f"{name}.stdout").write_text("verified\n", encoding="utf-8")
+            (evidence_dir / f"{name}.stdout").write_text(
+                healthy_retained_output(name), encoding="utf-8"
+            )
             (evidence_dir / f"{name}.stderr").write_text("", encoding="utf-8")
-        (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
         assert FINALIZER.positive_ci_census(healthy_ci_output())
