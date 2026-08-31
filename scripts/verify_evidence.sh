@@ -6,7 +6,8 @@ if [[ ! -f evidence/ANCHORS ]]; then
   echo "retained evidence anchor manifest is missing" >&2
   exit 1
 fi
-sha256sum --check evidence/ANCHORS
+/usr/bin/sha256sum --check evidence/ANCHORS
+/usr/bin/python3 scripts/verify_evidence_history.py
 
 while IFS= read -r -d '' entry; do
   if [[ -L "$entry" ]]; then
@@ -25,9 +26,6 @@ done < <(find evidence -mindepth 1 -maxdepth 1 \( -type f -o -type l \) -print0 
 while IFS= read -r -d '' record; do
   checksum="${record}.sha256"
   if [[ ! -f "$checksum" ]]; then
-    if python3 scripts/collection_marker.py check "$record/.collecting"; then
-      continue
-    fi
     echo "retained evidence directory lacks a checksum manifest: $record" >&2
     exit 1
   fi
@@ -38,7 +36,7 @@ if [[ -z "$assured_record" || ! -f "${assured_record}.sha256" ]]; then
   echo "assurance argument does not name one retained evidence record" >&2
   exit 1
 fi
-assured_digest="$(sha256sum "${assured_record}.sha256" | cut -d' ' -f1)"
+assured_digest="$(/usr/bin/sha256sum "${assured_record}.sha256" | /usr/bin/cut -d' ' -f1)"
 if ! grep -Fq "${assured_digest}" spec/assurance/AA-001.md; then
   echo "assurance argument does not bind its record's outer manifest digest" >&2
   exit 1
@@ -47,7 +45,7 @@ if ! grep -Fqx "${assured_digest}  ${assured_record}.sha256" evidence/ANCHORS; t
   echo "assurance argument and evidence anchors disagree" >&2
   exit 1
 fi
-python3 - "$assured_record" <<'PY'
+/usr/bin/python3 - "$assured_record" <<'PY'
 import json
 import pathlib
 import sys
@@ -59,20 +57,26 @@ if summary.get("overallStatus") != "passed" or any(
 ):
     raise SystemExit("assurance argument names a record that did not fully pass")
 PY
+assured_source="$(<"$assured_record/source-revision.txt")"
+if ! /usr/bin/git diff --quiet "$assured_source..HEAD" -- . \
+  ':(exclude)evidence/**' ':(exclude)spec/assurance/AA-001.md'; then
+  echo "assurance argument names a source older than the reviewed tree" >&2
+  exit 1
+fi
 while IFS= read -r -d '' checksum; do
   found=1
-  if ! grep -Fqx "$(sha256sum "$checksum")" evidence/ANCHORS; then
+  if ! grep -Fqx "$(/usr/bin/sha256sum "$checksum")" evidence/ANCHORS; then
     echo "retained evidence manifest lacks a committed anchor: $checksum" >&2
     exit 1
   fi
-  sha256sum --check "$checksum"
+  /usr/bin/sha256sum --check "$checksum"
   evidence_dir="${checksum%.sha256}"
-  python3 scripts/verify_evidence_manifest.py "$evidence_dir"
+  /usr/bin/python3 scripts/verify_evidence_manifest.py "$evidence_dir"
   if [[ ! -f "$evidence_dir/collection-summary.json" ]]; then
     echo "retained evidence summary is missing: $evidence_dir" >&2
     exit 1
   fi
-  python3 scripts/finalize_collection.py --check "$evidence_dir"
+  /usr/bin/python3 scripts/finalize_collection.py --check "$evidence_dir"
 done < <(find evidence -maxdepth 1 -type f -name '*.sha256' -print0 | sort -z)
 
 if [[ $found -eq 0 ]]; then

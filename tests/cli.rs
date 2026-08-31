@@ -153,4 +153,22 @@ fn cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes() {
     assert_eq!(value["diagnostics"][0]["code"], "source_limit");
     assert_eq!(value["diagnostics"][0]["span"]["start"], 1_048_576);
     assert_eq!(value["diagnostics"][0]["span"]["end"], 1_048_577);
+
+    let source = "p0";
+    let mut child = binary()
+        .args(["format", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    drop(child.stdout.take());
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(source.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success(), "broken stdout pipe caused a panic");
 }

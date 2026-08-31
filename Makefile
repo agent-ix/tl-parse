@@ -9,6 +9,9 @@ endif
 ifneq ($(strip $(PYTHONOPTIMIZE)),)
 $(error local CI refuses optimized Python policy execution)
 endif
+ifneq ($(strip $(ASAN_OPTIONS)),)
+$(error local CI refuses ambient ASAN_OPTIONS)
+endif
 ifneq ($(origin CARGO),undefined)
 $(error local CI refuses a CARGO override)
 endif
@@ -24,7 +27,7 @@ endif
 ifneq ($(origin BASH),undefined)
 $(error local CI refuses a BASH override)
 endif
-tl_ci_static_status := $(shell env -u PYTHONOPTIMIZE MAKEFLAGS= python3 scripts/check_failure_propagation.py --makefile '$(firstword $(MAKEFILE_LIST))' --static-only >/dev/null 2>&1; echo $$?)
+tl_ci_static_status := $(shell env -u PYTHONOPTIMIZE MAKEFLAGS= /usr/bin/python3 scripts/check_failure_propagation.py --makefile '$(firstword $(MAKEFILE_LIST))' --static-only >/dev/null 2>&1; echo $$?)
 ifneq ($(tl_ci_static_status),0)
 $(error local CI refuses unsafe Make recipe controls)
 endif
@@ -74,12 +77,12 @@ test:
 
 .PHONY: check-failure-propagation
 check-failure-propagation:
-	python3 scripts/check_failure_propagation.py
+	/usr/bin/python3 scripts/check_failure_propagation.py
 
 .PHONY: check-corpus
 check-corpus:
-	python3 scripts/check_checksum_manifest.py corpus/v1
-	python3 scripts/check_checksum_manifest.py fuzz/corpus/parser
+	/usr/bin/python3 scripts/check_checksum_manifest.py corpus/v1
+	/usr/bin/python3 scripts/check_checksum_manifest.py fuzz/corpus/parser
 
 .PHONY: fuzz-build
 fuzz-build:
@@ -87,11 +90,11 @@ fuzz-build:
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	bash scripts/run_fuzz_smoke.sh
+	/usr/bin/bash scripts/run_fuzz_smoke.sh
 
 .PHONY: verify-evidence
 verify-evidence:
-	bash scripts/verify_evidence.sh
+	/usr/bin/bash scripts/verify_evidence.sh
 
 .PHONY: rustdoc
 rustdoc:
@@ -99,9 +102,9 @@ rustdoc:
 
 .PHONY: evidence-tool
 evidence-tool:
-	python3 -m compileall -q scripts
-	python3 scripts/check_attribution.py
-	python3 scripts/run_policy_tests.py
+	/usr/bin/python3 -m compileall -q scripts
+	/usr/bin/python3 scripts/check_attribution.py
+	/usr/bin/python3 scripts/run_policy_tests.py
 
 .PHONY: build
 build:
@@ -136,7 +139,7 @@ cargo-audit:
 
 .PHONY: audit-unsafe
 audit-unsafe:
-	bash scripts/check_unsafe_comments.sh
+	/usr/bin/bash scripts/check_unsafe_comments.sh
 
 .PHONY: spec-validate
 spec-validate:
@@ -145,7 +148,7 @@ spec-validate:
 .PHONY: spec
 spec:
 	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
-	python3 scripts/check_traceability_coverage.py
+	/usr/bin/python3 scripts/check_traceability_coverage.py
 
 .PHONY: msrv
 msrv:

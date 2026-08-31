@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::File,
-    io::{self, Read},
+    io::{self, Read, Write},
     process::ExitCode,
 };
 
@@ -83,10 +83,9 @@ fn run() -> Result<ExitCode, String> {
         }
     };
     if json && (command == "validate" || report.document.is_none()) {
-        println!(
-            "{}",
-            report_json(&report).map_err(|error| format!("cannot serialize report: {error}"))?
-        );
+        write_stdout(
+            &report_json(&report).map_err(|error| format!("cannot serialize report: {error}"))?,
+        )?;
     } else if !report.diagnostics.is_empty() {
         for diagnostic in &report.diagnostics {
             eprintln!("{}", render_diagnostic(diagnostic));
@@ -101,7 +100,7 @@ fn run() -> Result<ExitCode, String> {
     };
     if command == "validate" {
         if !json {
-            println!("valid");
+            write_stdout("valid")?;
         }
         return Ok(ExitCode::SUCCESS);
     }
@@ -109,13 +108,12 @@ fn run() -> Result<ExitCode, String> {
     let formatted = format_document(document, FormatLimits::default());
     if let Some(text) = formatted.text.as_ref() {
         if json {
-            println!(
-                "{}",
-                serde_json::to_string(&formatted)
-                    .map_err(|error| format!("cannot serialize format report: {error}"))?
-            );
+            write_stdout(
+                &serde_json::to_string(&formatted)
+                    .map_err(|error| format!("cannot serialize format report: {error}"))?,
+            )?;
         } else {
-            println!("{text}");
+            write_stdout(text)?;
         }
         Ok(ExitCode::SUCCESS)
     } else {
@@ -124,6 +122,14 @@ fn run() -> Result<ExitCode, String> {
             |error| error.message,
         );
         Err(error)
+    }
+}
+
+fn write_stdout(text: &str) -> Result<(), String> {
+    match writeln!(io::stdout().lock(), "{text}") {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
+        Err(error) => Err(format!("cannot write stdout: {error}")),
     }
 }
 

@@ -11,8 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REQUIRED = {
-    "test_collection_marker.py",
     "test_evidence_tool.py",
+    "test_evidence_history.py",
     "test_failure_propagation.py",
     "test_json_schema_gate.py",
     "test_traceability_gate.py",

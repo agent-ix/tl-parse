@@ -6,8 +6,15 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "sourceRevision", "sourceState", "commands", "tools", "pgm01", "dependency", "dialect", "corpus", "limits"],
+  "allOf": [
+    {
+      "if": {"required": ["qualificationProfile"]},
+      "then": {"properties": {"tools": {"required": ["identities"]}}}
+    }
+  ],
   "properties": {
     "schemaVersion": {"const": "tl-parse.evidence-input/v1"},
+    "qualificationProfile": {"const": "tl-parse.evidence-qualification/v2"},
     "sourceRevision": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
     "sourceState": {"const": "clean"},
     "commands": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
@@ -20,7 +27,12 @@
         "jsonschema": {"type": "string", "minLength": 1},
         "python": {"type": "string", "minLength": 1},
         "quire": {"type": "string", "minLength": 1},
-        "rustc": {"type": "string", "minLength": 1}
+        "rustc": {"type": "string", "minLength": 1},
+        "identities": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/definitions/toolIdentity"},
+          "required": ["bash", "cargo", "git", "make", "python3", "quire", "sha256sum"]
+        }
       }
     },
     "pgm01": {
@@ -88,6 +100,15 @@
       "properties": {
         "algorithm": {"const": "sha256"},
         "value": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "toolIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^/"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     }
   }

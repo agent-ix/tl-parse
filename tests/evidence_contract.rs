@@ -101,22 +101,9 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     let collector = fs::read_to_string(root_path("scripts/collect_evidence.sh")).unwrap();
     assert!(collector.contains("git diff --check"));
     assert!(collector.contains("':(exclude)evidence/**'"));
-    for sanitized in [
-        "CARGO",
-        "PYTHON",
-        "BASH",
-        "QUIRE",
-        "SHA256SUM",
-        "MAKEFLAGS",
-        "PYTHONOPTIMIZE",
-        "TL_PARSE_FUZZ_DISABLE_LEAKS",
-        "TL_PARSE_COLLECTION_TOKEN",
-    ] {
-        assert!(
-            collector.contains(&format!("-u {sanitized}")),
-            "collector does not sanitize {sanitized}"
-        );
-    }
+    assert!(collector.contains("clean_env=(env -i PATH="));
+    assert!(collector.contains("for tool in bash cargo git make python3 quire sha256sum"));
+    assert!(collector.contains("pgm01_validator_digest="));
     let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();
     for required in [
         "sha256sum --check evidence/ANCHORS",

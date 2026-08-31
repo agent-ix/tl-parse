@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import pwd
 import re
 import shutil
 import subprocess
@@ -21,9 +22,11 @@ PROBES = {
 }
 GUARD_TARGET = "check-failure-propagation"
 TARGET = re.compile(r"^([A-Za-z0-9_.-]+):(?:\s+(.*?))?\s*$")
-SHELL_CONTROL = re.compile(r"&&|\|\||[;|]")
+SHELL_CONTROL = re.compile(r"&&|\|\||&(?!&)|[;|]")
 ATTRIBUTE_IGNORE = re.compile(r"#\s*\[\s*(?:ignore\b|cfg_attr\([^\]]*,\s*ignore\b)")
-MAKEFLAGS_ASSIGNMENT = re.compile(r"^\s*MAKEFLAGS\s*(?::|\+|\?)?=")
+MAKEFLAGS_ASSIGNMENT = re.compile(
+    r"^\s*(?:(?:export|override|unexport)\s+)?MAKEFLAGS\s*(?::|\+|\?)?="
+)
 
 
 def recipes(path: Path) -> dict[str, list[str]]:
@@ -45,13 +48,11 @@ def recipes(path: Path) -> dict[str, list[str]]:
 
 def inspect_ignored_tests(root: Path) -> list[str]:
     errors: list[str] = []
-    for directory in ("src", "tests", "fuzz"):
-        base = root / directory
-        if not base.exists():
+    for source in root.rglob("*.rs"):
+        if ".git" in source.parts or "target" in source.parts:
             continue
-        for source in base.rglob("*.rs"):
-            if ATTRIBUTE_IGNORE.search(source.read_text(encoding="utf-8")):
-                errors.append(f"{source.relative_to(root)} disables a Rust test with ignore")
+        if ATTRIBUTE_IGNORE.search(source.read_text(encoding="utf-8")):
+            errors.append(f"{source.relative_to(root)} disables a Rust test with ignore")
     return errors
 
 
@@ -86,6 +87,7 @@ def clean_environment() -> dict[str, str]:
     for name in (
         "MAKEFLAGS", "CARGO", "PYTHON", "QUIRE", "SHA256SUM", "BASH",
         "PYTHONOPTIMIZE", "TL_PARSE_FUZZ_DISABLE_LEAKS",
+        "ASAN_OPTIONS",
     ):
         environment.pop(name, None)
     return environment
@@ -93,31 +95,22 @@ def clean_environment() -> dict[str, str]:
 
 def verify_tool_identities() -> list[str]:
     errors: list[str] = []
-    expected_cargo = Path.home() / ".cargo" / "bin" / "cargo"
-    observed_cargo = shutil.which("cargo")
-    if observed_cargo is None or Path(observed_cargo) != expected_cargo:
-        errors.append(
-            f"cargo must resolve to the rustup-managed wrapper {expected_cargo}, got {observed_cargo}"
-        )
-    identities = {
-        "cargo": ("--version", re.compile(r"^cargo \d")),
-        "python3": ("--version", re.compile(r"^Python \d")),
-        "quire": ("--version", re.compile(r"^quire \d")),
-        "sha256sum": ("--version", re.compile(r"^sha256sum \(GNU coreutils\)")),
-        "bash": ("--version", re.compile(r"^GNU bash, version \d")),
+    real_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
+    expected = {
+        "bash": "/usr/bin/bash",
+        "cargo": str(real_home / ".cargo" / "bin" / "cargo"),
+        "git": "/usr/bin/git",
+        "make": "/usr/bin/make",
+        "python3": "/usr/bin/python3",
+        "sha256sum": "/usr/bin/sha256sum",
     }
-    for command, (argument, identity) in identities.items():
-        try:
-            value = subprocess.run(
-                [command, argument], check=False, capture_output=True, text=True,
-                env=clean_environment(),
-            )
-        except FileNotFoundError:
-            errors.append(f"required tool is unavailable: {command}")
-            continue
-        output = (value.stdout + value.stderr).strip()
-        if value.returncode != 0 or identity.search(output) is None:
-            errors.append(f"required tool did not self-identify as {command}: {output!r}")
+    for name, path in expected.items():
+        if shutil.which(name) != path:
+            errors.append(f"{name} must resolve to {path}, got {shutil.which(name)}")
+    quire = shutil.which("quire")
+    prefixes = (real_home / ".npm-global" / "bin", Path("/opt/hostedtoolcache/node"))
+    if quire is None or not any(Path(quire).is_relative_to(prefix) for prefix in prefixes):
+        errors.append(f"quire must resolve under a declared npm tool prefix, got {quire}")
     return errors
 
 
@@ -185,6 +178,8 @@ def main() -> int:
         errors.append("ambient MAKEFLAGS is not permitted for local CI")
     if os.environ.get("PYTHONOPTIMIZE") or sys.flags.optimize:
         errors.append("optimized Python disables policy assertions")
+    if os.environ.get("ASAN_OPTIONS"):
+        errors.append("ambient ASAN_OPTIONS is not permitted for local CI")
     if not errors and not args.static_only:
         errors.extend(inspect_expanded_recipes(makefile))
     if not errors and not args.inspect_only and not args.static_only:

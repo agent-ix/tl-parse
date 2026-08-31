@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -37,8 +39,16 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER)
 
 def healthy_ci_output() -> str:
     tests = "test result: ok. 1 passed; 0 failed; 0 ignored\n" * 8
+    tests += "test result: ok. 17 passed; 0 failed; 0 ignored\n"
     corpus = "\n".join(sorted(FINALIZER.REQUIRED_CORPUS_LINES)) + "\n"
-    return tests + corpus
+    signatures = (
+        "all 13 mandatory local-CI targets propagate failures\n"
+        "all 6 policy behavior tests passed\n"
+        "strict traceability coverage is complete: 55/55\n"
+        "clean-room attribution digests match the pinned Cargo source\n"
+        "LeakSanitizer enabled\n"
+    )
+    return tests + corpus + signatures
 
 
 def assert_schema_contracts() -> None:
@@ -124,15 +134,14 @@ def main() -> int:
         return 2
     assert_schema_contracts()
     collector = (ROOT / "scripts" / "collect_evidence.sh").read_text(encoding="utf-8")
-    for retained in (
-        "make-ci", "make-spec", "quire-coverage", "msrv", "rustdoc",
-        "default-dependencies", "corpus-integrity",
-    ):
-        line = next(
-            (item for item in collector.splitlines() if item.startswith(f"run_and_retain {retained} ")),
-            "",
-        )
-        assert '"${clean_env[@]}"' in line, f"{retained} bypasses the clean environment"
+    retained_calls = [
+        line.strip() for line in collector.splitlines()
+        if line.strip().startswith("run_and_retain ")
+    ]
+    assert len(retained_calls) == 14
+    assert all('"${clean_env[@]}"' in line for line in retained_calls), (
+        "one or more retained commands bypass the clean environment"
+    )
     with tempfile.TemporaryDirectory() as directory:
         evidence_dir = Path(directory)
         (evidence_dir / "make-ci.status.txt").write_text("0\n", encoding="utf-8")
@@ -170,14 +179,45 @@ def main() -> int:
         assert MODULE.classify_result("final", [outcomes["pgm01-validator"]])[0] == "error"
 
         (evidence_dir / "evidence-envelope.json").write_text(
-            json.dumps({"result": {"status": "inconclusive"}}) + "\n", encoding="utf-8"
+            "{}\n", encoding="utf-8"
+        )
+        revision = subprocess.run(
+            ["/usr/bin/git", "rev-parse", "HEAD"], cwd=ROOT, check=True,
+            capture_output=True, text=True,
+        ).stdout.strip()
+        source_builder = FINALIZER.git_bytes(revision, MODULE.BUILDER)
+        parameters = FINALIZER.historical_parameters_digest(revision, source_builder)
+        (evidence_dir / "source-revision.txt").write_text(revision + "\n", encoding="utf-8")
+        (evidence_dir / "collection-input.json").write_text(
+            json.dumps({"qualificationProfile": "tl-parse.evidence-qualification/v2"}) + "\n",
+            encoding="utf-8",
+        )
+        (evidence_dir / "evidence-envelope.json").write_text(
+            json.dumps({
+                "result": {"status": "inconclusive"},
+                "parametersDigest": {"value": parameters},
+            }) + "\n",
+            encoding="utf-8",
         )
         for name in FINALIZER.CHECKS:
             (evidence_dir / f"{name}.status.txt").write_text("0\n", encoding="utf-8")
+            (evidence_dir / f"{name}.stdout").write_text("verified\n", encoding="utf-8")
+            (evidence_dir / f"{name}.stderr").write_text("", encoding="utf-8")
+        (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
         assert FINALIZER.positive_ci_census(healthy_ci_output())
         assert not FINALIZER.positive_ci_census("cargo 1.94.1\n")
+        zero_tests = "test result: ok. 0 passed; 0 failed; 0 ignored\n" * 8
+        zero_tests += "\n".join(sorted(FINALIZER.REQUIRED_CORPUS_LINES)) + "\n"
+        assert not FINALIZER.positive_ci_census(zero_tests), (
+            "zero-test result groups satisfied the positive CI census"
+        )
+        (evidence_dir / "make-ci.stdout").write_text("", encoding="utf-8")
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed", (
+            "the positive census was not applied through summary()"
+        )
+        (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         assert FINALIZER.validate_envelope_result(evidence_dir, retained) == []
         (evidence_dir / "evidence-envelope.json").write_text(
             json.dumps({"result": {"status": "conclusive"}}) + "\n", encoding="utf-8"
@@ -259,6 +299,11 @@ def main() -> int:
         added = evidence_dir / "PLANTED-EXTRA.txt"
         added.write_text("FABRICATED\n", encoding="utf-8")
         assert any("unlisted" in error for error in VERIFIER.verify(evidence_dir))
+        rejected = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "verify_evidence_manifest.py"),
+             str(evidence_dir)], check=False, capture_output=True,
+        )
+        assert rejected.returncode != 0, "manifest verifier main accepted an extra artifact"
         added.unlink()
         symlink = evidence_dir / "PLANTED-LINK"
         symlink.symlink_to("make-ci.stdout")
@@ -275,6 +320,30 @@ def main() -> int:
              "--directory", directory], cwd=ROOT, check=False, capture_output=True,
         )
         assert runner.returncode != 0, "policy runner swallowed a failing discovered test"
+        missing = Path(directory) / "missing"
+        for script, arguments in (
+            ("check_checksum_manifest.py", [str(missing)]),
+            ("check_traceability_coverage.py", ["--report", str(missing)]),
+            ("build_evidence_envelope.py", [str(missing), "final"]),
+            ("verify_evidence_history.py", ["--root", str(missing)]),
+        ):
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / script), *arguments],
+                cwd=ROOT, check=False, capture_output=True,
+            )
+            assert result.returncode != 0, f"{script} main accepted a corrupt fixture"
+
+    attribution = ROOT / "docs" / "ATTRIBUTION.md"
+    original_attribution = attribution.read_text(encoding="utf-8")
+    try:
+        attribution.write_text(original_attribution + "\n| `fabricated` | `" + "0" * 64 + "` |\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "check_attribution.py")],
+            cwd=ROOT, check=False, capture_output=True,
+        )
+        assert result.returncode != 0, "attribution gate main accepted a fabricated file"
+    finally:
+        attribution.write_text(original_attribution, encoding="utf-8")
 
     planted = ROOT / "evidence" / f"PLANTED-EXIT-CONTRACT-{os.getpid()}.txt"
     planted.write_text("FABRICATED\n", encoding="utf-8")
@@ -286,6 +355,28 @@ def main() -> int:
         assert shell.returncode != 0, "evidence shell verifier exit contract was gutted"
     finally:
         planted.unlink(missing_ok=True)
+
+    assurance = ROOT / "spec" / "assurance" / "AA-001.md"
+    original_assurance = assurance.read_text(encoding="utf-8")
+    old_record = ROOT / "evidence" / "tl-parse-v01-64b2b1e610fb-20260831T051027Z"
+    old_source = (old_record / "source-revision.txt").read_text(encoding="utf-8").strip()
+    old_outer = hashlib.sha256(old_record.with_suffix(".sha256").read_bytes()).hexdigest()
+    old_envelope = hashlib.sha256((old_record / "evidence-envelope.json").read_bytes()).hexdigest()
+    rebound = re.sub(r"- Source candidate: `[0-9a-f]+`\.", f"- Source candidate: `{old_source}`.", original_assurance)
+    rebound = re.sub(r"- Record: `evidence/[^`]+`\.", f"- Record: `{old_record.relative_to(ROOT)}`.", rebound)
+    rebound = re.sub(r"(?s)(- Final envelope SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_envelope}\2", rebound)
+    rebound = re.sub(r"(?s)(- Outer manifest SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_outer}\2", rebound)
+    try:
+        assurance.write_text(rebound, encoding="utf-8")
+        stale = subprocess.run(
+            ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=ROOT, check=False,
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+        )
+        assert stale.returncode != 0 and "older than the reviewed tree" in stale.stderr, (
+            "assurance gate accepted a passing pre-remediation source record"
+        )
+    finally:
+        assurance.write_text(original_assurance, encoding="utf-8")
     print("evidence outcome behavior is valid")
     return 0
 

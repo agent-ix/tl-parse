@@ -20,8 +20,10 @@ while read -r _ filename; do
   cp -- "fuzz/corpus/parser/$filename" "$seed_corpus/$filename"
 done < fuzz/corpus/parser/SHA256SUMS
 
-asan_options="${ASAN_OPTIONS:-}"
-if [[ -n "${TL_PARSE_FUZZ_DISABLE_LEAKS:-}" ]]; then
+if [[ -n "${ASAN_OPTIONS:-}" ]]; then
+  echo "ambient ASAN_OPTIONS is not permitted" >&2
+  exit 2
+elif [[ -n "${TL_PARSE_FUZZ_DISABLE_LEAKS:-}" ]]; then
   echo "TL_PARSE_FUZZ_DISABLE_LEAKS is not permitted" >&2
   exit 2
 elif [[ -r /proc/self/status ]] &&
@@ -29,14 +31,14 @@ elif [[ -r /proc/self/status ]] &&
      grep -Eq '^Seccomp:[[:space:]]+2$' /proc/self/status; then
   # LeakSanitizer cannot inspect processes in this restricted sandbox. Keep
   # AddressSanitizer enabled and make the skipped leak lane visible in logs.
-  asan_options="${asan_options:+$asan_options:}detect_leaks=0"
   echo "LeakSanitizer unavailable under no-new-privileges/seccomp sandbox; disabled" >&2
+  exit 125
 else
   echo "LeakSanitizer enabled" >&2
 fi
 
 set +e
-ASAN_OPTIONS="$asan_options" cargo +nightly fuzz run parser \
+ASAN_OPTIONS=detect_leaks=1 cargo +nightly fuzz run parser \
   "$generated_corpus" "$seed_corpus" -- \
   "-artifact_prefix=$artifact_dir/" -runs=64
 status=$?

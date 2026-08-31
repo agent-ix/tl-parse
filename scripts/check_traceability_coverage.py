@@ -77,8 +77,23 @@ def validate_report(report: dict[str, Any]) -> list[str]:
     return errors
 
 
-def validate_matrix_statuses(path: Path) -> list[str]:
+def requirement_ids(root: Path = ROOT) -> dict[str, set[str]]:
+    values = {"Functional Requirement Coverage": set(), "Stakeholder Requirement Coverage": set(), "Non-Functional Requirement Coverage": set()}
+    sections = {"FR": "Functional Requirement Coverage", "StR": "Stakeholder Requirement Coverage", "NFR": "Non-Functional Requirement Coverage"}
+    for path in (root / "spec" / "requirements").glob("*.md"):
+        identity = path.stem.split("-", 2)[:2]
+        value = "-".join(identity)
+        prefix = value.split("-", 1)[0]
+        if prefix in sections:
+            values[sections[prefix]].add(value)
+    return values
+
+
+def validate_matrix_statuses(
+    path: Path, expected_rows: dict[str, set[str]] | None = None
+) -> list[str]:
     errors: list[str] = []
+    observed_rows = {section: set() for section in (expected_rows or {})}
     section = ""
     header: list[str] | None = None
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -98,9 +113,21 @@ def validate_matrix_statuses(path: Path) -> list[str]:
         if status_name not in header or len(cells) != len(header):
             errors.append(f"{path}:{number} has no parseable status column")
             continue
+        for index, cell in enumerate(cells):
+            if index != header.index(status_name) and not cell:
+                errors.append(f"{path}:{number} has an empty {header[index]!r} cell")
+        if section in observed_rows and cells:
+            observed_rows[section].add(cells[0])
         expected = "✅ implemented" if section == "Test Case Summary" else "✅ covered"
         if cells[header.index(status_name)] != expected:
             errors.append(f"{path}:{number} does not carry required status {expected!r}")
+    for section, expected in (expected_rows or {}).items():
+        observed = observed_rows.get(section, set())
+        if observed != expected:
+            errors.append(
+                f"{section} row census drift: missing={sorted(expected - observed)}, "
+                f"extra={sorted(observed - expected)}"
+            )
     return errors
 
 
@@ -162,7 +189,9 @@ def main() -> int:
     if status != 0 or report is None:
         return status
     errors = validate_report(report)
-    errors.extend(validate_matrix_statuses(ROOT / "spec" / "test-matrix.md"))
+    errors.extend(
+        validate_matrix_statuses(ROOT / "spec" / "test-matrix.md", requirement_ids())
+    )
     errors.extend(validate_verification_references())
     for error in errors:
         print(error, file=sys.stderr)

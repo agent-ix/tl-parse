@@ -56,6 +56,19 @@ def main() -> int:
             encoding="utf-8",
         )
         assert MODULE.validate_matrix_statuses(matrix)
+        expected = {"Functional Requirement Coverage": {"FR-001", "FR-002"}}
+        assert MODULE.validate_matrix_statuses(matrix, expected), (
+            "a deleted functional requirement row escaped the matrix census"
+        )
+        matrix.write_text(
+            "## Functional Requirement Coverage\n\n"
+            "| Functional Req | Test Cases | Coverage Status |\n|---|---|---|\n"
+            "| FR-001 | | ✅ covered |\n| FR-002 | TC-002 | ✅ covered |\n",
+            encoding="utf-8",
+        )
+        assert MODULE.validate_matrix_statuses(matrix, expected), (
+            "an empty matrix Test Cases cell escaped validation"
+        )
     requirement = ROOT / "spec" / "requirements" / "FR-004-canonical-format.md"
     original = requirement.read_text(encoding="utf-8")
     try:

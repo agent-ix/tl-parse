@@ -30,13 +30,17 @@ def main() -> int:
         original.replace("\tcargo clippy", "\t-cargo clippy", 1),
         original.replace("\tcargo test", "\tcargo test || true", 1),
         original.replace(
-            "\tpython3 scripts/check_checksum_manifest.py fuzz/corpus/parser",
-            "\tpython3 scripts/check_checksum_manifest.py fuzz/corpus/parser || :",
+            "\t/usr/bin/python3 scripts/check_checksum_manifest.py fuzz/corpus/parser",
+            "\t/usr/bin/python3 scripts/check_checksum_manifest.py fuzz/corpus/parser || :",
             1,
         ),
         original + "\n.IGNORE:\n",
         original + "\n.SILENT:\n",
         original + "\nMAKEFLAGS += -i\n",
+        original + "\nexport MAKEFLAGS = -i\n",
+        original + "\noverride MAKEFLAGS = -i\n",
+        original + "\nunexport MAKEFLAGS = -i\n",
+        original.replace("\tcargo test --all-targets --all-features", "\tcargo test --all-targets --all-features &", 1),
         original.replace("ci: ", "ci: fabricated ", 1),
     ]
     with tempfile.TemporaryDirectory() as directory:
@@ -62,6 +66,10 @@ def main() -> int:
             '#[serde(rename = "ignore")]\nstruct Wire;\n', encoding="utf-8"
         )
         assert MODULE.inspect_ignored_tests(ignored) == [], "serde rename caused a false positive"
+        helper = ignored / "helpers"
+        helper.mkdir()
+        (helper / "hidden.rs").write_text("#[test]\n#[ignore]\nfn hidden() {}\n", encoding="utf-8")
+        assert MODULE.inspect_ignored_tests(ignored), "ignored included helper escaped inspection"
 
         hidden = root / "hidden.mk"
         hidden.write_text(
@@ -74,8 +82,8 @@ def main() -> int:
         swallowed = root / "swallowed.mk"
         swallowed.write_text(
             original.replace(
-                "\tpython3 scripts/check_checksum_manifest.py fuzz/corpus/parser",
-                "\tpython3 scripts/check_checksum_manifest.py fuzz/corpus/parser || :",
+                "\t/usr/bin/python3 scripts/check_checksum_manifest.py fuzz/corpus/parser",
+                "\t/usr/bin/python3 scripts/check_checksum_manifest.py fuzz/corpus/parser || :",
                 1,
             ),
             encoding="utf-8",
@@ -94,6 +102,20 @@ def main() -> int:
         )
         assert result.returncode != 0, f"make {' '.join(arguments)} produced false success"
     assert MODULE.probe_command_positions(ROOT / "Makefile") == []
+    with tempfile.TemporaryDirectory() as directory:
+        shim = Path(directory)
+        for name in ("cargo", "python3"):
+            path = shim / name
+            path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            path.chmod(0o755)
+        hostile = dict(clean_env)
+        hostile["HOME"] = directory
+        hostile["PATH"] = f"{directory}:{hostile['PATH']}"
+        result = subprocess.run(
+            ["/usr/bin/make", "ci"], cwd=ROOT, check=False,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=hostile,
+        )
+        assert result.returncode != 0, "HOME/PATH-shadowed tools bypassed local CI"
     print("failure-propagation policy behavior is valid")
     return 0
 
