@@ -104,7 +104,7 @@ done
 run_and_retain make-ci "${clean_env[@]}" make ci-for-evidence
 run_and_retain make-spec "${clean_env[@]}" make spec
 run_and_retain quire-coverage "${clean_env[@]}" python3 scripts/check_traceability_coverage.py
-run_and_retain msrv "${clean_env[@]}" cargo +1.75.0 check --all-targets --all-features
+run_and_retain msrv "${clean_env[@]}" make msrv
 run_and_retain rustdoc "${clean_env[@]}" env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
 run_and_retain default-dependencies "${clean_env[@]}" cargo tree --no-default-features --edges normal
 run_and_retain corpus-integrity "${clean_env[@]}" make check-corpus

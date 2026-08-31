@@ -88,6 +88,8 @@ def healthy_retained_output(name: str) -> str:
         return "strict traceability coverage is complete: 62/62\n"
     if name == "rustdoc":
         return "Generated /tmp/doc/tl_parse/index.html\n"
+    if name == "msrv":
+        return "msrv gate passed\n"
     if name == "default-dependencies":
         return "tl-parse v0.1.0 (/tmp/tl-parse)\n"
     if name == "corpus-integrity":
@@ -319,6 +321,13 @@ def main() -> int:
 
         (evidence_dir / "rustdoc.status.txt").write_text("0\n", encoding="utf-8")
         (evidence_dir / "msrv.status.txt").write_text("0\n", encoding="utf-8")
+        (evidence_dir / "msrv.stdout").write_text("", encoding="utf-8")
+        assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed", (
+            "zero-exit MSRV evidence passed without its positive signature"
+        )
+        (evidence_dir / "msrv.stdout").write_text(
+            healthy_retained_output("msrv"), encoding="utf-8"
+        )
         (evidence_dir / "make-ci.stdout").write_text(
             "test result: FAILED. 5 passed; 1 failed; 0 ignored\n", encoding="utf-8"
         )

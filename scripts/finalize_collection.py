@@ -125,6 +125,8 @@ def positive_output(evidence_dir: Path, name: str) -> bool:
         return "strict traceability coverage is complete: 62/62" in combined
     if name == "rustdoc":
         return "Generated " in combined and "/doc/tl_parse/index.html" in combined
+    if name == "msrv":
+        return "msrv gate passed" in combined
     if name == "default-dependencies":
         return "tl-parse v0.1.0" in combined
     if name == "corpus-integrity":
