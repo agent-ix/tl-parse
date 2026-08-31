@@ -24,7 +24,7 @@ def main() -> int:
     transcript: list[str] = []
     for target in targets:
         result = subprocess.run(
-            ["/usr/bin/make", "--no-print-directory", target],
+            ["/usr/bin/make", "--no-print-directory", "MAKEFLAGS=", target],
             cwd=propagation.ROOT, check=False, capture_output=True, text=True,
             env=environment,
         )
