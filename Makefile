@@ -15,6 +15,7 @@ help:
 	@echo "  make clean            - cargo clean"
 	@echo "  make deny             - cargo deny check licenses"
 	@echo "  make audit-unsafe     - Enforce // SAFETY: comments on unsafe blocks"
+	@echo "  make spec             - Validate specification and strict coverage"
 	@echo "  make ci               - All CI gates locally (fmt-check + lint + test + deny + audit-unsafe)"
 
 # =============================================================================
@@ -60,6 +61,15 @@ cargo-audit:
 .PHONY: audit-unsafe
 audit-unsafe:
 	bash scripts/check_unsafe_comments.sh
+
+.PHONY: spec-validate
+spec-validate:
+	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+
+.PHONY: spec
+spec:
+	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+	quire coverage --scope . --strict
 
 # =============================================================================
 # Composite
