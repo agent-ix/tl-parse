@@ -1,0 +1,103 @@
+{
+  "backend": {
+    "kind": "none",
+    "reason": "deterministic packaging; invoked tools are identified in the input"
+  },
+  "environment": {
+    "dependenciesDigest": {
+      "algorithm": "sha256",
+      "value": "4f6eaf0c647acab71baf842bcbff741507dab9a902262f5423b2cd78810b780a"
+    },
+    "operatingSystem": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "targetTriple": "x86_64-unknown-linux-gnu",
+    "toolchain": "rustc 1.94.1 (e408947bf 2026-03-25)"
+  },
+  "extensions": {
+    "dev.agent-ix.tl-parse": {
+      "componentClass": "text-boundary-tool",
+      "corpusRevision": "tl-parse-corpus/v1",
+      "dialectRevision": "tl-parse.clean-ascii/v1",
+      "envelopeSchemaDigest": "0946e235e9e4b0fa79e9b9ec27ae157b303c17de0a9408d3cc04968fb7152256",
+      "pgm01CandidateRevision": "7dac9d8c19952412b56a0347387666e2ca81e01d",
+      "reviewState": "pending",
+      "sourceState": "clean"
+    }
+  },
+  "inputs": [
+    {
+      "contentDigest": {
+        "algorithm": "sha256",
+        "value": "e81eb287451e20404d6f57472b17906373c716aa2f02b49446da40efdbe41a35"
+      },
+      "mediaType": "application/json",
+      "role": "evidence-collection-input",
+      "schema": {
+        "digest": {
+          "algorithm": "sha256",
+          "value": "d7a7a8e6c3ee4083b6fa2d614ebe6357847c1552a0dfeb41442bd0f5b0e21c86"
+        },
+        "id": "tl-parse.evidence-input",
+        "version": "v1"
+      },
+      "uri": "collection-input.json"
+    }
+  ],
+  "outputs": [
+    {
+      "contentDigest": {
+        "algorithm": "sha256",
+        "value": "b5e225b4cf972f972aca36c8725b4e7fb7914a4e06178cf2995921f3765896d5"
+      },
+      "mediaType": "application/json",
+      "role": "tl-parse-evidence-manifest",
+      "schema": {
+        "digest": {
+          "algorithm": "sha256",
+          "value": "0717400327650c92e4311fdf2f47720f969906c207ec595e3d3d31ef937a80f9"
+        },
+        "id": "tl-parse.evidence-manifest",
+        "version": "v1"
+      },
+      "uri": "evidence-manifest.json"
+    }
+  ],
+  "parametersDigest": {
+    "algorithm": "sha256",
+    "value": "81b0eb6ff77876702a2675398d66dc47b5b7ea6e6d888e4aae5438c441287e82"
+  },
+  "producer": {
+    "executableDigest": {
+      "algorithm": "sha256",
+      "value": "b64a041df363286b39e06597556be3aa70a6f6f5f545c92f65bebab5223e9170"
+    },
+    "invocation": [
+      "bash",
+      "scripts/collect_evidence.sh",
+      "evidence/tl-parse-v01-f58ed6473841-20260831T162638Z"
+    ],
+    "name": "tl-parse-evidence-collector",
+    "sourceRevision": "f58ed6473841d87b6faf713b7c9abd3852a4e6ef",
+    "version": "0.1.0"
+  },
+  "provenance": {
+    "candidateRevision": "f58ed6473841d87b6faf713b7c9abd3852a4e6ef",
+    "contributionMethod": "agent-assisted",
+    "repository": "https://github.com/agent-ix/tl-parse",
+    "reviewers": [
+      "@kreneskyp"
+    ],
+    "sourceRevision": "f58ed6473841d87b6faf713b7c9abd3852a4e6ef"
+  },
+  "recordId": "tl-parse-v01-f58ed6473841-20260831T162638Z",
+  "recordedAt": "2026-08-31T16:26:43Z",
+  "result": {
+    "requirementRefs": [
+      "PGM-01-R08",
+      "PGM-01-R09",
+      "MP-001"
+    ],
+    "status": "error",
+    "summary": "one or more retained tl-parse checks failed"
+  },
+  "schemaVersion": "quire.derivation-evidence/v1"
+}

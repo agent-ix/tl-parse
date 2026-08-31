@@ -39,7 +39,7 @@ fn observed_cargo_arguments(target: &str) -> Vec<String> {
 
 // Trace: TC-022, FR-005-AC-4, NFR-002-AC-2, SUITE-001, SUITE-002, SUITE-003
 // Trace: SUITE-004, SUITE-005, SUITE-006
-// Trace: SUITE-007, SUITE-008
+// Trace: SUITE-007, SUITE-008, SUITE-009
 #[test]
 fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     let makefile = fs::read_to_string(root_path("Makefile")).unwrap();
