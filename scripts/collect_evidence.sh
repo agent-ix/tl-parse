@@ -63,7 +63,7 @@ cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
 
 run_and_retain make-ci make ci
 run_and_retain make-spec make spec
-run_and_retain quire-coverage quire coverage --scope . --strict
+run_and_retain quire-coverage python3 scripts/check_traceability_coverage.py
 run_and_retain rustdoc env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
 run_and_retain default-dependencies cargo tree --no-default-features --edges normal
 run_and_retain corpus-integrity make check-corpus

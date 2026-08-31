@@ -24,6 +24,10 @@ BUILDER = Path(__file__).resolve()
 VALIDATOR = ROOT / "scripts" / "validate_json_schema.py"
 FINALIZER = ROOT / "scripts" / "finalize_collection.py"
 EVIDENCE_VERIFIER = ROOT / "scripts" / "verify_evidence_manifest.py"
+TRACEABILITY_VALIDATOR = ROOT / "scripts" / "check_traceability_coverage.py"
+EVIDENCE_SHELL_VERIFIER = ROOT / "scripts" / "verify_evidence.sh"
+EVIDENCE_ANCHORS = ROOT / "evidence" / "ANCHORS"
+ASSURANCE_ARGUMENT = ROOT / "spec" / "assurance" / "AA-001.md"
 COMMANDS = (
     "make-ci",
     "make-spec",
@@ -92,7 +96,7 @@ def classify_result(
         return "inconclusive", "exact finalized-envelope validation is external or pending"
     if "inconclusive" in statuses or "skipped-unavailable" in statuses:
         return "inconclusive", "schema or governance validation is unavailable or pending"
-    return "conclusive", "all retained tl-parse checks passed"
+    return "inconclusive", "unrecognized collection phase cannot be conclusive"
 
 
 def parameters_digest() -> str:
@@ -126,6 +130,10 @@ def parameters_digest() -> str:
         VALIDATOR,
         FINALIZER,
         EVIDENCE_VERIFIER,
+        TRACEABILITY_VALIDATOR,
+        EVIDENCE_SHELL_VERIFIER,
+        EVIDENCE_ANCHORS,
+        ASSURANCE_ARGUMENT,
         INPUT_SCHEMA,
         MANIFEST_SCHEMA,
     )
@@ -154,7 +162,7 @@ def build(directory: Path, phase: str) -> None:
         "commands": [
             "make ci",
             "make spec",
-            "quire coverage --scope . --strict",
+            "python3 scripts/check_traceability_coverage.py",
             "RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features",
             "cargo tree --no-default-features --edges normal",
             "make check-corpus",

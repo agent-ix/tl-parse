@@ -142,4 +142,15 @@ fn cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes() {
     assert!(String::from_utf8(source_limit.stderr)
         .unwrap()
         .contains("source_limit"));
+
+    let source_limit_json = binary()
+        .args(["validate", "--json", oversized.path().to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert_eq!(source_limit_json.status.code(), Some(1));
+    let value: serde_json::Value = serde_json::from_slice(&source_limit_json.stdout).unwrap();
+    assert_eq!(value["stats"]["source_bytes"], 1_048_578);
+    assert_eq!(value["diagnostics"][0]["code"], "source_limit");
+    assert_eq!(value["diagnostics"][0]["span"]["start"], 1_048_576);
+    assert_eq!(value["diagnostics"][0]["span"]["end"], 1_048_577);
 }

@@ -124,7 +124,7 @@ fn render_node(
             ),
         });
     }
-    let Some(work) = stats.work.checked_add(rendered_node.text.len()) else {
+    let Some(work) = stats.work.checked_add(1) else {
         return Err(FormatError {
             code: FormatErrorCode::WorkLimit,
             message: "formatter work counter overflowed".to_owned(),
@@ -134,7 +134,7 @@ fn render_node(
         return Err(FormatError {
             code: FormatErrorCode::WorkLimit,
             message: format!(
-                "formatter work {} exceeds effective limit {}",
+                "formatter node work {} exceeds effective limit {}",
                 work, limits.max_work
             ),
         });

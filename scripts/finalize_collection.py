@@ -39,13 +39,24 @@ def summary(evidence_dir: Path) -> dict[str, object]:
             continue
         exit_code = int(status_path.read_text(encoding="utf-8").strip())
         skipped = exit_code == 125
+        stderr_path = evidence_dir / f"{name}.stderr"
+        validator_contradiction = (
+            exit_code == 0
+            and name in {"pgm01-validator", "sealed-pgm01-validator"}
+            and stderr_path.exists()
+            and bool(stderr_path.read_text(encoding="utf-8").strip())
+        )
         outcomes.append(
             {
                 "name": name,
                 "status": (
                     "skipped-unavailable"
                     if skipped
-                    else "passed" if exit_code == 0 else "failed"
+                    else "failed"
+                    if validator_contradiction
+                    else "passed"
+                    if exit_code == 0
+                    else "failed"
                 ),
                 "exitCode": exit_code,
             }

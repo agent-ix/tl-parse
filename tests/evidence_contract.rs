@@ -48,6 +48,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         .find(|line| line.starts_with("ci:"))
         .expect("Makefile has a composite local gate");
     for gate in [
+        "check-failure-propagation",
         "fmt-check",
         "lint",
         "test",
@@ -67,7 +68,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         );
     }
     let dry_run = Command::new("make")
-        .args(["-n", "ci"])
+        .args(["-n", "ci", "DRY_RUN_INSPECTION=1"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()
         .unwrap();
@@ -85,7 +86,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "bash scripts/check_unsafe_comments.sh",
         "python3 scripts/test_evidence_tool.py",
         "quire validate --scope . 'spec/**/*.md' 'docs/*.md'",
-        "quire coverage --scope . --strict",
+        "python3 scripts/check_traceability_coverage.py",
         "RUSTDOCFLAGS=-Dwarnings",
         "doc --no-deps --all-features",
         "bash scripts/verify_evidence.sh",
@@ -103,6 +104,16 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     assert_eq!(
         observed_cargo_arguments("deny"),
         ["deny check licenses", "deny check sources"]
+    );
+    let sentinel = Command::new("make")
+        .args(["--no-print-directory", "check-failure-propagation"])
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()
+        .unwrap();
+    assert!(
+        sentinel.status.success(),
+        "failure-propagation sentinel failed: {}",
+        String::from_utf8_lossy(&sentinel.stderr)
     );
 
     let workflow = fs::read_to_string(root_path(".github/workflows/ci.yml")).unwrap();
@@ -125,9 +136,14 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         assert_eq!(value["additionalProperties"], false);
     }
     assert!(fs::metadata(root_path("scripts/verify_evidence_manifest.py")).is_ok());
-    assert!(fs::read_to_string(root_path("scripts/verify_evidence.sh"))
-        .unwrap()
-        .contains("sha256sum --check evidence/ANCHORS"));
+    let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();
+    for required in [
+        "sha256sum --check evidence/ANCHORS",
+        "assurance argument and evidence anchors disagree",
+        "retained evidence summary is missing",
+    ] {
+        assert!(verifier.contains(required));
+    }
 
     let behavior = Command::new("python3")
         .arg(root_path("scripts/test_evidence_tool.py"))

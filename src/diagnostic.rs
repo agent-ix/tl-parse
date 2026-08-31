@@ -303,7 +303,7 @@ impl Default for FormatLimits {
 pub struct FormatStats {
     /// Reachable graph nodes rendered.
     pub nodes: usize,
-    /// Deterministic work units consumed.
+    /// Deterministic work units consumed, one per reachable node rendered.
     pub work: usize,
     /// Bytes in the final canonical output, or zero on error.
     pub output_bytes: usize,
@@ -321,14 +321,20 @@ pub enum FormatErrorCode {
     WorkLimit,
 }
 
-impl fmt::Display for FormatErrorCode {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = match self {
+impl FormatErrorCode {
+    /// Returns the stable wire spelling.
+    pub const fn as_str(self) -> &'static str {
+        match self {
             Self::InvalidGraph => "invalid_graph",
             Self::OutputLimit => "output_limit",
             Self::WorkLimit => "work_limit",
-        };
-        formatter.write_str(value)
+        }
+    }
+}
+
+impl fmt::Display for FormatErrorCode {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
     }
 }
 

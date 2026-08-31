@@ -12,7 +12,7 @@ type: SuiteRegistry
 |---|---|---|---|---|
 | SUITE-001 | Complete local candidate gate | `make ci` | Rust/Cargo/Python/Quire tooling | Integration |
 | SUITE-002 | Requirements and assurance validation | `quire validate --scope . 'spec/**/*.md' 'docs/*.md'` | Quire 0.31.0 | Analysis |
-| SUITE-003 | Requirement coverage | `quire coverage --scope . --strict` | Quire 0.31.0 | Analysis |
+| SUITE-003 | Requirement coverage | `python3 scripts/check_traceability_coverage.py` | Quire 0.31.0 plus repository completeness policy | Analysis |
 | SUITE-004 | Rustdoc warnings | `RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features` | rustdoc | Analysis |
 | SUITE-005 | Corpus integrity | `make check-corpus` | sha256sum | Static |
 | SUITE-006 | Minimum supported Rust boundary | `cargo +1.75.0 check --all-targets --all-features` | Rust 1.75.0 | Analysis |

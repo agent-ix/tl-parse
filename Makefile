@@ -11,6 +11,7 @@ help:
 	@echo "  make fmt-check        - Verify formatting (CI gate)"
 	@echo "  make lint             - Clippy with -D warnings"
 	@echo "  make test             - cargo test"
+	@echo "  make check-failure-propagation - prove required command failures reach CI"
 	@echo "  make build            - Release build"
 	@echo "  make clean            - cargo clean"
 	@echo "  make deny             - cargo deny check licenses and sources"
@@ -44,6 +45,17 @@ lint:
 test:
 	$(CARGO) test --all-targets --all-features
 
+.PHONY: check-failure-propagation
+check-failure-propagation:
+	@if [ "$(DRY_RUN_INSPECTION)" != "1" ]; then \
+		for target in test deny-licenses deny-sources; do \
+			if $(MAKE) --no-print-directory "$$target" CARGO=false >/dev/null 2>&1; then \
+				echo "$$target swallowed a deliberately failing cargo command" >&2; \
+				exit 1; \
+			fi; \
+		done; \
+	fi
+
 .PHONY: check-corpus
 check-corpus:
 	cd corpus/v1 && sha256sum --check SHA256SUMS
@@ -67,8 +79,9 @@ rustdoc:
 
 .PHONY: evidence-tool
 evidence-tool:
-	python3 -m py_compile scripts/build_evidence_envelope.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/validate_json_schema.py scripts/verify_evidence_manifest.py
+	python3 -m py_compile scripts/build_evidence_envelope.py scripts/check_traceability_coverage.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/test_traceability_gate.py scripts/validate_json_schema.py scripts/verify_evidence_manifest.py
 	python3 scripts/test_evidence_tool.py
+	python3 scripts/test_traceability_gate.py
 
 .PHONY: build
 build:
@@ -82,9 +95,13 @@ clean:
 # Supply chain & safety
 # =============================================================================
 
-.PHONY: deny
-deny:
+.PHONY: deny deny-licenses deny-sources
+deny: deny-licenses deny-sources
+
+deny-licenses:
 	$(CARGO) deny check licenses
+
+deny-sources:
 	$(CARGO) deny check sources
 
 .PHONY: cargo-audit
@@ -102,11 +119,11 @@ spec-validate:
 .PHONY: spec
 spec:
 	quire validate --scope . 'spec/**/*.md' 'docs/*.md'
-	quire coverage --scope . --strict
+	python3 scripts/check_traceability_coverage.py
 
 # =============================================================================
 # Composite
 # =============================================================================
 
 .PHONY: ci
-ci: fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec rustdoc verify-evidence
+ci: check-failure-propagation fmt-check lint test check-corpus fuzz-build fuzz-smoke deny audit-unsafe evidence-tool spec rustdoc verify-evidence

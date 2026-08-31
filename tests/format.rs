@@ -100,6 +100,7 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     let report = format_document(&deep, FormatLimits::default());
     assert!(report.error.is_none());
     assert_eq!(report.stats.nodes, 1_001);
+    assert_eq!(report.stats.work, report.stats.nodes);
 
     let shared = FormulaDocument::new(
         SemanticProfile::ClosedTraceV1,
@@ -143,6 +144,39 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
         assert_eq!(decoded, report);
         let error = report.error.unwrap();
         assert_eq!(error.code, expected);
+        assert_eq!(error.code.as_str(), error.code.to_string());
         assert!(error.to_string().contains(&expected.to_string()));
+    }
+}
+
+// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+#[test]
+fn accepted_node_ceiling_is_reachable_with_default_formatter_limits() {
+    let source = std::iter::repeat("p0")
+        .take(5_000)
+        .collect::<Vec<_>>()
+        .join("&");
+    let document = parse_closed(&source);
+    assert_eq!(document.nodes().len(), 9_999);
+    let report = format_document(&document, FormatLimits::default());
+    assert!(report.error.is_none(), "{:?}", report.error);
+    assert_eq!(report.stats.nodes, 9_999);
+    assert_eq!(report.stats.work, 9_999);
+    assert_eq!(report.text.as_deref(), Some(source.as_str()));
+}
+
+// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+#[test]
+fn format_error_display_matches_every_wire_spelling() {
+    for code in [
+        FormatErrorCode::InvalidGraph,
+        FormatErrorCode::OutputLimit,
+        FormatErrorCode::WorkLimit,
+    ] {
+        assert_eq!(code.to_string(), code.as_str());
+        assert_eq!(
+            serde_json::to_string(&code).unwrap(),
+            format!(r#""{}""#, code.as_str())
+        );
     }
 }

@@ -152,6 +152,15 @@ def main() -> int:
             (evidence_dir / f"{name}.status.txt").write_text("0\n", encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
+        (evidence_dir / "pgm01-validator.stderr").write_text(
+            "governance validation error: fabricated pass\n", encoding="utf-8"
+        )
+        contradicted = FINALIZER.summary(evidence_dir)
+        assert contradicted["overallStatus"] == "failed"
+        assert next(
+            item for item in contradicted["outcomes"] if item["name"] == "pgm01-validator"
+        )["status"] == "failed"
+        (evidence_dir / "pgm01-validator.stderr").write_text("", encoding="utf-8")
         (evidence_dir / "rustdoc.status.txt").write_text("1\n", encoding="utf-8")
         assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed"
 

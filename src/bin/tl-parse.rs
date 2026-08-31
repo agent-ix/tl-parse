@@ -5,7 +5,9 @@ use std::{
     process::ExitCode,
 };
 
-use tl_parse::{format_document, parse, report_json, Diagnostic, FormatLimits, ParseLimits};
+use tl_parse::{
+    format_document, parse, report_json, source_limit_report, Diagnostic, FormatLimits, ParseLimits,
+};
 use tl_syntax::SemanticProfile;
 
 const EXIT_INVALID: u8 = 1;
@@ -60,8 +62,13 @@ fn run() -> Result<ExitCode, String> {
         }
     }
 
-    let source = read_bounded(path.as_deref().unwrap_or("-"))?;
-    let report = parse(&source, profile, ParseLimits::default());
+    let input = read_bounded(path.as_deref().unwrap_or("-"))?;
+    let report = match input {
+        BoundedInput::Source(source) => parse(&source, profile, ParseLimits::default()),
+        BoundedInput::SourceLimit { source_bytes } => {
+            source_limit_report(source_bytes, profile, ParseLimits::default())
+        }
+    };
     if json && (command == "validate" || report.document.is_none()) {
         println!(
             "{}",
@@ -107,26 +114,50 @@ fn run() -> Result<ExitCode, String> {
     }
 }
 
-fn read_bounded(path: &str) -> Result<String, String> {
+enum BoundedInput {
+    Source(String),
+    SourceLimit { source_bytes: usize },
+}
+
+fn read_bounded(path: &str) -> Result<BoundedInput, String> {
     let byte_limit = ParseLimits::default().max_source_bytes;
-    let mut bytes = Vec::new();
     if path == "-" {
-        io::stdin()
-            .lock()
-            .take((byte_limit as u64).saturating_add(1))
-            .read_to_end(&mut bytes)
-            .map_err(|error| format!("cannot read stdin: {error}"))?;
+        read_bounded_reader(io::stdin().lock(), byte_limit)
+            .map_err(|error| format!("cannot read stdin: {error}"))
     } else {
-        File::open(path)
-            .map_err(|error| format!("cannot open {path:?}: {error}"))?
-            .take((byte_limit as u64).saturating_add(1))
-            .read_to_end(&mut bytes)
-            .map_err(|error| format!("cannot read {path:?}: {error}"))?;
+        let file = File::open(path).map_err(|error| format!("cannot open {path:?}: {error}"))?;
+        read_bounded_reader(file, byte_limit)
+            .map_err(|error| format!("cannot read {path:?}: {error}"))
     }
-    if bytes.len() > byte_limit {
-        return Ok(" ".repeat(bytes.len()));
+}
+
+fn read_bounded_reader(mut reader: impl Read, byte_limit: usize) -> io::Result<BoundedInput> {
+    let mut retained = Vec::with_capacity(byte_limit.min(64 * 1024));
+    let mut buffer = [0_u8; 16 * 1024];
+    let mut source_bytes = 0_usize;
+    loop {
+        let read = reader.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        source_bytes = source_bytes.checked_add(read).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "input byte count overflowed usize",
+            )
+        })?;
+        if source_bytes <= byte_limit {
+            retained.extend_from_slice(&buffer[..read]);
+        } else {
+            retained.clear();
+        }
     }
-    String::from_utf8(bytes).map_err(|error| format!("cannot read UTF-8 {path:?}: {error}"))
+    if source_bytes > byte_limit {
+        return Ok(BoundedInput::SourceLimit { source_bytes });
+    }
+    String::from_utf8(retained)
+        .map(BoundedInput::Source)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
 }
 
 fn render_diagnostic(diagnostic: &Diagnostic) -> String {

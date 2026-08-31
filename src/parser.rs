@@ -1,5 +1,5 @@
 use tl_syntax::{
-    FormulaDocument, Interval, Node, NodeId, NodeKind, PropositionId, SemanticProfile,
+    FormulaDocument, Interval, Node, NodeId, NodeKind, PropositionId, SemanticProfile, SourceSpan,
 };
 
 use crate::{
@@ -91,6 +91,39 @@ pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> Par
     if !report.diagnostics.is_empty() || parser.had_error || parser.stopped {
         report.document = None;
     }
+    report
+}
+
+// Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
+/// Builds the same fail-closed report as [`parse`] for an input whose full byte
+/// count is known but whose contents were intentionally not retained.
+///
+/// Streaming front ends use this after counting an input beyond the effective
+/// source limit, avoiding a fabricated replacement source and preserving the
+/// submitted byte count.
+pub fn source_limit_report(
+    source_bytes: usize,
+    profile: SemanticProfile,
+    limits: ParseLimits,
+) -> ParseReport {
+    let limits = limits.clamped();
+    let start = limits.max_source_bytes;
+    let end = start.saturating_add(1).min(source_bytes);
+    let mut report = ParseReport::empty(profile, limits, source_bytes);
+    report.diagnostics.push(Diagnostic {
+        code: DiagnosticCode::SourceLimit,
+        severity: DiagnosticSeverity::Error,
+        span: SourceSpan::new(start as u32, end as u32)
+            .expect("hard source limit and adjacent span fit u32"),
+        found: "<source>".to_owned(),
+        expected: Vec::new(),
+        recovery: RecoveryAction::Stopped,
+        message: format!(
+            "source length {source_bytes} exceeds effective limit {}",
+            limits.max_source_bytes
+        ),
+    });
+    report.stats.diagnostics = 1;
     report
 }
 

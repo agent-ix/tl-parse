@@ -14,7 +14,7 @@ pub use diagnostic::{
     FormatLimits, FormatReport, FormatStats, ParseLimits, ParseReport, ParseStats, RecoveryAction,
 };
 pub use format::{format_document, format_formula};
-pub use parser::parse;
+pub use parser::{parse, source_limit_report};
 pub use tl_syntax;
 
 /// Stable identity of the independently authored textual dialect.

@@ -25,7 +25,10 @@ whitespace-free representation within declared output and work limits.
   except the value zero.
 - Formatting ignores source spans and preserves node kinds, bounds,
   proposition identities, root meaning, and semantic profile on reparse.
-- Output bytes and formatting work are checked before emission.
+- Output bytes are checked before emission. Formatter work charges one unit per
+  reachable graph node, so every formula within the declared node ceiling can
+  reach canonical formatting under the default work limit when its final text
+  fits the output limit.
 
 ## Acceptance Criteria
 
@@ -33,7 +36,7 @@ whitespace-free representation within declared output and work limits.
 |---|---|---|
 | FR-004-AC-1 | Every operator has one exact canonical rendering and formatting canonical text twice is idempotent. | Test (TC-014, TC-015) |
 | FR-004-AC-2 | A deterministic generated formula population parse-formats-parses without structural or profile drift. | Test (TC-016) |
-| FR-004-AC-3 | Deep/shared graphs and output/work exhaustion are handled iteratively and return explicit errors without partial output. | Test (TC-017) |
+| FR-004-AC-3 | Deep/shared graphs and output/work exhaustion are handled iteratively and return explicit errors without partial output; the 9,999-node accepted boundary formats under default limits. | Test (TC-017) |
 
 ## Dependencies
 
