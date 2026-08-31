@@ -62,7 +62,10 @@ def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     defined = recipes(path)
     expected_composites = {
-        "ci": ["/usr/bin/python3 scripts/run_local_ci.py --include-verify"],
+        "ci": [
+            "/usr/bin/bash scripts/verify_evidence.sh",
+            "/usr/bin/python3 scripts/run_local_ci.py --include-verify",
+        ],
         "ci-for-evidence": ["/usr/bin/python3 scripts/run_local_ci.py"],
     }
     for target, expected_recipes in expected_composites.items():

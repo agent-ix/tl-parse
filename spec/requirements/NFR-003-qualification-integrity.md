@@ -39,7 +39,7 @@ profile/retraction states, clean-tree refusal, and retained-record checks.
 | ID | Criteria | Verification |
 |---|---|---|
 | NFR-003-AC-1 | Every mandatory executable is source-locked by absolute path and SHA-256; collection verifies the live bytes and retained records are re-derived against the source revision's lock. | Test (TC-023) |
-| NFR-003-AC-2 | Local CI enumerates every mandatory gate, propagates every command failure, and refuses success unless its own transcript contains the exact positive gate census. | Test (TC-024) |
+| NFR-003-AC-2 | Local CI independently verifies the clean-tree retained-evidence boundary before delegation, enumerates every mandatory gate, propagates every command failure, and refuses success unless its own transcript contains the exact positive gate census. | Test (TC-024) |
 | NFR-003-AC-3 | Active evidence requires qualification-v2 and positive output for every non-silent retained lane; older records are explicitly retracted or inconclusive, never silently passed. | Test (TC-025) |
 | NFR-003-AC-4 | Evidence verification requires a clean tree and checks record identity and append-only behavior relative to the presented Git history; no local digest claims external attestation or release authority. | Inspection (TC-022) |
 

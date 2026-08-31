@@ -177,4 +177,5 @@ ci-for-evidence:
 	/usr/bin/python3 scripts/run_local_ci.py
 
 ci:
+	/usr/bin/bash scripts/verify_evidence.sh
 	/usr/bin/python3 scripts/run_local_ci.py --include-verify

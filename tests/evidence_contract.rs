@@ -40,6 +40,9 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         );
     }
     assert!(runner.contains("positive_ci_census"));
+    assert!(makefile.contains(
+        "ci:\n\t/usr/bin/bash scripts/verify_evidence.sh\n\t/usr/bin/python3 scripts/run_local_ci.py --include-verify"
+    ));
     assert!(makefile.contains("scripts/run_local_ci.py --include-verify"));
     assert!(makefile.contains("ci-for-evidence:\n\t/usr/bin/python3 scripts/run_local_ci.py"));
     for command in [
