@@ -1,0 +1,4 @@
+quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+/usr/bin/python3 scripts/check_traceability_coverage.py
+strict traceability coverage is complete: 62/62
+spec gate passed

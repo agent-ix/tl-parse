@@ -1,0 +1,1 @@
+/home/peter/.npm-global/bin/quire
