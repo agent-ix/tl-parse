@@ -28,7 +28,7 @@ fn stdin_run(arguments: &[&str], source: &str) -> std::process::Output {
     child.wait_with_output().unwrap()
 }
 
-// Trace: TC-020, FR-001-AC-3, FR-005-AC-3, NFR-002-AC-1
+// Trace: TC-020, FR-001-AC-3, FR-005-AC-3, NFR-002-AC-1, StR-001-VC-1
 #[test]
 fn dialect_provenance_and_cli_valid_paths_are_exact() {
     let root = env!("CARGO_MANIFEST_DIR");

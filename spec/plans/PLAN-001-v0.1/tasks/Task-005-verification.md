@@ -21,4 +21,5 @@ and resolve agent and pull-request review findings.
 
 Corpus hashes, seed consumption, successful round trips, CLI file/stdin/profile
 and exit-class tests, evidence contracts, code review, and gap analysis pass.
-Hosted CI remains manual-only and belongs to the finalized Task-006 revision.
+Hosted CI remains manual-only and confirms the finalized PR revision after the
+retained Task-006 record is committed.

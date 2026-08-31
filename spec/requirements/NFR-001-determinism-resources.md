@@ -29,8 +29,8 @@ counters rather than timing assumptions or allocator-dependent behavior.
 
 | Metric | Target | Threshold | Method |
 |---|---|---|---|
-| Repeat-output mismatch count | 0 | 0 | deterministic test |
-| Unbounded public logical resources | 0 | 0 | inspection and boundary tests |
+| Repeat-output mismatch count | 0 | 0 | Test |
+| Unbounded public logical resources | 0 | 0 | Test |
 
 ## Verification
 

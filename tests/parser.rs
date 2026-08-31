@@ -153,7 +153,7 @@ fn graph_is_topological_and_nodes_retain_full_source_spans() {
     assert_eq!((root_span.start(), root_span.end()), (0, 16));
 }
 
-// Trace: TC-007, FR-002-AC-2
+// Trace: TC-007, FR-002-AC-2, StR-001-VC-2
 #[test]
 fn every_success_validates_and_preserves_the_selected_profile() {
     for profile in [

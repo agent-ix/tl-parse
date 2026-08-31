@@ -27,8 +27,8 @@ version, license, or decision owner can drift silently.
 
 | Metric | Target | Threshold | Method |
 |---|---|---|---|
-| Unpinned governed inputs | 0 | 0 | inspection and evidence validation |
-| Automated release approvals | 0 | 0 | assurance-boundary test |
+| Unpinned governed inputs | 0 | 0 | Inspection |
+| Automated release approvals | 0 | 0 | Test |
 
 ## Verification
 
