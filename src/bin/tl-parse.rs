@@ -216,7 +216,7 @@ mod tests {
 
     impl Read for FailingReader {
         fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
-            Err(io::Error::new(io::ErrorKind::Other, "fixture read failure"))
+            Err(io::Error::other("fixture read failure"))
         }
     }
 
