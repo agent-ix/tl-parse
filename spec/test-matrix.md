@@ -58,8 +58,8 @@ relationships:
 | TC-018 | Validate malformed/resource corpus and checksums | Integration | P0 | FR-005-AC-1, StR-002-VC-2 | ✅ implemented |
 | TC-019 | Consume checked-in fuzz target seeds | Fuzz | P0 | FR-005-AC-2, StR-002-VC-2 | ✅ implemented |
 | TC-020 | Validate dialect provenance and CLI valid paths | Integration | P0 | FR-001-AC-3, FR-005-AC-3, NFR-002-AC-1 | ✅ implemented |
-| TC-021 | Validate CLI invalid/usage paths and determinism | Integration | P0 | FR-005-AC-3, NFR-001-AC-1 | ✅ implemented |
+| TC-021 | Validate CLI dispatch, read/write/error paths, malformed intervals, diagnostic limits, and determinism | Integration | P0 | FR-005-AC-3, NFR-001-AC-1 | ✅ implemented |
 | TC-022 | Validate retained evidence and human boundary | Integration | P0 | FR-005-AC-4, NFR-002-AC-2, NFR-003-AC-4 | ✅ implemented |
-| TC-023 | Re-derive source-locked executable identities | Integration | P0 | NFR-003-AC-1 | ✅ implemented |
+| TC-023 | Select and retain versioned tool profiles; re-derive exact paths and executable identities | Integration | P0 | NFR-003-AC-1 | ✅ implemented |
 | TC-024 | Require complete self-censusing local CI | Integration | P0 | NFR-003-AC-2 | ✅ implemented |
-| TC-025 | Distinguish active, missing-lane, inconclusive, and retracted evidence; reject a retracted assurance record | Integration | P0 | NFR-003-AC-3 | ✅ implemented |
+| TC-025 | Inject collector faults/cleanup and distinguish positive, missing-lane, inconclusive, and retracted evidence; reject anchor/assurance mutation | Integration | P0 | NFR-003-AC-3 | ✅ implemented |

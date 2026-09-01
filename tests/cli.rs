@@ -192,6 +192,21 @@ fn cli_dispatch_read_and_render_failures_are_classified() {
         assert!(String::from_utf8(output.stderr).unwrap().contains(expected));
     }
 
+    let default_stdin = stdin_run(&["validate"], "p0");
+    assert!(default_stdin.status.success());
+    assert_eq!(default_stdin.stdout, b"valid\n");
+
+    let closed = stdin_run(&["validate", "--profile", "closed", "--json"], "p0");
+    assert!(closed.status.success());
+    let value: serde_json::Value = serde_json::from_slice(&closed.stdout).unwrap();
+    assert_eq!(value["semantic_profile"], "mltl.closed-trace/v1");
+
+    let duplicate_stdin = binary().args(["validate", "-", "-"]).output().unwrap();
+    assert_eq!(duplicate_stdin.status.code(), Some(2));
+    assert!(String::from_utf8(duplicate_stdin.stderr)
+        .unwrap()
+        .contains("only one input path"));
+
     let missing = binary()
         .args(["validate", "/definitely/not/a/tl-parse-input"])
         .output()
@@ -211,6 +226,31 @@ fn cli_dispatch_read_and_render_failures_are_classified() {
     assert!(String::from_utf8(unreadable.stderr)
         .unwrap()
         .contains("invalid utf-8 sequence"));
+
+    let mut child = binary()
+        .arg("validate")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&[0xff, 0xfe])
+        .unwrap();
+    let invalid_stdin = child.wait_with_output().unwrap();
+    assert_eq!(invalid_stdin.status.code(), Some(2));
+    assert!(String::from_utf8(invalid_stdin.stderr)
+        .unwrap()
+        .contains("cannot read stdin"));
+
+    let streamed_limit = stdin_run(&["validate"], &" ".repeat(1_048_577));
+    assert_eq!(streamed_limit.status.code(), Some(1));
+    let stderr = String::from_utf8(streamed_limit.stderr).unwrap();
+    assert!(stderr.contains("error[source_limit]"));
+    assert!(stderr.contains("source length is at least 1048577"));
 
     let rendered = stdin_run(&["format", "-"], "F[3,1]p0");
     assert_eq!(rendered.status.code(), Some(1));
