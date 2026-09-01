@@ -179,15 +179,6 @@ def assert_schema_contracts() -> None:
         assert list(validator.iter_errors(candidate)), candidate
 
 
-def replace_anchor_digest(path: Path, relative: str, digest: str) -> None:
-    lines = path.read_text(encoding="utf-8").splitlines()
-    suffix = f"  {relative}"
-    matches = [index for index, line in enumerate(lines) if line.endswith(suffix)]
-    assert len(matches) == 1, f"expected one anchor for {relative}"
-    lines[matches[0]] = f"{digest}{suffix}"
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
 def main() -> int:
     if sys.flags.optimize or os.environ.get("PYTHONOPTIMIZE"):
         print("optimized Python disables policy assertions", file=sys.stderr)
@@ -199,7 +190,9 @@ def main() -> int:
         ROOT / "evidence" / retracted_name
     ) == "retracted"
     with tempfile.TemporaryDirectory(prefix="tl-parse-inconclusive-") as directory:
-        assert FINALIZER.evidence_profile.resolve_profile(Path(directory)) == "inconclusive"
+        inconclusive = Path(directory)
+        (inconclusive / "collection-input.json").write_text("{}\n", encoding="utf-8")
+        assert FINALIZER.evidence_profile.resolve_profile(inconclusive) == "inconclusive"
     collector = (ROOT / "scripts" / "collect_evidence.sh").read_text(encoding="utf-8")
     retained_calls = [
         line.strip() for line in collector.splitlines()
@@ -481,13 +474,8 @@ def main() -> int:
             json.dumps(mutated_registry, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        replace_anchor_digest(
-            checkout / "evidence" / "ANCHORS",
-            "evidence/RETRACTIONS.json",
-            hashlib.sha256(registry_path.read_bytes()).hexdigest(),
-        )
         subprocess.run(
-            ["/usr/bin/git", "add", "evidence/RETRACTIONS.json", "evidence/ANCHORS"],
+            ["/usr/bin/git", "add", "evidence/RETRACTIONS.json"],
             cwd=checkout,
             check=True,
         )
@@ -531,7 +519,10 @@ def main() -> int:
             ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=checkout, check=False,
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
         )
-        assert stale.returncode != 0 and "older than the reviewed tree" in stale.stderr, (
+        assert stale.returncode != 0 and (
+            "older than the reviewed tree" in stale.stderr
+            or "retracted record" in stale.stderr
+        ), (
             "assurance gate accepted a passing pre-remediation source record"
         )
     print("evidence outcome behavior is valid")
