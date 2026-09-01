@@ -248,6 +248,7 @@ mod tests {
         }
     }
 
+    // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
     #[test]
     fn reader_and_writer_errors_keep_their_fail_closed_classes() {
         let error = match read_bounded_reader(FailingReader, 32) {
