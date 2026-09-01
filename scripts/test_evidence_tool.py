@@ -145,6 +145,18 @@ def assert_schema_contracts() -> None:
     }
     validator = Draft7Validator(input_schema)
     assert not list(validator.iter_errors(input_value))
+    qualified_input = json.loads(json.dumps(input_value))
+    qualified_input["qualificationProfile"] = "tl-parse.evidence-qualification/v2"
+    qualified_input["toolProfile"] = "reviewed-runner-v1"
+    qualified_input["tools"]["identities"] = {
+        name: {"path": f"/reviewed/bin/{name}", "sha256": "d" * 64}
+        for name in FINALIZER.tool_identity.REQUIRED
+    }
+    assert not list(validator.iter_errors(qualified_input))
+    del qualified_input["toolProfile"]
+    assert list(validator.iter_errors(qualified_input)), (
+        "qualification-v2 input omitted its selected tool profile"
+    )
     for mutate in [
         lambda value: value.update({"fabricated": True}),
         lambda value: value["dependency"].update({"fabricated": True}),
@@ -311,6 +323,26 @@ def main() -> int:
         )
         (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         assert FINALIZER.validate_envelope_result(evidence_dir, retained) == []
+        (evidence_dir / "qualification-profile.txt").write_text(
+            "undeclared-profile-v1\n", encoding="utf-8"
+        )
+        assert FINALIZER.validate_tool_identity(evidence_dir, revision), (
+            "an undeclared retained tool profile escaped source-lock re-derivation"
+        )
+        (evidence_dir / "qualification-profile.txt").write_text(
+            profile_name + "\n", encoding="utf-8"
+        )
+        forged_profile = json.loads(json.dumps(collection_input))
+        forged_profile["toolProfile"] = "different-profile-v1"
+        (evidence_dir / "collection-input.json").write_text(
+            json.dumps(forged_profile) + "\n", encoding="utf-8"
+        )
+        assert FINALIZER.validate_tool_identity(evidence_dir, revision), (
+            "a collection-input profile mismatch escaped source-lock re-derivation"
+        )
+        (evidence_dir / "collection-input.json").write_text(
+            json.dumps(collection_input) + "\n", encoding="utf-8"
+        )
         forged_collection = json.loads(json.dumps(collection_input))
         forged_collection["tools"]["identities"]["cargo"]["sha256"] = "0" * 64
         (evidence_dir / "collection-input.json").write_text(

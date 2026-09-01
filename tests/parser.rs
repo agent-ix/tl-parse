@@ -194,7 +194,7 @@ fn recovery_diagnostics_never_expose_partial_documents() {
 fn malformed_interval_recovery_has_exact_structured_diagnostics() {
     let cases = [
         (
-            "Fp0",
+            "F p0",
             DiagnosticCode::MissingToken,
             vec![ExpectedToken::LeftBracket],
             RecoveryAction::InsertedToken,
