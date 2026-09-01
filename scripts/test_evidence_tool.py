@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import importlib.util
-import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -47,6 +47,27 @@ def temporary_worktree():
             cwd=ROOT, check=True,
         )
         try:
+            overlay = [ROOT / "tools.lock", *sorted((ROOT / "scripts").glob("*.py"))]
+            overlay.extend(sorted((ROOT / "scripts").glob("*.sh")))
+            relative_overlay = []
+            for source in overlay:
+                relative = source.relative_to(ROOT)
+                destination = checkout / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+                relative_overlay.append(str(relative))
+            subprocess.run(
+                ["/usr/bin/git", "add", *relative_overlay], cwd=checkout, check=True
+            )
+            subprocess.run(
+                [
+                    "/usr/bin/git", "-c", "user.name=Policy Test",
+                    "-c", "user.email=policy@example.invalid", "commit",
+                    "--allow-empty", "-qm", "overlay evidence policy under test",
+                ],
+                cwd=checkout,
+                check=True,
+            )
             yield checkout
         finally:
             subprocess.run(
@@ -56,11 +77,12 @@ def temporary_worktree():
 
 
 def healthy_ci_output() -> str:
-    tests = "test result: ok. 1 passed; 0 failed; 0 ignored\n" * 8
-    tests += "test result: ok. 17 passed; 0 failed; 0 ignored\n"
+    tests = "test result: ok. 1 passed; 0 failed; 0 ignored\n" * 7
+    tests += "test result: ok. 21 passed; 0 failed; 0 ignored\n"
     corpus = "\n".join(sorted(FINALIZER.REQUIRED_CORPUS_LINES)) + "\n"
     signatures = (
-        "all 13 mandatory local-CI targets propagate failures\n"
+        "qualification profile: peter-linux-x86_64-v1\n"
+        "all 14 mandatory local-CI targets propagate failures\n"
         "all 6 policy behavior tests passed\n"
         "strict traceability coverage is complete: 62/62\n"
         "clean-room attribution digests match the pinned Cargo source\n"
@@ -68,6 +90,8 @@ def healthy_ci_output() -> str:
         "fmt-check gate passed\n"
         "lint gate passed\n"
         "Rust test gate passed\n"
+        "compiled Rust test census passed: 28 requirement-tagged tests\n"
+        "rust-test-census gate passed\n"
         "corpus-integrity gate passed\n"
         "fuzz-build gate passed\n"
         "fuzz-smoke gate passed\n"
@@ -201,6 +225,36 @@ def main() -> int:
     assert FINALIZER.evidence_profile.resolve_profile(
         ROOT / "evidence" / retracted_name
     ) == "retracted"
+    retracted_check = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "finalize_collection.py"),
+            "--check",
+            str(ROOT / "evidence" / retracted_name),
+        ],
+        check=False,
+        capture_output=True,
+    )
+    assert retracted_check.returncode == 3, (
+        "explicitly retracted evidence did not retain its distinct non-passing exit"
+    )
+    assured = ROOT / "evidence" / "tl-parse-v01-2b295d21fef6-20260831T233256Z"
+    assert FINALIZER.evidence_profile.resolve_profile(assured) == "unsupported-lock-schema", (
+        "the assurance-bound v1 lock was not distinguished from checked failure"
+    )
+    unsupported_check = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "finalize_collection.py"),
+            "--check",
+            str(assured),
+        ],
+        check=False,
+        capture_output=True,
+    )
+    assert unsupported_check.returncode == 4, (
+        "unsupported source tool-lock schema lacked its distinct verification exit"
+    )
     with tempfile.TemporaryDirectory(prefix="tl-parse-inconclusive-") as directory:
         inconclusive = Path(directory)
         (inconclusive / "collection-input.json").write_text("{}\n", encoding="utf-8")
@@ -260,7 +314,18 @@ def main() -> int:
         source_builder = FINALIZER.git_bytes(revision, MODULE.BUILDER)
         parameters = FINALIZER.historical_parameters_digest(revision, source_builder)
         (evidence_dir / "source-revision.txt").write_text(revision + "\n", encoding="utf-8")
-        profile_name, _, locked_tools = FINALIZER.tool_identity.load_lock()
+        source_lock = json.loads(FINALIZER.git_bytes(revision, MODULE.TOOLS_LOCK))
+        profile_name = source_lock["defaultProfile"]
+        profile_value = source_lock["profiles"][profile_name]
+        source_names = set(profile_value["tools"])
+        required = (
+            FINALIZER.tool_identity.REQUIRED
+            if source_names == set(FINALIZER.tool_identity.REQUIRED)
+            else FINALIZER.tool_identity.LEGACY_REQUIRED
+        )
+        _, locked_tools = FINALIZER.tool_identity.validate_profile(
+            profile_name, profile_value, required=required
+        )
         (evidence_dir / "qualification-profile.txt").write_text(
             profile_name + "\n", encoding="utf-8"
         )
@@ -310,7 +375,29 @@ def main() -> int:
             ("stderr", ""),
         ):
             (evidence_dir / f"msrv.{suffix}").write_text(content, encoding="utf-8")
-        assert FINALIZER.positive_ci_census(healthy_ci_output())
+        expected_tests = len(FINALIZER.rust_test_census.git_tagged_test_names(ROOT, revision))
+        assert expected_tests == 28, "reviewed source Rust-test known answer drifted"
+        assert FINALIZER.positive_ci_census(
+            healthy_ci_output(),
+            expected_rust_tests=expected_tests,
+            expected_profile=profile_name,
+        )
+        assert not FINALIZER.positive_ci_census(
+            healthy_ci_output().replace(
+                "qualification profile: peter-linux-x86_64-v1",
+                "qualification profile: undeclared-profile-v1",
+            ),
+            expected_rust_tests=expected_tests,
+            expected_profile=profile_name,
+        ), "a transcript attributed to the wrong qualification profile passed"
+        assert not FINALIZER.positive_ci_census(
+            healthy_ci_output().replace(
+                "compiled Rust test census passed: 28",
+                "compiled Rust test census passed: 27",
+            ),
+            expected_rust_tests=expected_tests,
+            expected_profile=profile_name,
+        ), "compiled Rust-test census drift passed"
         assert not FINALIZER.positive_ci_census("cargo 1.94.1\n")
         zero_tests = "test result: ok. 0 passed; 0 failed; 0 ignored\n" * 8
         zero_tests += "\n".join(sorted(FINALIZER.REQUIRED_CORPUS_LINES)) + "\n"
@@ -323,6 +410,21 @@ def main() -> int:
         )
         (evidence_dir / "make-ci.stdout").write_text(healthy_ci_output(), encoding="utf-8")
         assert FINALIZER.validate_envelope_result(evidence_dir, retained) == []
+        reordered = json.loads(json.dumps(retained))
+        msrv = next(item for item in reordered["outcomes"] if item["name"] == "msrv")
+        reordered["outcomes"] = [
+            item for item in reordered["outcomes"] if item["name"] != "msrv"
+        ] + [msrv]
+        (evidence_dir / "collection-summary.json").write_text(
+            json.dumps(reordered, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        order_check = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "finalize_collection.py"),
+             "--check", str(evidence_dir)], check=False, capture_output=True,
+        )
+        assert order_check.returncode == 0, (
+            "semantically identical retained outcomes were rejected solely by list order"
+        )
         (evidence_dir / "qualification-profile.txt").write_text(
             "undeclared-profile-v1\n", encoding="utf-8"
         )
@@ -544,32 +646,76 @@ def main() -> int:
         )
 
     with temporary_worktree() as checkout:
-        assurance = checkout / "spec" / "assurance" / "AA-001.md"
-        original_assurance = assurance.read_text(encoding="utf-8")
-        old_record = checkout / "evidence" / "tl-parse-v01-64b2b1e610fb-20260831T051027Z"
-        old_source = (old_record / "source-revision.txt").read_text(encoding="utf-8").strip()
-        old_outer = hashlib.sha256(old_record.with_suffix(".sha256").read_bytes()).hexdigest()
-        old_envelope = hashlib.sha256((old_record / "evidence-envelope.json").read_bytes()).hexdigest()
-        rebound = re.sub(r"- Source candidate: `[0-9a-f]+`\.", f"- Source candidate: `{old_source}`.", original_assurance)
-        rebound = re.sub(r"- Record: `evidence/[^`]+`\.", f"- Record: `{old_record.relative_to(checkout)}`.", rebound)
-        rebound = re.sub(r"(?s)(- Final envelope SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_envelope}\2", rebound)
-        rebound = re.sub(r"(?s)(- Outer manifest SHA-256:\n  `)[0-9a-f]+(`\.)", rf"\g<1>{old_outer}\2", rebound)
-        assurance.write_text(rebound, encoding="utf-8")
-        subprocess.run(["/usr/bin/git", "add", str(assurance)], cwd=checkout, check=True)
-        subprocess.run(
-            ["/usr/bin/git", "-c", "user.name=Policy Test", "-c",
-             "user.email=policy@example.invalid", "commit", "-qm", "rebind fixture"],
-            cwd=checkout, check=True,
-        )
         stale = subprocess.run(
             ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=checkout, check=False,
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
         )
-        assert stale.returncode != 0 and (
-            "older than the reviewed tree" in stale.stderr
-            or "retracted record" in stale.stderr
-        ), (
+        assert stale.returncode != 0 and "older than the reviewed tree" in stale.stderr, (
             "assurance gate accepted a passing pre-remediation source record"
+        )
+
+    with temporary_worktree() as checkout:
+        assurance = (checkout / "spec" / "assurance" / "AA-001.md").read_text(
+            encoding="utf-8"
+        )
+        assured_match = re.search(
+            r"^- Record: `(evidence/[^`]+)`\.", assurance, re.MULTILINE
+        )
+        assert assured_match is not None
+        assured_name = Path(assured_match.group(1)).name
+        historical_name = sorted(registry["records"])[0]
+        verifier_path = checkout / "scripts" / "verify_evidence.sh"
+        verifier_text = verifier_path.read_text(encoding="utf-8").replace(
+            "/usr/bin/git diff --quiet", "/usr/bin/true", 1
+        )
+        verifier_path.write_text(verifier_text, encoding="utf-8")
+        (checkout / "scripts" / "evidence_profile.py").write_text(
+            "#!/usr/bin/env python3\n"
+            "import pathlib, sys\n"
+            f"assured = {assured_name!r}\n"
+            f"unsupported = {historical_name!r}\n"
+            "name = pathlib.Path(sys.argv[1]).name\n"
+            "print('v2' if name == assured else "
+            "'unsupported-lock-schema' if name == unsupported else 'retracted')\n",
+            encoding="utf-8",
+        )
+        (checkout / "scripts" / "finalize_collection.py").write_text(
+            "#!/usr/bin/env python3\nraise SystemExit(0)\n", encoding="utf-8"
+        )
+        subprocess.run(
+            [
+                "/usr/bin/git", "add", "scripts/verify_evidence.sh",
+                "scripts/evidence_profile.py", "scripts/finalize_collection.py",
+            ],
+            cwd=checkout, check=True,
+        )
+        subprocess.run(
+            [
+                "/usr/bin/git", "-c", "user.name=Policy Test", "-c",
+                "user.email=policy@example.invalid", "commit", "-qm",
+                "isolate historical profile-state policy",
+            ],
+            cwd=checkout, check=True,
+        )
+        historical = subprocess.run(
+            ["/usr/bin/bash", "scripts/verify_evidence.sh"],
+            cwd=checkout, check=False, capture_output=True, text=True,
+        )
+        assert historical.returncode == 0, historical.stderr
+        assert (
+            f"unsupported source tool-lock schema: evidence/{historical_name}"
+            in historical.stdout
+            and "1 unsupported historical" in historical.stdout
+        ), "unsupported historical evidence was not checksummed and counted"
+
+    with temporary_worktree() as checkout:
+        (checkout / "DIRTY-POLICY-PROBE").write_text("dirty\n", encoding="utf-8")
+        dirty = subprocess.run(
+            ["/usr/bin/bash", "scripts/verify_evidence.sh"], cwd=checkout, check=False,
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+        )
+        assert dirty.returncode != 0 and "clean source tree" in dirty.stderr, (
+            "evidence verification accepted a dirty candidate tree"
         )
     print("evidence outcome behavior is valid")
     return 0

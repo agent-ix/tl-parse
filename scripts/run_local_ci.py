@@ -16,10 +16,9 @@ def main() -> int:
         print("usage: run_local_ci.py [--include-verify]", file=sys.stderr)
         return 2
     include_verify = bool(sys.argv[1:])
-    targets = sorted(
-        propagation.PROBES if include_verify else propagation.COLLECTION_PROBES
-    )
-    targets.insert(0, propagation.GUARD_TARGET)
+    targets = [propagation.GUARD_TARGET, *sorted(propagation.COLLECTION_PROBES)]
+    if include_verify:
+        targets.insert(0, "verify-evidence")
     environment = propagation.clean_environment()
     transcript: list[str] = []
     for target in targets:
@@ -34,7 +33,11 @@ def main() -> int:
         if result.returncode != 0:
             return result.returncode
     combined = "\n".join(transcript)
-    if not finalize_collection.positive_ci_census(combined, require_verify=include_verify):
+    if not finalize_collection.positive_ci_census(
+        combined,
+        require_verify=include_verify,
+        expected_profile=environment["TL_PARSE_TOOL_PROFILE"],
+    ):
         print("local CI transcript does not satisfy the positive gate census", file=sys.stderr)
         return 1
     print("local CI transcript satisfies the positive gate census")

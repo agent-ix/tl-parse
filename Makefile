@@ -12,6 +12,11 @@ endif
 ifneq ($(strip $(ASAN_OPTIONS)),)
 $(error local CI refuses ambient ASAN_OPTIONS)
 endif
+ifneq ($(origin TL_PARSE_TOOL_PROFILE),undefined)
+ifneq ($(origin TL_PARSE_TOOL_PROFILE),command line)
+$(error local CI refuses an ambient TL_PARSE_TOOL_PROFILE)
+endif
+endif
 ifneq ($(origin CARGO),undefined)
 $(error local CI refuses a CARGO override)
 endif
@@ -79,6 +84,11 @@ test:
 	cargo test --all-targets --all-features
 	@/usr/bin/printf 'Rust test gate passed\n'
 
+.PHONY: rust-test-census
+rust-test-census:
+	/usr/bin/python3 scripts/rust_test_census.py
+	@/usr/bin/printf 'rust-test-census gate passed\n'
+
 .PHONY: check-failure-propagation
 check-failure-propagation:
 	/usr/bin/python3 scripts/check_failure_propagation.py
@@ -91,7 +101,7 @@ check-corpus:
 
 .PHONY: fuzz-build
 fuzz-build:
-	cargo +nightly fuzz build parser
+	/usr/bin/python3 scripts/run_cargo_toolchain.py nightly fuzz build parser --target-dir "$${CARGO_TARGET_DIR}/fuzz"
 	@/usr/bin/printf 'fuzz-build gate passed\n'
 
 .PHONY: fuzz-smoke
@@ -165,7 +175,7 @@ spec:
 
 .PHONY: msrv
 msrv:
-	cargo +1.75.0 check --all-targets --all-features
+	/usr/bin/python3 scripts/run_cargo_toolchain.py 1.75.0 check --all-targets --all-features
 	@/usr/bin/printf 'msrv gate passed\n'
 
 # =============================================================================
@@ -177,5 +187,4 @@ ci-for-evidence:
 	/usr/bin/python3 scripts/run_local_ci.py
 
 ci:
-	/usr/bin/bash scripts/verify_evidence.sh
 	/usr/bin/python3 scripts/run_local_ci.py --include-verify

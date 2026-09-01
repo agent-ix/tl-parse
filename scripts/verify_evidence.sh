@@ -49,15 +49,17 @@ if ! grep -Fqx "${assured_digest}  ${assured_record}.sha256" evidence/ANCHORS; t
   echo "assurance argument and evidence anchors disagree" >&2
   exit 1
 fi
+assured_profile="$(/usr/bin/python3 scripts/evidence_profile.py "$assured_record")"
+if [[ "$assured_profile" == retracted ]]; then
+  echo "assurance argument names an explicitly retracted record" >&2
+  exit 1
+fi
 /usr/bin/python3 - "$assured_record" <<'PY'
 import json
 import pathlib
 import sys
 
 record = pathlib.Path(sys.argv[1])
-registry = json.loads(pathlib.Path("evidence/RETRACTIONS.json").read_text(encoding="utf-8"))
-if record.name in registry.get("records", {}):
-    raise SystemExit("assurance argument names an explicitly retracted record")
 summary = json.loads((record / "collection-summary.json").read_text(encoding="utf-8"))
 if summary.get("overallStatus") != "passed" or any(
     item.get("status") != "passed" for item in summary.get("outcomes", [])
@@ -70,6 +72,16 @@ if ! /usr/bin/git diff --quiet "$assured_source..HEAD" -- . \
   echo "assurance argument names a source older than the reviewed tree" >&2
   exit 1
 fi
+if [[ "$assured_profile" == unsupported-lock-schema ]]; then
+  echo "assurance argument names an unsupported source tool-lock schema" >&2
+  exit 4
+fi
+if [[ "$assured_profile" != v2 ]]; then
+  echo "assurance argument is inconclusive without qualification-v2" >&2
+  exit 3
+fi
+retracted_count=0
+unsupported_count=0
 while IFS= read -r -d '' checksum; do
   found=1
   if ! grep -Fqx "$(/usr/bin/sha256sum "$checksum")" evidence/ANCHORS; then
@@ -83,8 +95,24 @@ while IFS= read -r -d '' checksum; do
     echo "retained evidence summary is missing: $evidence_dir" >&2
     exit 1
   fi
+  profile="$(/usr/bin/python3 scripts/evidence_profile.py "$evidence_dir")"
+  if [[ "$profile" == retracted ]]; then
+    retracted_count=$((retracted_count + 1))
+    continue
+  fi
+  if [[ "$profile" == unsupported-lock-schema ]]; then
+    unsupported_count=$((unsupported_count + 1))
+    echo "historical retained evidence uses an unsupported source tool-lock schema: $evidence_dir"
+    continue
+  fi
+  if [[ "$profile" != v2 ]]; then
+    echo "retained evidence is inconclusive without qualification-v2: $evidence_dir" >&2
+    exit 3
+  fi
   /usr/bin/python3 scripts/finalize_collection.py --check "$evidence_dir"
 done < <(find evidence -maxdepth 1 -type f -name '*.sha256' -print0 | sort -z)
+
+echo "retained evidence profile census: $retracted_count retracted, $unsupported_count unsupported historical"
 
 if [[ $found -eq 0 ]]; then
   if [[ -e evidence/REQUIRED ]]; then

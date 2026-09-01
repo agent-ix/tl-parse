@@ -67,13 +67,16 @@ if [[ -z "$tool_profile" ]]; then
   tool_profile="$(/usr/bin/python3 scripts/tool_identity.py --profile-name)"
 fi
 profile_args=(--profile "$tool_profile")
-if ! /usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --verify-live; then
-  echo "qualified tool identities do not match tools.lock" >&2
-  exit 2
-fi
 trusted_path="$(/usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --trusted-path)"
 real_home="$(/usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --home)"
 cargo_target_dir="$(/usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --cargo-target-dir)"
+if ! /usr/bin/env -i PATH="$trusted_path" HOME="$real_home" \
+     CARGO_TARGET_DIR="$cargo_target_dir" USER=qualified LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+     TL_PARSE_TOOL_PROFILE="$tool_profile" \
+     python3 scripts/tool_identity.py "${profile_args[@]}" --verify-live; then
+  echo "qualified tool identities do not match tools.lock" >&2
+  exit 2
+fi
 staging_root="$(/usr/bin/mktemp -d -p . .tl-parse-evidence-stage.XXXXXX)"
 cleanup_staging() {
   if [[ -n "${staging_root:-}" && -d "$staging_root" ]]; then
@@ -84,7 +87,7 @@ trap cleanup_staging EXIT
 evidence_dir="$staging_root/$(basename "$final_evidence_dir")"
 /usr/bin/mkdir -p "$evidence_dir"
 collection_failed=0
-clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" CARGO_TARGET_DIR="$cargo_target_dir" USER="${USER:-}" LANG=C.UTF-8 LC_ALL=C.UTF-8 TL_PARSE_TOOL_PROFILE="$tool_profile" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
+clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" CARGO_TARGET_DIR="$cargo_target_dir" USER=qualified LANG=C.UTF-8 LC_ALL=C.UTF-8 TL_PARSE_TOOL_PROFILE="$tool_profile" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
 
 run_and_retain() {
   local name="$1"
@@ -120,7 +123,7 @@ echo "$tool_profile" >"$evidence_dir/qualification-profile.txt"
 "${clean_env[@]}" python3 -c 'import importlib.metadata; print(importlib.metadata.version("jsonschema"))' >"$evidence_dir/jsonschema-version.txt"
 "${clean_env[@]}" quire provenance --pretty >"$evidence_dir/quire-provenance.json"
 "${clean_env[@]}" cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
-for tool in bash cargo git make python3 quire rustc sha256sum; do
+for tool in bash cargo git make python3 quire rustc rustup sha256sum; do
   "${clean_env[@]}" python3 scripts/tool_identity.py "${profile_args[@]}" --tool-path "$tool" \
     >"$evidence_dir/tool-${tool}-path.txt"
   "${clean_env[@]}" python3 scripts/tool_identity.py "${profile_args[@]}" --tool-sha256 "$tool" \
@@ -130,7 +133,8 @@ done
 # The candidate cannot already carry an AA-001 record for itself. Run every
 # substantive CI prerequisite here; ordinary `make ci` adds verify-evidence
 # after this record and its AA-001 binding are committed.
-run_and_retain make-ci "${clean_env[@]}" make ci-for-evidence
+run_and_retain make-ci "${clean_env[@]}" make \
+  "TL_PARSE_TOOL_PROFILE=$tool_profile" ci-for-evidence
 run_and_retain make-spec "${clean_env[@]}" make spec
 run_and_retain quire-coverage "${clean_env[@]}" python3 scripts/check_traceability_coverage.py
 run_and_retain msrv "${clean_env[@]}" make msrv

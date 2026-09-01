@@ -60,6 +60,6 @@ relationships:
 | TC-020 | Validate dialect provenance and CLI valid paths | Integration | P0 | FR-001-AC-3, FR-005-AC-3, NFR-002-AC-1 | ✅ implemented |
 | TC-021 | Validate CLI dispatch, read/write/error paths, malformed intervals, diagnostic limits, and determinism | Integration | P0 | FR-005-AC-3, NFR-001-AC-1 | ✅ implemented |
 | TC-022 | Validate retained evidence and human boundary | Integration | P0 | FR-005-AC-4, NFR-002-AC-2, NFR-003-AC-4 | ✅ implemented |
-| TC-023 | Select and retain versioned tool profiles; re-derive exact paths and executable identities | Integration | P0 | NFR-003-AC-1 | ✅ implemented |
-| TC-024 | Require complete self-censusing local CI | Integration | P0 | NFR-003-AC-2 | ✅ implemented |
-| TC-025 | Inject collector faults/cleanup and distinguish positive, missing-lane, inconclusive, and retracted evidence; reject anchor/assurance mutation | Integration | P0 | NFR-003-AC-3 | ✅ implemented |
+| TC-023 | Select and retain versioned tool profiles; prove exact-path rejection with a byte-identical earlier PATH alias; and re-derive actual executable identities | Integration | P0 | NFR-003-AC-1 | ✅ implemented |
+| TC-024 | Reject global, multi-target, pattern-scoped, imported, and ambient Make/profile execution controls with direct false-success fixtures; match the compiled/tagged Rust-test census; and require complete self-censusing local CI | Integration | P0 | NFR-003-AC-2 | ✅ implemented |
+| TC-025 | Inject faults after staging begins and after retained gates; prove cleanup and external fuzz-target placement; distinguish positive, missing-lane, inconclusive, unsupported-lock, and retracted evidence; and leave manually maintained anchors/assurance unchanged | Integration | P0 | NFR-003-AC-3 | ✅ implemented |

@@ -60,8 +60,8 @@ jobs:
 
       - name: Complete local gate
         env:
-          TL_PARSE_TOOL_PROFILE: ${{ inputs.tool_profile }}
-        run: make ci
+          TL_PARSE_SELECTED_PROFILE: ${{ inputs.tool_profile }}
+        run: make TL_PARSE_TOOL_PROFILE="$TL_PARSE_SELECTED_PROFILE" ci
 
   licenses:
     name: License Check

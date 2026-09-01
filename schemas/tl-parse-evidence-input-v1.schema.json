@@ -35,7 +35,7 @@
         "identities": {
           "type": "object",
           "additionalProperties": {"$ref": "#/definitions/toolIdentity"},
-          "required": ["bash", "cargo", "git", "make", "python3", "quire", "rustc", "sha256sum"]
+          "required": ["bash", "cargo", "git", "make", "python3", "quire", "rustc", "rustup", "sha256sum"]
         }
       }
     },

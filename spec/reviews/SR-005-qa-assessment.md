@@ -16,6 +16,10 @@ fully tested. The complete local gate, exact-candidate evidence collection,
 post-seal evidence verification, policy mutation tests, schemas, MSRV, clippy,
 rustdoc, dependency policy, corpus checks, and bounded fuzz smoke all pass.
 Hosted CI remains manual-only and was not dispatched.
+The current review-remediation source has not been collected as final evidence;
+the assurance-bound archive remains intentionally stale until tl-syntax merges.
+Git-ignored build, Python-cache, and editor artifacts are outside the candidate
+source census and are disclosed in `NFR-003` and `evidence/README.md`.
 
 ## Coverage Measurement
 
@@ -61,8 +65,9 @@ lexer- and parser-originated diagnostic truncation.
 
 ## Qualification Coverage
 
-- The Rust suite executes 28 passing tests across eight result groups with no
-  ignored tests.
+- The Rust suite executes 28 passing requirement-tagged tests across eight
+  result groups; a Cargo `--list` gate requires the compiled and tagged sets to
+  agree exactly and rejects ignored tests.
 - Six Python policy suites exercise retained history, evidence outcomes,
   exact collector faults/cleanup/target placement, failure propagation, Draft
   7 format checks, and strict traceability.
@@ -77,9 +82,12 @@ lexer- and parser-originated diagnostic truncation.
 
 | ID | Severity | Summary | Refs |
 |---|---|---|---|
-| FND-401 | medium | Resolved: disposable committed worktrees inject failure before and after staging, exercise exact clean-environment tool lookup, prove cleanup and immutable anchors/assurance, and keep cargo-fuzz output outside the candidate. Every non-silent retained lane has a positive-output mutation, including MSRV. | Issue #7 |
+| FND-401 | medium | Resolved: disposable committed worktrees inject failures immediately after the staging cleanup trap is installed and after retained gates, exercise exact clean-environment tool lookup, prove cleanup and immutable anchors/assurance, and pass an explicit external cargo-fuzz target directory. Every non-silent retained lane has a positive-output mutation, including MSRV. | Issue #7 |
 | FND-402 | medium | Resolved: reachable CLI I/O, dispatch, rendering, malformed-interval, and diagnostic-limit paths have asserted outcomes; remaining defensive branches have the reachability disposition above. | Issue #8 |
-| FND-403 | low | Resolved for the current boundary: `tools.lock` v2 supports explicit reviewed profiles, exact path/digest re-derivation, declared byte-identical aliases, retained profile identity, and a manual dispatch input. A runner profile must still be committed and reviewed before anyone dispatches hosted CI. | Issue #9 |
+| FND-403 | low | Resolved for the current boundary: `tools.lock` v2 supports explicit reviewed profiles, exact path/digest re-derivation, actual stable Cargo/rustc identities, separately pinned rustup, retained profile identity, and a manual dispatch input. An earlier-sorting byte-identical PATH alias is rejected by a direct fixture. A runner profile must still be committed and reviewed before anyone dispatches hosted CI. | Issue #9 |
+| FND-900 | high | Resolved in source: Make execution-control assignment forms, single/multi-target and pattern-scoped assignments, imported Makefiles, dynamic eval/define, `.ONESHELL`, and `.DEFAULT` are rejected and mutation-tested with direct GNU Make false-success fixtures. | NFR-003, TC-024 |
+| FND-901 | medium | Resolved in source: retained summary outcome comparison is order-insensitive. | NFR-003, TC-025 |
+| FND-907 | medium | Resolved in source: unsupported historical tool-lock schemas, retracted records, failed records, and inconclusive records have non-passing distinct states. | NFR-003, TC-025 |
 | FND-404 | medium | Upstream `tl-syntax` PR #6 must merge before the temporary git-source exception can be removed and release evidence regenerated. | `tl-syntax` PR #6 |
 
 None of these items grants an automated release decision. The assurance claim

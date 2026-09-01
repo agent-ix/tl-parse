@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import tool_identity
+
 
 ROOT = Path(__file__).resolve().parent.parent
 PGM01_POLICY_REVISION = "7dac9d8c19952412b56a0347387666e2ca81e01d"
@@ -196,7 +198,7 @@ def build(directory: Path, phase: str) -> None:
                     "path": (directory / f"tool-{name}-path.txt").read_text().strip(),
                     "sha256": (directory / f"tool-{name}-sha256.txt").read_text().strip(),
                 }
-                for name in ("bash", "cargo", "git", "make", "python3", "quire", "rustc", "sha256sum")
+                for name in tool_identity.REQUIRED
             },
         },
         "pgm01": {

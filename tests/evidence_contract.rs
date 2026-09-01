@@ -15,7 +15,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     let makefile = fs::read_to_string(root_path("Makefile")).unwrap();
     let runner = fs::read_to_string(root_path("scripts/run_local_ci.py")).unwrap();
     assert!(
-        runner.contains("propagation.PROBES"),
+        runner.contains("propagation.COLLECTION_PROBES"),
         "local runner omits the gate census"
     );
     for gate in [
@@ -23,6 +23,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "fmt-check",
         "lint",
         "test",
+        "rust-test-census",
         "check-corpus",
         "fuzz-build",
         "fuzz-smoke",
@@ -40,9 +41,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         );
     }
     assert!(runner.contains("positive_ci_census"));
-    assert!(makefile.contains(
-        "ci:\n\t/usr/bin/bash scripts/verify_evidence.sh\n\t/usr/bin/python3 scripts/run_local_ci.py --include-verify"
-    ));
+    assert!(makefile.contains("ci:\n\t/usr/bin/python3 scripts/run_local_ci.py --include-verify"));
     assert!(makefile.contains("scripts/run_local_ci.py --include-verify"));
     assert!(makefile.contains("ci-for-evidence:\n\t/usr/bin/python3 scripts/run_local_ci.py"));
     for command in [
@@ -51,7 +50,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "cargo test --all-targets --all-features",
         "python3 scripts/check_checksum_manifest.py corpus/v1",
         "python3 scripts/check_checksum_manifest.py fuzz/corpus/parser",
-        "cargo +nightly fuzz build parser",
+        "python3 scripts/run_cargo_toolchain.py nightly fuzz build parser --target-dir",
         "bash scripts/run_fuzz_smoke.sh",
         "cargo deny check licenses",
         "cargo deny check sources",
@@ -61,7 +60,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "python3 scripts/run_policy_tests.py",
         "quire validate --scope . 'spec/**/*.md' 'docs/*.md'",
         "python3 scripts/check_traceability_coverage.py",
-        "cargo +1.75.0 check --all-targets --all-features",
+        "python3 scripts/run_cargo_toolchain.py 1.75.0 check --all-targets --all-features",
         "RUSTDOCFLAGS=-Dwarnings",
         "doc --no-deps --all-features",
         "bash scripts/verify_evidence.sh",
@@ -114,11 +113,13 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     assert!(collector.contains("git diff --check"));
     assert!(collector.contains("':(exclude)evidence/**'"));
     assert!(collector.contains("clean_env=(/usr/bin/env -i PATH="));
-    assert!(collector.contains("for tool in bash cargo git make python3 quire rustc sha256sum"));
+    assert!(
+        collector.contains("for tool in bash cargo git make python3 quire rustc rustup sha256sum")
+    );
     assert!(collector.contains("scripts/tool_identity.py \"${profile_args[@]}\" --verify-live"));
     assert!(collector.contains("qualification-profile.txt"));
     assert!(collector.contains("pgm01_validator_digest="));
-    assert!(collector.contains("make ci-for-evidence"));
+    assert!(collector.contains("TL_PARSE_TOOL_PROFILE=$tool_profile"));
     let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();
     for required in [
         "sha256sum --check evidence/ANCHORS",

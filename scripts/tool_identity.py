@@ -17,23 +17,31 @@ ROOT = Path(__file__).resolve().parent.parent
 LOCK = ROOT / "tools.lock"
 SCHEMA = "tl-parse.qualified-tools/v2"
 PROFILE_NAME = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
-REQUIRED = ("bash", "cargo", "git", "make", "python3", "quire", "rustc", "sha256sum")
+REQUIRED = (
+    "bash", "cargo", "git", "make", "python3", "quire", "rustc", "rustup",
+    "sha256sum",
+)
+LEGACY_REQUIRED = ("bash", "cargo", "git", "make", "python3", "quire", "rustc", "sha256sum")
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate_profile(name: str, value: Any) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
+def validate_profile(
+    name: str,
+    value: Any,
+    required: tuple[str, ...] = REQUIRED,
+) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
     if not PROFILE_NAME.fullmatch(name):
         raise ValueError(f"invalid qualification profile name: {name!r}")
     if not isinstance(value, dict) or set(value) != {"environment", "tools"}:
         raise ValueError(f"qualification profile {name!r} has malformed fields")
     tools = value.get("tools")
-    if not isinstance(tools, dict) or set(tools) != set(REQUIRED):
+    if not isinstance(tools, dict) or set(tools) != set(required):
         raise ValueError(f"qualification profile {name!r} lacks the exact tool census")
     validated: dict[str, dict[str, str]] = {}
-    for tool_name in REQUIRED:
+    for tool_name in required:
         identity = tools.get(tool_name)
         if not isinstance(identity, dict) or set(identity) != {"path", "sha256"}:
             raise ValueError(f"qualification profile {name!r} has a malformed {tool_name} identity")

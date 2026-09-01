@@ -18,16 +18,29 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = {
     "fmt-check", "lint", "test", "check-corpus", "fuzz-build", "fuzz-smoke",
     "deny", "audit-unsafe", "evidence-tool", "spec", "msrv", "rustdoc",
-    "verify-evidence",
+    "verify-evidence", "rust-test-census",
 }
 COLLECTION_PROBES = PROBES - {"verify-evidence"}
 GUARD_TARGET = "check-failure-propagation"
 TARGET = re.compile(r"^([A-Za-z0-9_.-]+):(?:\s+(.*?))?\s*$")
 SHELL_CONTROL = re.compile(r"&&|\|\||&(?!&)|[;|]")
 ATTRIBUTE_IGNORE = re.compile(r"#\s*\[\s*(?:ignore\b|cfg_attr\([^\]]*,\s*ignore\b)")
-MAKEFLAGS_ASSIGNMENT = re.compile(
-    r"^\s*(?:(?:export|override|unexport)\s+)*MAKEFLAGS\s*(?::|\+|\?)?="
+DISABLED_CRATE_OR_MODULE = re.compile(r"#!\s*\[\s*cfg\s*\([^\]]*\)\s*\]")
+DANGEROUS_ASSIGNMENT = re.compile(
+    r"^\s*(?:(?:export|override|unexport|private)\s+)*"
+    r"(?:SHELL|\.SHELLFLAGS|MAKE|MAKEFLAGS)\s*[:+?!]*="
 )
+DANGEROUS_DEFINE = re.compile(
+    r"^\s*(?:(?:export|override|private)\s+)*define\s+"
+    r"(?:SHELL|\.SHELLFLAGS|MAKE|MAKEFLAGS)(?:\s|$)"
+)
+EVAL = re.compile(r"\$\(\s*eval(?:\s|$)")
+TARGET_SCOPED_ASSIGNMENT = re.compile(
+    r"^\s*(?:[^\s:=]+(?:\s+[^\s:=]+)*)\s*:{1,2}\s*"
+    r"(?:(?:export|override|unexport|private)\s+)*"
+    r"(?:SHELL|\.SHELLFLAGS|MAKE|MAKEFLAGS)\s*[:+?!]*="
+)
+MAKEFILE_IMPORT = re.compile(r"^\s*(?:-?include|sinclude)\s+")
 
 
 def recipes(path: Path) -> dict[str, list[str]]:
@@ -52,8 +65,11 @@ def inspect_ignored_tests(root: Path) -> list[str]:
     for source in root.rglob("*.rs"):
         if ".git" in source.parts or "target" in source.parts:
             continue
-        if ATTRIBUTE_IGNORE.search(source.read_text(encoding="utf-8")):
+        source_text = source.read_text(encoding="utf-8")
+        if ATTRIBUTE_IGNORE.search(source_text):
             errors.append(f"{source.relative_to(root)} disables a Rust test with ignore")
+        if DISABLED_CRATE_OR_MODULE.search(source_text):
+            errors.append(f"{source.relative_to(root)} has a crate/module-level cfg exclusion")
     return errors
 
 
@@ -62,10 +78,7 @@ def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     defined = recipes(path)
     expected_composites = {
-        "ci": [
-            "/usr/bin/bash scripts/verify_evidence.sh",
-            "/usr/bin/python3 scripts/run_local_ci.py --include-verify",
-        ],
+        "ci": ["/usr/bin/python3 scripts/run_local_ci.py --include-verify"],
         "ci-for-evidence": ["/usr/bin/python3 scripts/run_local_ci.py"],
     }
     for target, expected_recipes in expected_composites.items():
@@ -75,10 +88,16 @@ def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
                 f"observed {defined.get(target, [])}"
             )
     for number, line in enumerate(lines, start=1):
-        if re.match(r"^\s*\.(?:IGNORE|SILENT)\s*(?::|$)", line):
+        if re.match(r"^\s*\.(?:IGNORE|SILENT|ONESHELL|DEFAULT)\s*(?::|$)", line):
             errors.append(f"Makefile:{number} declares a recipe-control directive")
-        if MAKEFLAGS_ASSIGNMENT.match(line):
-            errors.append(f"Makefile:{number} assigns MAKEFLAGS")
+        if DANGEROUS_ASSIGNMENT.match(line) or DANGEROUS_DEFINE.match(line):
+            errors.append(f"Makefile:{number} overrides a mandatory Make execution control")
+        if EVAL.search(line):
+            errors.append(f"Makefile:{number} uses forbidden dynamic eval")
+        if TARGET_SCOPED_ASSIGNMENT.match(line):
+            errors.append(f"Makefile:{number} applies a target-scoped Make execution override")
+        if MAKEFILE_IMPORT.match(line):
+            errors.append(f"Makefile:{number} imports unchecked Make execution controls")
         if not line.startswith("\t"):
             continue
         recipe = line[1:].lstrip("@ ")
@@ -183,6 +202,14 @@ def main() -> int:
         print(error, file=sys.stderr)
     if errors:
         return 1
+    try:
+        selected, _, _ = tool_identity.load_lock(
+            profile_name=os.environ.get("TL_PARSE_TOOL_PROFILE")
+        )
+    except (OSError, ValueError) as error:
+        print(f"cannot select qualification profile: {error}", file=sys.stderr)
+        return 1
+    print(f"qualification profile: {selected}")
     print(f"all {len(PROBES)} mandatory local-CI targets propagate failures")
     return 0
 

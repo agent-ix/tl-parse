@@ -12,6 +12,7 @@ from pathlib import Path
 
 import build_evidence_envelope as builder
 import evidence_profile
+import rust_test_census
 import tool_identity
 
 
@@ -38,6 +39,13 @@ CONTRADICTION = re.compile(
 TEST_SUCCESS = re.compile(
     r"^test result: ok\. ([0-9]+) passed; 0 failed; 0 ignored", re.MULTILINE
 )
+COMPILED_TEST_CENSUS = re.compile(
+    r"^compiled Rust test census passed: ([1-9][0-9]*) requirement-tagged tests$",
+    re.MULTILINE,
+)
+QUALIFICATION_PROFILE = re.compile(
+    r"^qualification profile: ([a-z0-9][a-z0-9._-]{0,63})$", re.MULTILINE
+)
 REQUIRED_CORPUS_LINES = {
     f"corpus/v1/{name}: OK"
     for name in (
@@ -62,11 +70,21 @@ def git_bytes(revision: str, path: Path) -> bytes:
     ).stdout
 
 
-def positive_ci_census(output: str, require_verify: bool = False) -> bool:
+def positive_ci_census(
+    output: str,
+    require_verify: bool = False,
+    expected_rust_tests: int | None = None,
+    expected_profile: str | None = None,
+) -> bool:
     lines = set(output.splitlines())
     passed = [int(value) for value in TEST_SUCCESS.findall(output)]
+    compiled = [int(value) for value in COMPILED_TEST_CENSUS.findall(output)]
+    profiles = QUALIFICATION_PROFILE.findall(output)
+    compiled_count = expected_rust_tests if expected_rust_tests is not None else (
+        compiled[0] if len(compiled) == 1 else 0
+    )
     required_signatures = (
-        r"all 13 mandatory local-CI targets propagate failures",
+        r"all 14 mandatory local-CI targets propagate failures",
         r"all [1-9][0-9]* policy behavior tests passed",
         r"strict traceability coverage is complete: 62/62",
         r"clean-room attribution digests match the pinned Cargo source",
@@ -74,6 +92,7 @@ def positive_ci_census(output: str, require_verify: bool = False) -> bool:
         r"fmt-check gate passed",
         r"lint gate passed",
         r"Rust test gate passed",
+        r"rust-test-census gate passed",
         r"corpus-integrity gate passed",
         r"fuzz-build gate passed",
         r"fuzz-smoke gate passed",
@@ -85,8 +104,12 @@ def positive_ci_census(output: str, require_verify: bool = False) -> bool:
         r"rustdoc gate passed",
     )
     return (
-        len(passed) >= 8
-        and sum(passed) >= 25
+        len(compiled) == 1
+        and compiled[0] == compiled_count
+        and bool(passed)
+        and sum(passed) == compiled_count
+        and len(profiles) == 1
+        and (expected_profile is None or profiles[0] == expected_profile)
         and REQUIRED_CORPUS_LINES <= lines
         and all(re.search(pattern, output) for pattern in required_signatures)
         and (not require_verify or "verify-evidence gate passed" in output)
@@ -119,7 +142,16 @@ def positive_output(evidence_dir: Path, name: str) -> bool:
         if path.exists()
     )
     if name == "make-ci":
-        return positive_ci_census(combined)
+        revision = (evidence_dir / "source-revision.txt").read_text(encoding="utf-8").strip()
+        expected_tests = len(rust_test_census.git_tagged_test_names(builder.ROOT, revision))
+        expected_profile = (evidence_dir / "qualification-profile.txt").read_text(
+            encoding="utf-8"
+        ).strip()
+        return positive_ci_census(
+            combined,
+            expected_rust_tests=expected_tests,
+            expected_profile=expected_profile,
+        )
     if name == "diff-integrity":
         return True
     if name in {"make-spec", "quire-coverage"}:
@@ -305,7 +337,17 @@ def validate_tool_identity(evidence_dir: Path, revision: str | None) -> list[str
         profiles = lock_value.get("profiles")
         if lock_value.get("schemaVersion") != tool_identity.SCHEMA or not isinstance(profiles, dict):
             raise ValueError("source tools.lock has an unknown schema")
-        _, locked_tools = tool_identity.validate_profile(profile_name, profiles.get(profile_name))
+        profile_value = profiles.get(profile_name)
+        profile_tools = profile_value.get("tools") if isinstance(profile_value, dict) else None
+        required = (
+            tool_identity.REQUIRED
+            if isinstance(profile_tools, dict)
+            and set(profile_tools) == set(tool_identity.REQUIRED)
+            else tool_identity.LEGACY_REQUIRED
+        )
+        _, locked_tools = tool_identity.validate_profile(
+            profile_name, profile_value, required=required
+        )
         collection = json.loads(
             (evidence_dir / "collection-input.json").read_text(encoding="utf-8")
         )
@@ -366,6 +408,19 @@ def validate_envelope_result(evidence_dir: Path, value: dict[str, object]) -> li
     return errors
 
 
+def equivalent_summary(actual: object, expected: dict[str, object]) -> bool:
+    if not isinstance(actual, dict):
+        return False
+    actual_copy = dict(actual)
+    expected_copy = dict(expected)
+    for value in (actual_copy, expected_copy):
+        outcomes = value.get("outcomes")
+        if not isinstance(outcomes, list):
+            return False
+        value["outcomes"] = sorted(outcomes, key=lambda item: str(item.get("name")))
+    return actual_copy == expected_copy
+
+
 def main() -> int:
     check = len(sys.argv) == 3 and sys.argv[1] == "--check"
     if len(sys.argv) != 2 and not check:
@@ -382,10 +437,16 @@ def main() -> int:
             print(f"refusing to rewrite explicitly retracted evidence: {evidence_dir}", file=sys.stderr)
             return 2
         print(f"retained evidence is explicitly retracted: {evidence_dir}")
-        return 0
+        return 3
+    if profile == "unsupported-lock-schema":
+        print(
+            f"retained evidence uses an unsupported source tool-lock schema: {evidence_dir}",
+            file=sys.stderr,
+        )
+        return 4
     if profile != "v2":
         print(f"active evidence is inconclusive without qualification-v2: {evidence_dir}", file=sys.stderr)
-        return 1
+        return 3
     try:
         value = summary(evidence_dir)
     except (OSError, ValueError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
@@ -399,7 +460,7 @@ def main() -> int:
     summary_path = evidence_dir / "collection-summary.json"
     if check:
         actual = json.loads(summary_path.read_text(encoding="utf-8"))
-        if actual != value:
+        if not equivalent_summary(actual, value):
             print(f"retained summary disagrees with status files: {evidence_dir}", file=sys.stderr)
             return 1
         return 0

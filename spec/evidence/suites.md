@@ -15,7 +15,7 @@ type: SuiteRegistry
 | SUITE-003 | Requirement coverage | `python3 scripts/check_traceability_coverage.py` | Quire 0.31.0 plus repository completeness policy | Analysis |
 | SUITE-004 | Rustdoc warnings | `RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features` | rustdoc | Analysis |
 | SUITE-005 | Corpus integrity | `make check-corpus` | sha256sum | Static |
-| SUITE-006 | Minimum supported Rust boundary | `cargo +1.75.0 check --all-targets --all-features` | Rust 1.75.0 | Analysis |
+| SUITE-006 | Minimum supported Rust boundary | `python3 scripts/run_cargo_toolchain.py 1.75.0 check --all-targets --all-features` | Rust 1.75.0 | Analysis |
 | SUITE-007 | PGM-01 evidence validation | `make evidence-tool` | JSON Schema/PGM validator | Analysis |
 | SUITE-008 | Hosted candidate confirmation | Manual `workflow_dispatch` once for a finalized PR revision | GitHub Actions | Integration |
 | SUITE-009 | Authored diff integrity | `git diff --check origin/main...HEAD -- . ':(exclude)evidence/**'` | Git | Static |
