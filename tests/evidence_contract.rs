@@ -115,7 +115,8 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     assert!(collector.contains("':(exclude)evidence/**'"));
     assert!(collector.contains("clean_env=(/usr/bin/env -i PATH="));
     assert!(collector.contains("for tool in bash cargo git make python3 quire rustc sha256sum"));
-    assert!(collector.contains("scripts/tool_identity.py --verify-live"));
+    assert!(collector.contains("scripts/tool_identity.py \"${profile_args[@]}\" --verify-live"));
+    assert!(collector.contains("qualification-profile.txt"));
     assert!(collector.contains("pgm01_validator_digest="));
     assert!(collector.contains("make ci-for-evidence"));
     let verifier = fs::read_to_string(root_path("scripts/verify_evidence.sh")).unwrap();

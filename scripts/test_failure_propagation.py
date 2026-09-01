@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -111,11 +113,13 @@ def main() -> int:
         )
         assert result.returncode != 0, f"make {' '.join(arguments)} produced false success"
     assert MODULE.probe_command_positions(ROOT / "Makefile") == []
-    lock_value, locked_tools = MODULE.tool_identity.load_lock()
-    unavailable, mismatches = MODULE.tool_identity.verify_live(lock_value, locked_tools)
+    profile_name, lock_profile, locked_tools = MODULE.tool_identity.load_lock()
+    unavailable, mismatches = MODULE.tool_identity.verify_live(
+        profile_name, lock_profile, locked_tools
+    )
     assert unavailable == [] and mismatches == []
     qualified_environment = MODULE.tool_identity.qualified_environment(
-        lock_value, locked_tools
+        profile_name, lock_profile, locked_tools
     )
     assert qualified_environment["CARGO_TARGET_DIR"] == "/home/peter/.cargo-target"
     for name, identity in locked_tools.items():
@@ -130,9 +134,37 @@ def main() -> int:
             )
     forged_tools = {name: dict(identity) for name, identity in locked_tools.items()}
     forged_tools["cargo"]["sha256"] = "0" * 64
-    assert MODULE.tool_identity.verify_live(lock_value, forged_tools)[1], (
+    assert MODULE.tool_identity.verify_live(profile_name, lock_profile, forged_tools)[1], (
         "a mismatched mandatory-tool digest escaped qualification"
     )
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = Path(directory)
+        lock = json.loads((ROOT / "tools.lock").read_text(encoding="utf-8"))
+        alias_profile = json.loads(json.dumps(lock["profiles"][profile_name]))
+        alias = fixture / "cargo"
+        shutil.copyfile(locked_tools["cargo"]["path"], alias)
+        alias.chmod(0o755)
+        alias_profile["tools"]["cargo"]["path"] = str(alias)
+        lock["profiles"]["byte-identical-alias-v1"] = alias_profile
+        lock_path = fixture / "tools.lock"
+        lock_path.write_text(json.dumps(lock), encoding="utf-8")
+        selected, selected_profile, selected_tools = MODULE.tool_identity.load_lock(
+            lock_path, "byte-identical-alias-v1"
+        )
+        assert selected == "byte-identical-alias-v1"
+        assert MODULE.tool_identity.verify_live(
+            selected, selected_profile, selected_tools
+        ) == ([], []), "a declared byte-identical path alias was rejected"
+        alias.write_bytes(b"different executable bytes\n")
+        assert MODULE.tool_identity.verify_live(
+            selected, selected_profile, selected_tools
+        )[1], "different bytes at a declared alias did not fail closed"
+        try:
+            MODULE.tool_identity.load_lock(lock_path, "undeclared-alias-v1")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("an undeclared qualification profile was selected")
     with tempfile.TemporaryDirectory() as directory:
         shim = Path(directory)
         for name in ("cargo", "python3"):

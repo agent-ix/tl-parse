@@ -2,6 +2,11 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      tool_profile:
+        description: Exact reviewed tools.lock profile (runner profile must be committed first)
+        required: true
+        default: peter-linux-x86_64-v1
 
 jobs:
   msrv:
@@ -54,6 +59,8 @@ jobs:
           tool: cargo-deny,cargo-fuzz
 
       - name: Complete local gate
+        env:
+          TL_PARSE_TOOL_PROFILE: ${{ inputs.tool_profile }}
         run: make ci
 
   licenses:

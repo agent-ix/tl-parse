@@ -299,11 +299,18 @@ def validate_tool_identity(evidence_dir: Path, revision: str | None) -> list[str
     if not revision:
         return ["retained tool identity has no source revision"]
     try:
+        lock_path = evidence_dir / "qualification-profile.txt"
+        profile_name = lock_path.read_text(encoding="utf-8").strip()
         lock_value = json.loads(git_bytes(revision, builder.TOOLS_LOCK))
-        locked_tools = tool_identity.validate_lock(lock_value)
+        profiles = lock_value.get("profiles")
+        if lock_value.get("schemaVersion") != tool_identity.SCHEMA or not isinstance(profiles, dict):
+            raise ValueError("source tools.lock has an unknown schema")
+        _, locked_tools = tool_identity.validate_profile(profile_name, profiles.get(profile_name))
         collection = json.loads(
             (evidence_dir / "collection-input.json").read_text(encoding="utf-8")
         )
+        if collection["toolProfile"] != profile_name:
+            return ["retained tool profile disagrees with qualification-profile.txt"]
         retained = collection["tools"]["identities"]
     except (KeyError, OSError, ValueError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
         return [f"cannot rederive retained tool identity: {error}"]

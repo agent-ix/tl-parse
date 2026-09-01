@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Verify the executable identities used for local qualification."""
+"""Select and verify a reviewed qualification-tool profile."""
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import re
@@ -14,6 +15,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCK = ROOT / "tools.lock"
+SCHEMA = "tl-parse.qualified-tools/v2"
+PROFILE_NAME = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
 REQUIRED = ("bash", "cargo", "git", "make", "python3", "quire", "rustc", "sha256sum")
 
 
@@ -21,24 +24,26 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate_lock(value: Any) -> dict[str, dict[str, str]]:
-    if not isinstance(value, dict) or value.get("schemaVersion") != "tl-parse.qualified-tools/v1":
-        raise ValueError("tools.lock has an unknown schema")
+def validate_profile(name: str, value: Any) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
+    if not PROFILE_NAME.fullmatch(name):
+        raise ValueError(f"invalid qualification profile name: {name!r}")
+    if not isinstance(value, dict) or set(value) != {"environment", "tools"}:
+        raise ValueError(f"qualification profile {name!r} has malformed fields")
     tools = value.get("tools")
     if not isinstance(tools, dict) or set(tools) != set(REQUIRED):
-        raise ValueError("tools.lock does not contain the exact mandatory-tool census")
+        raise ValueError(f"qualification profile {name!r} lacks the exact tool census")
     validated: dict[str, dict[str, str]] = {}
-    for name in REQUIRED:
-        identity = tools.get(name)
+    for tool_name in REQUIRED:
+        identity = tools.get(tool_name)
         if not isinstance(identity, dict) or set(identity) != {"path", "sha256"}:
-            raise ValueError(f"tools.lock has a malformed identity for {name}")
+            raise ValueError(f"qualification profile {name!r} has a malformed {tool_name} identity")
         path = identity.get("path")
         digest = identity.get("sha256")
         if not isinstance(path, str) or not Path(path).is_absolute():
-            raise ValueError(f"tools.lock path for {name} is not absolute")
+            raise ValueError(f"qualification profile {name!r} path for {tool_name} is not absolute")
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-            raise ValueError(f"tools.lock digest for {name} is malformed")
-        validated[name] = {"path": path, "sha256": digest}
+            raise ValueError(f"qualification profile {name!r} digest for {tool_name} is malformed")
+        validated[tool_name] = {"path": path, "sha256": digest}
     environment = value.get("environment")
     if (
         not isinstance(environment, dict)
@@ -48,13 +53,29 @@ def validate_lock(value: Any) -> dict[str, dict[str, str]]:
         or not isinstance(environment.get("cargoTargetDir"), str)
         or not Path(environment["cargoTargetDir"]).is_absolute()
     ):
-        raise ValueError("tools.lock has a malformed qualification environment")
-    return validated
+        raise ValueError(f"qualification profile {name!r} has a malformed environment")
+    return value, validated
 
 
-def load_lock(path: Path = LOCK) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
+def load_lock(
+    path: Path = LOCK, profile_name: str | None = None
+) -> tuple[str, dict[str, Any], dict[str, dict[str, str]]]:
     value = json.loads(path.read_text(encoding="utf-8"))
-    return value, validate_lock(value)
+    if not isinstance(value, dict) or value.get("schemaVersion") != SCHEMA:
+        raise ValueError("tools.lock has an unknown schema")
+    if set(value) != {"schemaVersion", "defaultProfile", "profiles"}:
+        raise ValueError("tools.lock has malformed top-level fields")
+    profiles = value.get("profiles")
+    default = value.get("defaultProfile")
+    if not isinstance(profiles, dict) or not profiles:
+        raise ValueError("tools.lock has no qualification profiles")
+    if not isinstance(default, str) or default not in profiles:
+        raise ValueError("tools.lock default profile is unavailable")
+    selected = profile_name or default
+    if selected not in profiles:
+        raise ValueError(f"qualification profile is unavailable: {selected!r}")
+    profile, tools = validate_profile(selected, profiles[selected])
+    return selected, profile, tools
 
 
 def trusted_path(tools: dict[str, dict[str, str]]) -> str:
@@ -66,22 +87,25 @@ def trusted_path(tools: dict[str, dict[str, str]]) -> str:
     return ":".join(parents)
 
 
-def qualified_environment(value: dict[str, Any], tools: dict[str, dict[str, str]]) -> dict[str, str]:
+def qualified_environment(
+    profile_name: str, profile: dict[str, Any], tools: dict[str, dict[str, str]]
+) -> dict[str, str]:
     return {
-        "HOME": value["environment"]["home"],
+        "HOME": profile["environment"]["home"],
         "PATH": trusted_path(tools),
-        "CARGO_TARGET_DIR": value["environment"]["cargoTargetDir"],
+        "CARGO_TARGET_DIR": profile["environment"]["cargoTargetDir"],
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
+        "TL_PARSE_TOOL_PROFILE": profile_name,
     }
 
 
 def verify_live(
-    value: dict[str, Any], tools: dict[str, dict[str, str]]
+    profile_name: str, profile: dict[str, Any], tools: dict[str, dict[str, str]]
 ) -> tuple[list[str], list[str]]:
     unavailable: list[str] = []
     mismatches: list[str] = []
-    environment = qualified_environment(value, tools)
+    environment = qualified_environment(profile_name, profile, tools)
     for name in REQUIRED:
         expected = tools[name]
         locked_path = Path(expected["path"])
@@ -99,6 +123,11 @@ def verify_live(
         if observed is None:
             unavailable.append(f"qualified tool is unavailable: {name}")
             continue
+        if Path(observed) != locked_path:
+            mismatches.append(
+                f"qualified path mismatch for {name}: profile declares {locked_path}, resolved {observed}"
+            )
+            continue
         try:
             observed_digest = sha256(Path(observed))
         except OSError as error:
@@ -113,36 +142,41 @@ def verify_live(
 
 
 def main() -> int:
-    simple_options = {"--verify-live", "--trusted-path", "--home"}
-    tool_options = {"--tool-path", "--tool-sha256"}
-    if not (
-        (len(sys.argv) == 2 and sys.argv[1] in simple_options)
-        or (len(sys.argv) == 3 and sys.argv[1] in tool_options and sys.argv[2] in REQUIRED)
-    ):
-        print(
-            "usage: tool_identity.py {--verify-live|--trusted-path|--home|"
-            "--tool-path NAME|--tool-sha256 NAME}",
-            file=sys.stderr,
-        )
-        return 2
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--profile")
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--verify-live", action="store_true")
+    action.add_argument("--trusted-path", action="store_true")
+    action.add_argument("--home", action="store_true")
+    action.add_argument("--cargo-target-dir", action="store_true")
+    action.add_argument("--profile-name", action="store_true")
+    action.add_argument("--tool-path", choices=REQUIRED)
+    action.add_argument("--tool-sha256", choices=REQUIRED)
+    args = parser.parse_args()
     try:
-        value, tools = load_lock()
+        selected, profile, tools = load_lock(profile_name=args.profile)
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"qualified tool lock is unavailable: {error}", file=sys.stderr)
         return 2
-    if sys.argv[1] == "--trusted-path":
+    if args.trusted_path:
         print(trusted_path(tools))
         return 0
-    if sys.argv[1] == "--home":
-        print(value["environment"]["home"])
+    if args.home:
+        print(profile["environment"]["home"])
         return 0
-    if sys.argv[1] == "--tool-path":
-        print(tools[sys.argv[2]]["path"])
+    if args.cargo_target_dir:
+        print(profile["environment"]["cargoTargetDir"])
         return 0
-    if sys.argv[1] == "--tool-sha256":
-        print(tools[sys.argv[2]]["sha256"])
+    if args.profile_name:
+        print(selected)
         return 0
-    unavailable, mismatches = verify_live(value, tools)
+    if args.tool_path:
+        print(tools[args.tool_path]["path"])
+        return 0
+    if args.tool_sha256:
+        print(tools[args.tool_sha256]["sha256"])
+        return 0
+    unavailable, mismatches = verify_live(selected, profile, tools)
     for error in unavailable + mismatches:
         print(error, file=sys.stderr)
     if unavailable:

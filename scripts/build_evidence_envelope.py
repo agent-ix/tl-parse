@@ -169,6 +169,7 @@ def build(directory: Path, phase: str) -> None:
     collection_input = {
         "schemaVersion": "tl-parse.evidence-input/v1",
         "qualificationProfile": "tl-parse.evidence-qualification/v2",
+        "toolProfile": (directory / "qualification-profile.txt").read_text().strip(),
         "sourceRevision": revision,
         "sourceState": (directory / "source-state.txt").read_text().strip(),
         "commands": [

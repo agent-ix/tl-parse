@@ -189,6 +189,69 @@ fn recovery_diagnostics_never_expose_partial_documents() {
     assert_eq!(absent.diagnostics[0].expected, [ExpectedToken::Expression]);
 }
 
+// Trace: TC-008, TC-012, FR-003-AC-1, FR-003-AC-2
+#[test]
+fn malformed_interval_recovery_has_exact_structured_diagnostics() {
+    let cases = [
+        (
+            "Fp0",
+            DiagnosticCode::MissingToken,
+            vec![ExpectedToken::LeftBracket],
+            RecoveryAction::InsertedToken,
+        ),
+        (
+            "F[,1]p0",
+            DiagnosticCode::UnexpectedToken,
+            vec![ExpectedToken::Integer],
+            RecoveryAction::SkippedToken,
+        ),
+        (
+            "F[0 p0",
+            DiagnosticCode::MissingToken,
+            vec![ExpectedToken::Comma],
+            RecoveryAction::InsertedToken,
+        ),
+        (
+            "F[0,]p0",
+            DiagnosticCode::UnexpectedToken,
+            vec![ExpectedToken::Integer],
+            RecoveryAction::SkippedToken,
+        ),
+        (
+            "F[0,1p0",
+            DiagnosticCode::MissingToken,
+            vec![ExpectedToken::RightBracket],
+            RecoveryAction::InsertedToken,
+        ),
+        (
+            "F[2,1]p0",
+            DiagnosticCode::InvalidInterval,
+            vec![],
+            RecoveryAction::None,
+        ),
+    ];
+    for (source, code, expected, recovery) in cases {
+        let report = parse_closed(source);
+        assert!(
+            report.document.is_none(),
+            "malformed interval {source:?} succeeded"
+        );
+        let diagnostic = report
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.code == code)
+            .unwrap_or_else(|| panic!("missing {code:?} for {source:?}: {:?}", report.diagnostics));
+        assert_eq!(
+            diagnostic.expected, expected,
+            "unexpected token set for {source:?}"
+        );
+        assert_eq!(
+            diagnostic.recovery, recovery,
+            "unexpected recovery for {source:?}"
+        );
+    }
+}
+
 // Trace: TC-009, TC-010, FR-003-AC-1
 #[test]
 fn diagnostics_have_stable_golden_fields_and_versioned_json() {
@@ -290,6 +353,26 @@ fn diagnostic_and_work_limits_fail_closed_without_growth() {
     let report = parse("bad worse worst", SemanticProfile::ClosedTraceV1, limits);
     assert!(report.document.is_none());
     assert_eq!(report.diagnostics.len(), 1);
+    assert!(report.stats.diagnostics_truncated);
+
+    let limits = ParseLimits {
+        max_diagnostics: 1,
+        ..ParseLimits::default()
+    };
+    let report = parse("p0 p1 p2", SemanticProfile::ClosedTraceV1, limits);
+    assert!(report.document.is_none());
+    assert_eq!(report.diagnostics.len(), 1);
+    assert_eq!(report.diagnostics[0].code, DiagnosticCode::TrailingInput);
+    assert_eq!(report.diagnostics[0].recovery, RecoveryAction::SkippedToken);
+    assert!(report.stats.diagnostics_truncated);
+
+    let limits = ParseLimits {
+        max_diagnostics: 0,
+        ..ParseLimits::default()
+    };
+    let report = parse("@", SemanticProfile::ClosedTraceV1, limits);
+    assert!(report.document.is_none());
+    assert!(report.diagnostics.is_empty());
     assert!(report.stats.diagnostics_truncated);
 }
 

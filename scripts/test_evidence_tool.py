@@ -248,9 +248,13 @@ def main() -> int:
         source_builder = FINALIZER.git_bytes(revision, MODULE.BUILDER)
         parameters = FINALIZER.historical_parameters_digest(revision, source_builder)
         (evidence_dir / "source-revision.txt").write_text(revision + "\n", encoding="utf-8")
-        _, locked_tools = FINALIZER.tool_identity.load_lock()
+        profile_name, _, locked_tools = FINALIZER.tool_identity.load_lock()
+        (evidence_dir / "qualification-profile.txt").write_text(
+            profile_name + "\n", encoding="utf-8"
+        )
         collection_input = {
             "qualificationProfile": "tl-parse.evidence-qualification/v2",
+            "toolProfile": profile_name,
             "tools": {"identities": locked_tools},
         }
         (evidence_dir / "collection-input.json").write_text(
@@ -271,6 +275,16 @@ def main() -> int:
             (evidence_dir / f"{name}.stderr").write_text("", encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
+        for name in FINALIZER.CHECKS:
+            if name == "diff-integrity":
+                continue
+            stdout_path = evidence_dir / f"{name}.stdout"
+            original_output = stdout_path.read_text(encoding="utf-8")
+            stdout_path.write_text("", encoding="utf-8")
+            assert FINALIZER.summary(evidence_dir)["overallStatus"] == "failed", (
+                f"zero-exit {name} evidence passed without its positive output contract"
+            )
+            stdout_path.write_text(original_output, encoding="utf-8")
         (evidence_dir / "msrv.status.txt").unlink()
         (evidence_dir / "msrv.stdout").unlink()
         (evidence_dir / "msrv.stderr").unlink()

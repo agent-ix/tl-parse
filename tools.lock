@@ -1,10 +1,13 @@
 {
-  "schemaVersion": "tl-parse.qualified-tools/v1",
-  "environment": {
+  "schemaVersion": "tl-parse.qualified-tools/v2",
+  "defaultProfile": "peter-linux-x86_64-v1",
+  "profiles": {
+    "peter-linux-x86_64-v1": {
+      "environment": {
     "cargoTargetDir": "/home/peter/.cargo-target",
     "home": "/home/peter"
-  },
-  "tools": {
+      },
+      "tools": {
     "bash": {
       "path": "/usr/bin/bash",
       "sha256": "59474588a312b6b6e73e5a42a59bf71e62b55416b6c9d5e4a6e1c630c2a9ecd4"
@@ -36,6 +39,8 @@
     "sha256sum": {
       "path": "/usr/bin/sha256sum",
       "sha256": "7645c8e76d75515ccb75c9086bdcf0d4071f2985f380f249253ead7d7c6810b3"
+    }
+      }
     }
   }
 }

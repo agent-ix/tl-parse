@@ -126,7 +126,11 @@ fn run() -> Result<ExitCode, String> {
 }
 
 fn write_stdout(text: &str) -> Result<(), String> {
-    match writeln!(io::stdout().lock(), "{text}") {
+    write_output(&mut io::stdout().lock(), text)
+}
+
+fn write_output(writer: &mut impl Write, text: &str) -> Result<(), String> {
+    match writeln!(writer, "{text}") {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
         Err(error) => Err(format!("cannot write stdout: {error}")),
@@ -192,9 +196,9 @@ fn usage() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Read};
+    use std::io::{self, Read, Write};
 
-    use super::{read_bounded_reader, BoundedInput};
+    use super::{read_bounded_reader, write_output, BoundedInput};
 
     struct NonClosingReader {
         reads: usize,
@@ -205,6 +209,26 @@ mod tests {
             self.reads += 1;
             buffer.fill(b'p');
             Ok(buffer.len())
+        }
+    }
+
+    struct FailingReader;
+
+    impl Read for FailingReader {
+        fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
+            Err(io::Error::new(io::ErrorKind::Other, "fixture read failure"))
+        }
+    }
+
+    struct FailingWriter(io::ErrorKind);
+
+    impl Write for FailingWriter {
+        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+            Err(io::Error::new(self.0, "fixture write failure"))
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
         }
     }
 
@@ -222,5 +246,22 @@ mod tests {
             }
             BoundedInput::Source(_) => panic!("non-closing oversized input was accepted"),
         }
+    }
+
+    #[test]
+    fn reader_and_writer_errors_keep_their_fail_closed_classes() {
+        let error = match read_bounded_reader(FailingReader, 32) {
+            Err(error) => error,
+            Ok(_) => panic!("failing reader unexpectedly succeeded"),
+        };
+        assert_eq!(error.kind(), io::ErrorKind::Other);
+        assert_eq!(error.to_string(), "fixture read failure");
+
+        assert_eq!(
+            write_output(&mut FailingWriter(io::ErrorKind::BrokenPipe), "p0"),
+            Ok(())
+        );
+        let error = write_output(&mut FailingWriter(io::ErrorKind::Other), "p0").unwrap_err();
+        assert_eq!(error, "cannot write stdout: fixture write failure");
     }
 }

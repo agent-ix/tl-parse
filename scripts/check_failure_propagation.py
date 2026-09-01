@@ -91,14 +91,18 @@ def inspect_makefile(path: Path, root: Path = ROOT) -> list[str]:
 
 
 def clean_environment() -> dict[str, str]:
-    value, tools = tool_identity.load_lock()
-    return tool_identity.qualified_environment(value, tools)
+    selected, profile, tools = tool_identity.load_lock(
+        profile_name=os.environ.get("TL_PARSE_TOOL_PROFILE")
+    )
+    return tool_identity.qualified_environment(selected, profile, tools)
 
 
 def verify_tool_identities() -> list[str]:
     try:
-        value, tools = tool_identity.load_lock()
-        unavailable, mismatches = tool_identity.verify_live(value, tools)
+        selected, profile, tools = tool_identity.load_lock(
+            profile_name=os.environ.get("TL_PARSE_TOOL_PROFILE")
+        )
+        unavailable, mismatches = tool_identity.verify_live(selected, profile, tools)
     except (OSError, ValueError) as error:
         return [f"cannot load qualified tool identities: {error}"]
     return unavailable + mismatches

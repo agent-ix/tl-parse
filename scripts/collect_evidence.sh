@@ -1,9 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -gt 0 ]]; then
-  final_evidence_dir="$1"
-else
+tool_profile=""
+final_evidence_dir=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --tool-profile)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "--tool-profile requires a reviewed profile name" >&2
+        exit 2
+      fi
+      tool_profile="$2"
+      shift 2
+      ;;
+    --*)
+      echo "unknown collector option: $1" >&2
+      exit 2
+      ;;
+    *)
+      if [[ -n "$final_evidence_dir" ]]; then
+        echo "only one evidence destination may be supplied" >&2
+        exit 2
+      fi
+      final_evidence_dir="$1"
+      shift
+      ;;
+  esac
+done
+if [[ -z "$final_evidence_dir" ]]; then
   evidence_revision="$(/usr/bin/git rev-parse --short=12 HEAD)"
   evidence_timestamp="$(/usr/bin/date -u +%Y%m%dT%H%M%SZ)"
   final_evidence_dir="evidence/tl-parse-v01-${evidence_revision}-${evidence_timestamp}"
@@ -39,13 +63,17 @@ if [[ -n "${PGM01_VALIDATOR:-}" ]] && \
   exit 2
 fi
 
-if ! /usr/bin/python3 scripts/tool_identity.py --verify-live; then
+if [[ -z "$tool_profile" ]]; then
+  tool_profile="$(/usr/bin/python3 scripts/tool_identity.py --profile-name)"
+fi
+profile_args=(--profile "$tool_profile")
+if ! /usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --verify-live; then
   echo "qualified tool identities do not match tools.lock" >&2
   exit 2
 fi
-trusted_path="$(/usr/bin/python3 scripts/tool_identity.py --trusted-path)"
-real_home="$(/usr/bin/python3 scripts/tool_identity.py --home)"
-cargo_target_dir="$real_home/.cargo-target"
+trusted_path="$(/usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --trusted-path)"
+real_home="$(/usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --home)"
+cargo_target_dir="$(/usr/bin/python3 scripts/tool_identity.py "${profile_args[@]}" --cargo-target-dir)"
 staging_root="$(/usr/bin/mktemp -d -p . .tl-parse-evidence-stage.XXXXXX)"
 cleanup_staging() {
   if [[ -n "${staging_root:-}" && -d "$staging_root" ]]; then
@@ -56,7 +84,7 @@ trap cleanup_staging EXIT
 evidence_dir="$staging_root/$(basename "$final_evidence_dir")"
 /usr/bin/mkdir -p "$evidence_dir"
 collection_failed=0
-clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" CARGO_TARGET_DIR="$cargo_target_dir" USER="${USER:-}" LANG="${LANG:-C}" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
+clean_env=(/usr/bin/env -i PATH="$trusted_path" HOME="$real_home" CARGO_TARGET_DIR="$cargo_target_dir" USER="${USER:-}" LANG=C.UTF-8 LC_ALL=C.UTF-8 TL_PARSE_TOOL_PROFILE="$tool_profile" PGM01_SCHEMA="${PGM01_SCHEMA:-}" PGM01_VALIDATOR="${PGM01_VALIDATOR:-}")
 
 run_and_retain() {
   local name="$1"
@@ -85,6 +113,7 @@ retain_skipped() {
 
 "${clean_env[@]}" git rev-parse HEAD >"$evidence_dir/source-revision.txt"
 echo clean >"$evidence_dir/source-state.txt"
+echo "$tool_profile" >"$evidence_dir/qualification-profile.txt"
 "${clean_env[@]}" rustc --version --verbose >"$evidence_dir/rustc-version.txt"
 "${clean_env[@]}" cargo --version --verbose >"$evidence_dir/cargo-version.txt"
 "${clean_env[@]}" python3 --version >"$evidence_dir/python-version.txt"
@@ -92,9 +121,9 @@ echo clean >"$evidence_dir/source-state.txt"
 "${clean_env[@]}" quire provenance --pretty >"$evidence_dir/quire-provenance.json"
 "${clean_env[@]}" cargo metadata --format-version 1 --all-features >"$evidence_dir/metadata.json"
 for tool in bash cargo git make python3 quire rustc sha256sum; do
-  "${clean_env[@]}" python3 scripts/tool_identity.py --tool-path "$tool" \
+  "${clean_env[@]}" python3 scripts/tool_identity.py "${profile_args[@]}" --tool-path "$tool" \
     >"$evidence_dir/tool-${tool}-path.txt"
-  "${clean_env[@]}" python3 scripts/tool_identity.py --tool-sha256 "$tool" \
+  "${clean_env[@]}" python3 scripts/tool_identity.py "${profile_args[@]}" --tool-sha256 "$tool" \
     >"$evidence_dir/tool-${tool}-sha256.txt"
 done
 

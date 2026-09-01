@@ -172,3 +172,50 @@ fn cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes() {
     let output = child.wait_with_output().unwrap();
     assert!(output.status.success(), "broken stdout pipe caused a panic");
 }
+
+// Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
+#[test]
+fn cli_dispatch_read_and_render_failures_are_classified() {
+    for (arguments, expected) in [
+        (vec![], "usage: tl-parse"),
+        (
+            vec!["validate", "--profile"],
+            "--profile requires closed or online",
+        ),
+        (
+            vec!["validate", "--profile", "future"],
+            "--profile requires closed or online",
+        ),
+    ] {
+        let output = binary().args(arguments).output().unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(String::from_utf8(output.stderr).unwrap().contains(expected));
+    }
+
+    let missing = binary()
+        .args(["validate", "/definitely/not/a/tl-parse-input"])
+        .output()
+        .unwrap();
+    assert_eq!(missing.status.code(), Some(2));
+    assert!(String::from_utf8(missing.stderr)
+        .unwrap()
+        .contains("cannot open"));
+
+    let mut invalid_utf8 = NamedTempFile::new().unwrap();
+    invalid_utf8.write_all(&[0xff, 0xfe]).unwrap();
+    let unreadable = binary()
+        .args(["validate", invalid_utf8.path().to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert_eq!(unreadable.status.code(), Some(2));
+    assert!(String::from_utf8(unreadable.stderr)
+        .unwrap()
+        .contains("invalid utf-8 sequence"));
+
+    let rendered = stdin_run(&["format", "-"], "F[3,1]p0");
+    assert_eq!(rendered.status.code(), Some(1));
+    assert!(rendered.stdout.is_empty());
+    let stderr = String::from_utf8(rendered.stderr).unwrap();
+    assert!(stderr.starts_with("error[invalid_interval] 1..6: "));
+    assert!(stderr.contains("interval"));
+}
