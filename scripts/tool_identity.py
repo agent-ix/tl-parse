@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 import shutil
 import sys
@@ -43,10 +42,13 @@ def validate_lock(value: Any) -> dict[str, dict[str, str]]:
     environment = value.get("environment")
     if (
         not isinstance(environment, dict)
-        or environment.get("home") != "/home/peter"
-        or environment.get("cargoTargetDir") != "/home/peter/.cargo-target"
+        or set(environment) != {"home", "cargoTargetDir"}
+        or not isinstance(environment.get("home"), str)
+        or not Path(environment["home"]).is_absolute()
+        or not isinstance(environment.get("cargoTargetDir"), str)
+        or not Path(environment["cargoTargetDir"]).is_absolute()
     ):
-        raise ValueError("tools.lock has an unknown qualification home")
+        raise ValueError("tools.lock has a malformed qualification environment")
     return validated
 
 
@@ -65,16 +67,13 @@ def trusted_path(tools: dict[str, dict[str, str]]) -> str:
 
 
 def qualified_environment(value: dict[str, Any], tools: dict[str, dict[str, str]]) -> dict[str, str]:
-    environment = dict(os.environ)
-    environment["HOME"] = value["environment"]["home"]
-    environment["PATH"] = trusted_path(tools)
-    environment["CARGO_TARGET_DIR"] = value["environment"]["cargoTargetDir"]
-    for name in (
-        "MAKE", "MAKEFLAGS", "CARGO", "PYTHON", "QUIRE", "SHA256SUM", "BASH",
-        "PYTHONOPTIMIZE", "ASAN_OPTIONS", "TL_PARSE_FUZZ_DISABLE_LEAKS",
-    ):
-        environment.pop(name, None)
-    return environment
+    return {
+        "HOME": value["environment"]["home"],
+        "PATH": trusted_path(tools),
+        "CARGO_TARGET_DIR": value["environment"]["cargoTargetDir"],
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+    }
 
 
 def verify_live(

@@ -19,6 +19,7 @@ CHECKS = (
     "make-ci",
     "make-spec",
     "quire-coverage",
+    "msrv",
     "rustdoc",
     "default-dependencies",
     "corpus-integrity",

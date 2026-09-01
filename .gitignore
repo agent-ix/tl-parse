@@ -1,4 +1,6 @@
 /target
+__pycache__/
+*.pyc
 Cargo.lock.bak
 *.swp
 .DS_Store

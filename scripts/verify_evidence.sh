@@ -55,6 +55,9 @@ import pathlib
 import sys
 
 record = pathlib.Path(sys.argv[1])
+registry = json.loads(pathlib.Path("evidence/RETRACTIONS.json").read_text(encoding="utf-8"))
+if record.name in registry.get("records", {}):
+    raise SystemExit("assurance argument names an explicitly retracted record")
 summary = json.loads((record / "collection-summary.json").read_text(encoding="utf-8"))
 if summary.get("overallStatus") != "passed" or any(
     item.get("status") != "passed" for item in summary.get("outcomes", [])

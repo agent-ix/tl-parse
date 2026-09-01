@@ -27,7 +27,7 @@ endif
 ifneq ($(origin BASH),undefined)
 $(error local CI refuses a BASH override)
 endif
-tl_ci_static_status := $(shell env -u PYTHONOPTIMIZE MAKEFLAGS= /usr/bin/python3 scripts/check_failure_propagation.py --makefile '$(firstword $(MAKEFILE_LIST))' --static-only >/dev/null 2>&1; echo $$?)
+tl_ci_static_status := $(shell /usr/bin/env -u PYTHONOPTIMIZE MAKEFLAGS= /usr/bin/python3 scripts/check_failure_propagation.py --makefile '$(firstword $(MAKEFILE_LIST))' --static-only >/dev/null; echo $$?)
 ifneq ($(tl_ci_static_status),0)
 $(error local CI refuses unsafe Make recipe controls)
 endif

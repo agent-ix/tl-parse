@@ -14,6 +14,10 @@ fn root_path(relative: &str) -> String {
 fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
     let makefile = fs::read_to_string(root_path("Makefile")).unwrap();
     let runner = fs::read_to_string(root_path("scripts/run_local_ci.py")).unwrap();
+    assert!(
+        runner.contains("propagation.PROBES"),
+        "local runner omits the gate census"
+    );
     for gate in [
         "check-failure-propagation",
         "fmt-check",
@@ -30,10 +34,6 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         "rustdoc",
         "verify-evidence",
     ] {
-        assert!(
-            runner.contains("propagation.PROBES"),
-            "local runner omits the gate census"
-        );
         assert!(
             makefile.contains(&format!("{gate}:")),
             "Makefile omits {gate}"
@@ -72,7 +72,7 @@ fn evidence_gates_and_manual_ci_boundary_are_machine_checkable() {
         );
     }
 
-    let sentinel = Command::new("make")
+    let sentinel = Command::new("/usr/bin/make")
         .args([
             "--no-print-directory",
             "MAKEFLAGS=",

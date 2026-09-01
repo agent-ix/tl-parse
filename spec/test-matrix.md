@@ -62,4 +62,4 @@ relationships:
 | TC-022 | Validate retained evidence and human boundary | Integration | P0 | FR-005-AC-4, NFR-002-AC-2, NFR-003-AC-4 | ✅ implemented |
 | TC-023 | Re-derive source-locked executable identities | Integration | P0 | NFR-003-AC-1 | ✅ implemented |
 | TC-024 | Require complete self-censusing local CI | Integration | P0 | NFR-003-AC-2 | ✅ implemented |
-| TC-025 | Distinguish active, inconclusive, and retracted evidence | Integration | P0 | NFR-003-AC-3 | ✅ implemented |
+| TC-025 | Distinguish active, missing-lane, inconclusive, and retracted evidence; reject a retracted assurance record | Integration | P0 | NFR-003-AC-3 | ✅ implemented |

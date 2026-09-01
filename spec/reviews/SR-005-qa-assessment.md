@@ -1,5 +1,5 @@
 ---
-id: SR-004
+id: SR-005
 title: Quality assurance and test coverage assessment
 type: SpecReview
 analysis: gap-analysis

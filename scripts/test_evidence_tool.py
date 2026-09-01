@@ -179,11 +179,27 @@ def assert_schema_contracts() -> None:
         assert list(validator.iter_errors(candidate)), candidate
 
 
+def replace_anchor_digest(path: Path, relative: str, digest: str) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    suffix = f"  {relative}"
+    matches = [index for index, line in enumerate(lines) if line.endswith(suffix)]
+    assert len(matches) == 1, f"expected one anchor for {relative}"
+    lines[matches[0]] = f"{digest}{suffix}"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     if sys.flags.optimize or os.environ.get("PYTHONOPTIMIZE"):
         print("optimized Python disables policy assertions", file=sys.stderr)
         return 2
     assert_schema_contracts()
+    registry = json.loads((ROOT / "evidence" / "RETRACTIONS.json").read_text())
+    retracted_name = sorted(registry["records"])[0]
+    assert FINALIZER.evidence_profile.resolve_profile(
+        ROOT / "evidence" / retracted_name
+    ) == "retracted"
+    with tempfile.TemporaryDirectory(prefix="tl-parse-inconclusive-") as directory:
+        assert FINALIZER.evidence_profile.resolve_profile(Path(directory)) == "inconclusive"
     collector = (ROOT / "scripts" / "collect_evidence.sh").read_text(encoding="utf-8")
     retained_calls = [
         line.strip() for line in collector.splitlines()
@@ -262,6 +278,19 @@ def main() -> int:
             (evidence_dir / f"{name}.stderr").write_text("", encoding="utf-8")
         retained = FINALIZER.summary(evidence_dir)
         assert retained["overallStatus"] == "passed"
+        (evidence_dir / "msrv.status.txt").unlink()
+        (evidence_dir / "msrv.stdout").unlink()
+        (evidence_dir / "msrv.stderr").unlink()
+        missing_msrv = FINALIZER.summary(evidence_dir)
+        assert next(
+            item for item in missing_msrv["outcomes"] if item["name"] == "msrv"
+        )["status"] == "inconclusive"
+        for suffix, content in (
+            ("status.txt", "0\n"),
+            ("stdout", healthy_retained_output("msrv")),
+            ("stderr", ""),
+        ):
+            (evidence_dir / f"msrv.{suffix}").write_text(content, encoding="utf-8")
         assert FINALIZER.positive_ci_census(healthy_ci_output())
         assert not FINALIZER.positive_ci_census("cargo 1.94.1\n")
         zero_tests = "test result: ok. 0 passed; 0 failed; 0 ignored\n" * 8
@@ -433,6 +462,52 @@ def main() -> int:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         assert shell.returncode != 0, "evidence shell verifier exit contract was gutted"
+
+    with temporary_worktree() as checkout:
+        assurance = checkout / "spec" / "assurance" / "AA-001.md"
+        assured_match = re.search(
+            r"^- Record: `(evidence/[^`]+)`\.",
+            assurance.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        assert assured_match is not None
+        record_name = Path(assured_match.group(1)).name
+        registry_path = checkout / "evidence" / "RETRACTIONS.json"
+        mutated_registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        mutated_registry["records"][record_name] = {
+            "reason": "policy probe must not retract the assurance-bound record"
+        }
+        registry_path.write_text(
+            json.dumps(mutated_registry, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        replace_anchor_digest(
+            checkout / "evidence" / "ANCHORS",
+            "evidence/RETRACTIONS.json",
+            hashlib.sha256(registry_path.read_bytes()).hexdigest(),
+        )
+        subprocess.run(
+            ["/usr/bin/git", "add", "evidence/RETRACTIONS.json", "evidence/ANCHORS"],
+            cwd=checkout,
+            check=True,
+        )
+        subprocess.run(
+            ["/usr/bin/git", "-c", "user.name=Policy Test", "-c",
+             "user.email=policy@example.invalid", "commit", "-qm", "retract assured fixture"],
+            cwd=checkout,
+            check=True,
+        )
+        retracted = subprocess.run(
+            ["/usr/bin/bash", "scripts/verify_evidence.sh"],
+            cwd=checkout,
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        assert retracted.returncode != 0 and "retracted record" in retracted.stderr, (
+            "assurance gate accepted an explicitly retracted bound record"
+        )
 
     with temporary_worktree() as checkout:
         assurance = checkout / "spec" / "assurance" / "AA-001.md"
