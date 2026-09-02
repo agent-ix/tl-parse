@@ -29,8 +29,8 @@ jobs:
     name: Rust Checks
     runs-on: ubuntu-24.04
     steps:
-      # Full history: the attribution check and the assurance chain both name an
-      # exact revision, and a shallow checkout cannot resolve one.
+      # Full history: the assurance chain names an exact revision, and a shallow
+      # checkout cannot resolve one.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

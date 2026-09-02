@@ -10,8 +10,9 @@ not own a second AST or temporal semantics.
 The crate compiles against `tl-syntax` at
 `953ee825e5060335b4c79682f5f41a78c5a1bfae`, the head of that repository's
 `main`. The dialect was authored from the earlier revision `740182f1`, which is
-a separate and historical fact; `docs/ATTRIBUTION.md` records a SHA-256 table
-for both. The dependency still resolves by exact git revision because
+a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
+`Cargo.lock` is what enforces the compiled one. The dependency still resolves by
+exact git revision because
 `tl-syntax` has no registry release, and source release remains blocked while
 that is true.
 

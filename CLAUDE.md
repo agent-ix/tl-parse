@@ -17,7 +17,6 @@ make check-corpus   # verify hostile-input and fuzz-seed checksums
 make conformance    # replay the hostile-input corpus through the crate
 make roundtrip      # sweep the parse-format-parse fixed point
 make test-census    # bind requirement-tagged tests to compiled tests
-make attribution    # re-derive the clean-room attribution digests
 make fuzz-build     # compile the checked-in cargo-fuzz target locally
 make fuzz-smoke     # execute a bounded local libFuzzer seed smoke run
 make spec           # validate specifications and strict coverage
@@ -92,9 +91,12 @@ Two different facts, and they no longer coincide.
 The crate **compiles against** `953ee825e5060335b4c79682f5f41a78c5a1bfae`, the
 head of tl-syntax `main`. The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
-move. `docs/ATTRIBUTION.md` carries a SHA-256 table for both, and
-`scripts/check_attribution.py` re-derives the compiled one from the checkout
-Cargo actually resolved.
+move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and
+`Cargo.lock` enforce the compiled pin; there is no local digest table and no
+re-derivation gate. Both were dropped under `agent-ix/tl-parse#15` because
+740182f1 lives on a deleted upstream branch, so its digests could never be
+re-derived by anyone and recorded an unverifiable claim in a verifiable-looking
+shape.
 
 The earlier form of the `deny.toml` git-source exception was scoped to "until
 tl-syntax PR #6 merges or 2026-09-07". That merge has happened — as PR #10,

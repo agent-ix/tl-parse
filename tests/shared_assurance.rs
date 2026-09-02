@@ -175,8 +175,8 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
         .expect("attested_results");
     assert_eq!(
         attested.len(),
-        6,
-        "six proof obligations are declared; {} were attested",
+        5,
+        "five proof obligations are declared; {} were attested",
         attested.len()
     );
     for (proof, result) in attested {

@@ -40,7 +40,7 @@ inspection rather than by a gate.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-002-AC-1 | The dialect record names its authorship basis, license boundary, exact compiled tl-syntax pin, stable revision, and digest; the authorship basis and the compiled revision are recorded as separate facts and the compiled digests are re-derived from the source Cargo resolved. | Inspection (TC-020) |
+| NFR-002-AC-1 | The dialect record names its authorship basis, license boundary, exact compiled tl-syntax pin, stable revision, and digest, with the authorship basis and the compiled revision recorded as separate facts. The compiled pin is enforced by `Cargo.toml` and `Cargo.lock` rather than by a repository-local digest table. | Inspection (TC-020) |
 
 ## Qualification Boundary
 

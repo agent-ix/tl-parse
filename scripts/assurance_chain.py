@@ -56,7 +56,6 @@ INPUTS = {
     "PROOF-parser-conformance": ("parser-conformance.jsonl", "application/x-ndjson"),
     "PROOF-roundtrip-property": ("roundtrip-property.jsonl", "application/x-ndjson"),
     "PROOF-test-census": ("test-census.json", "application/json"),
-    "PROOF-clean-room-attribution": ("attribution.json", "application/json"),
     "PROOF-quire-static-export": ("quire-static-export.json", "application/json"),
     "PROOF-msrv": ("msrv.jsonl", "application/x-ndjson"),
 }
@@ -547,9 +546,6 @@ def derive_result(proof_id: str, path: Path) -> str:
         return _rows_result(rows, path.name)
     if proof_id == "PROOF-test-census":
         return _rows_result(_load_json(raw, path)["entries"], path.name)
-    if proof_id == "PROOF-clean-room-attribution":
-        report = _load_json(raw, path)
-        return "passed" if report["matched"] else "failed"
     if proof_id == "PROOF-quire-static-export":
         export = _load_json(raw, path)
         # Quire's export is a static fact set, not a run, so it has no outcome

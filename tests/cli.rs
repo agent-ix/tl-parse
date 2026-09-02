@@ -58,24 +58,24 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         attribution_document_digest(),
-        "464f20c406f328a03acb8d58784638cd2d6fe0f0a6d99aebcf1e00ea0b8a59ef"
+        "f3461df5bda9ee96ec4f132229845f2f1be6cc4a6050091696e8eb58ebecd728"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
-    // and the compiled revision at 953ee825, which is a different fact. Both
-    // tables are asserted so that dropping either one goes red.
-    for digest in [
-        // authorship basis, tl-syntax@740182f1
-        "04e6a46e697444df8e6764dd0e5e5227b1271199ffc0e9d24f77720c979eb14e",
-        "f97005479f1f12511f1fceb2f9a85b94b482170e606c5735758e11aa2e4580f2",
-        // compiled revision, tl-syntax@953ee825
-        "76a5f72f6ee2791b9665ffacab057b1d62a262fa6a56a80bfbe443235d368647",
-        "8ba023faf819b1934b06e47b536e7aa1739143df3a82f7fc426ecf91a6aa1268",
-        // licence files, byte-identical across both revisions
-        "97ead12ddb151fc37ffb1c623ab42b9814e21629dee252ff23dc7205f1df9f05",
-        "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+    // and the compiled revision at 953ee825, which is a different fact. The
+    // per-file digest tables that used to be asserted here were dropped under
+    // issue #15: 740182f1 is on a deleted branch, so half of them could never be
+    // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.
+    for required in [
+        "independently authored",
+        "MIT OR Apache-2.0",
+        TL_SYNTAX_REVISION,
+        "740182f13b84858008d6f176f75136737d405c1b",
     ] {
-        assert!(attribution.contains(digest));
+        assert!(
+            attribution.contains(required),
+            "attribution omits {required}"
+        );
     }
 
     let mut file = NamedTempFile::new().unwrap();
