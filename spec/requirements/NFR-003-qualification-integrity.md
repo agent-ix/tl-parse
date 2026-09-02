@@ -9,45 +9,62 @@ quality_attribute: reliability
 
 ## Statement
 
-Candidate qualification shall bind executable identities, execute a complete
-local-gate census, retain positive outcome evidence, and distinguish active,
-inconclusive, failed, and explicitly retracted records without granting release
-authority.
+Candidate qualification shall keep the producer boundary observable, derive every
+attested result from the bytes a producer wrote, keep the twelve verification
+outcomes distinguishable, and grant no release authority.
 
 ## Scope
 
-This requirement owns `tools.lock`, the local-CI runner and propagation probes,
-the collection/finalization/verifier scripts, the evidence retraction registry,
-and their traceability and behavior tests.
+This requirement owns the shared-assurance intake path: the pinned toolchain
+declaration in `assurance/pins.json`, the change-assurance declaration in
+`assurance/change-assurance.json`, the driver `scripts/assurance_chain.py`, the
+compatibility view `scripts/legacy_evidence_view.py`, the pin classifier
+`scripts/check_shared_pins.py`, and the tests that exercise them.
+
+It no longer owns `tools.lock`, a local-CI runner, Make execution-control
+probes, a collector, a finalizer, a manifest verifier, an anchor file, or a
+retraction registry. Those were removed with the local evidence framework they
+belonged to. That is a real reduction in local detection — a Makefile recipe can
+now be made to report success without running, and nothing in this repository
+inspects Make's own execution controls to notice. What replaces it is
+structural rather than another guard: Quoin binds each retained input by digest,
+and every attested result is derived from the producer's own bytes, so a recipe
+that did not run produces an absent or empty input and the chain reports that by
+name. The residue is recorded as an open unknown in the change-assurance
+declaration and tracked as `agent-ix/tl-parse#11`.
 
 ## Measurement and Evaluation
 
 | Metric | Target | Threshold | Method |
 |---|---|---|---|
-| Mandatory tools with selected-profile, source-locked SHA-256 identities | 9/9 | 9/9 | Test |
-| Candidate local-CI gates with required positive signatures | 14/14 | 14/14 | Test |
-| Active records lacking qualification-v2 | 0 | 0 | Test |
+| Components classified by the packaged matrix | 4/4 | 4/4 | Test |
+| Verification outcomes demonstrated and matched | 12/12 | 12/12 | Test |
+| Negatives without an accepted positive control | 0 | 0 | Test |
+| Retained evidence bytes modified | 0 | 0 | Test |
+| Attested results not derived from producer bytes | 0 | 0 | Test |
 | Automatic release decisions | 0 | 0 | Inspection |
 
 ## Verification
 
-Behavior tests exercise the tool lock, exact-path resolution, compiled Rust-test
-census, gate census, transcript postcondition, profile/retraction/unsupported
-states, clean-tree refusal, and retained-record checks. Git-ignored `target`,
-`__pycache__`, and `*.pyc` paths are build/runtime caches rather than candidate
-source and are outside the clean-tree source census.
+Behaviour tests invoke the gates rather than reimplementing them. The producer
+boundary is asserted with two runs — producers replaced by logging stubs with the
+log required to be empty, and a control that stubs the tool the chain does use
+and requires the chain to fail — because an empty log and an unconsulted `PATH`
+are otherwise the same observation. Mutation probes remove one load-bearing
+check at a time and require the corresponding gate to go red.
 
 ## Acceptance Criteria
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-003-AC-1 | Every mandatory executable is source-locked by selected, versioned environment profile, absolute path, and SHA-256; Cargo and rustc identify the actual stable binaries while separately pinned rustup selects explicit auxiliary toolchains. Collection verifies the exact resolved path and live bytes, retains the selected profile, and re-derives records against that profile in the source revision's lock. Declared byte-identical aliases are accepted, while undeclared profiles, paths resolving elsewhere, and different bytes fail closed. | Test (TC-023) |
-| NFR-003-AC-2 | Local CI independently verifies the clean-tree retained-evidence boundary before delegation, refuses ambient profile selection plus global, multi-target, pattern-scoped, imported, and dynamic Make execution controls, enumerates every mandatory gate, compares the requirement-tagged Rust tests with Cargo's compiled census, propagates every command failure, and refuses success unless its transcript names the selected profile and contains the exact positive gate census. | Test (TC-024) |
-| NFR-003-AC-3 | Active evidence requires qualification-v2 and positive output for every non-silent retained lane; missing mandatory lanes and legacy qualification states are non-passing; an unsupported source tool-lock schema has a distinct individual verification state and exit while checksum-verified unsupported archives remain counted history without requiring retraction; explicitly retracted records remain checksum-verifiable but cannot pass qualification; and the assurance-bound record must be active v2 and cannot be retracted. | Test (TC-025) |
-| NFR-003-AC-4 | Evidence verification requires a clean tree and checks record identity and append-only behavior relative to the presented Git history; no local digest claims external attestation or release authority. | Inspection (TC-022) |
+| NFR-003-AC-1 | Every attested proof result is derived from the producer's own structured output; a producer whose output is absent, empty, or unreadable is an error naming the target that writes it, and never a pass. | Test (TC-023) |
+| NFR-003-AC-2 | Neither Quire nor Quoin executes a producer, demonstrated by stubbing every producer and requiring no invocation, together with a control that stubs Quoin and requires the chain to fail. | Test (TC-023) |
+| NFR-003-AC-3 | The twelve verification outcomes stay distinguishable, each demonstrated by a case that produced it and matched, with every negative paired with a positive control and a control naming a non-existent scenario refused. | Test (TC-026) |
+| NFR-003-AC-4 | Retained evidence is read without a byte moving, Git is consulted for whether the retained bytes are the committed bytes, and no local digest claims external attestation or release authority. | Test (TC-025) |
 
 ## Qualification Boundary
 
 These controls make a presented candidate and its retained artifacts
-reproducible and reviewable. Branch protection and the remote review history,
-not the local repository, establish resistance to history replacement.
+reproducible and reviewable. They confer no qualification, certification, or
+accreditation. Branch protection and the remote review history, not the local
+repository, establish resistance to history replacement.

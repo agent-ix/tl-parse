@@ -1,0 +1,257 @@
+{
+  "schema_version": "tl-parse.change-assurance-declaration/v1",
+  "purpose": "What this repository states about the change under issue #10, in the shape Quoin's FR-063 record requires. Quoin owns the record schema, its digest, and its retention; this file is the author's statement that gets sealed into one.",
+  "not_an_envelope": "Quoin's packaged change-assurance-record-v1, proof-attestation-v1, and verification-receipt-v1 schemas are the shapes. This file projects into the record body Quoin requires and derives nothing beyond the digests its own derived_fields names. It is not a local evidence envelope, it retains nothing, and it computes no verdict.",
+  "derived_fields": [
+    "subject.base_revision and impact_snapshot.revision come from the candidate revision the caller names.",
+    "source_connections[].revision is that same candidate revision; source_connections[].digest is read from the bytes at the declared path in `sources`.",
+    "proof_obligations[].configuration_digest is read from the bytes at that proof's declared `configuration` path.",
+    "impact_snapshot.digest is read from the bytes of the Quire static export.",
+    "record.digest is computed and written by quoin at seal time; this file never states it.",
+    "Nothing else is filled in, defaulted, or discovered. A field this file does not state is a validation failure at seal time, which is the behaviour that makes the record a statement rather than a guess."
+  ],
+  "sources": {
+    "FR-006": "spec/requirements/FR-006-shared-assurance-intake.md",
+    "FR-003": "spec/requirements/FR-003-diagnostics-limits.md",
+    "FR-004": "spec/requirements/FR-004-canonical-format.md",
+    "FR-005": "spec/requirements/FR-005-corpus-cli-evidence.md",
+    "NFR-002": "spec/requirements/NFR-002-provenance-boundary.md",
+    "NFR-003": "spec/requirements/NFR-003-qualification-integrity.md",
+    "TM-001": "spec/test-matrix.md",
+    "SUR-001": "spec/evidence/suites.md",
+    "corpus-manifest": "corpus/v1/manifest.json",
+    "dialect": "docs/DIALECT-001-clean-room-mltl-v1.md",
+    "attribution": "docs/ATTRIBUTION.md",
+    "assurance-pins": "assurance/pins.json"
+  },
+  "record": {
+    "schema_version": 1,
+    "record_type": "change_assurance",
+    "record_id": "tl-parse/issue-10",
+    "revision": 1,
+    "parent_digest": null,
+    "subject": {
+      "repository": "agent-ix/tl-parse",
+      "scope": [
+        "src",
+        "corpus",
+        "examples",
+        "schemas",
+        "scripts",
+        "spec",
+        "docs",
+        "tests",
+        "fuzz",
+        "assurance",
+        "Makefile"
+      ]
+    },
+    "source_connections": [
+      { "source_id": "FR-006", "kind": "requirement" },
+      { "source_id": "FR-003", "kind": "requirement" },
+      { "source_id": "FR-004", "kind": "requirement" },
+      { "source_id": "FR-005", "kind": "requirement" },
+      { "source_id": "NFR-002", "kind": "requirement" },
+      { "source_id": "NFR-003", "kind": "requirement" },
+      { "source_id": "TM-001", "kind": "test" },
+      { "source_id": "SUR-001", "kind": "test" },
+      { "source_id": "corpus-manifest", "kind": "architecture" },
+      { "source_id": "dialect", "kind": "architecture" },
+      { "source_id": "attribution", "kind": "other" },
+      { "source_id": "assurance-pins", "kind": "other" }
+    ],
+    "impact_snapshot": {
+      "identity": "quire-static-export",
+      "completeness": "complete",
+      "truncated": false,
+      "gaps": []
+    },
+    "definition": {
+      "requirements": [
+        {
+          "id": "FR-006-AC-1",
+          "statement": "The adopted component versions are classified by the packaged Engineering Assurance compatibility matrix, not by a local restatement of it.",
+          "source_ids": ["FR-006", "assurance-pins"]
+        },
+        {
+          "id": "FR-006-AC-2",
+          "statement": "Native parser, formatter, diagnostic, corpus, and round-trip results are produced by domain tools in a declared structured format and transcribed by Quoin without Quoin executing the producer.",
+          "source_ids": ["FR-006", "FR-003", "FR-004", "FR-005"]
+        },
+        {
+          "id": "FR-006-AC-3",
+          "statement": "Static specification, obligation, and coverage facts come from a Quire export, and Quire does not execute a producer.",
+          "source_ids": ["FR-006", "TM-001"]
+        },
+        {
+          "id": "FR-006-AC-4",
+          "statement": "Retained evidence bytes are read through the Engineering Assurance compatibility mapping and are not modified, and the mapping's answer is reported without collapsing it into pass or fail.",
+          "source_ids": ["FR-006", "NFR-002"]
+        },
+        {
+          "id": "FR-006-AC-5",
+          "statement": "Pass, fail, unavailable, unsupported, inconclusive, not-computed, malformed, partial, stale, suspect, vacuous, and tampered remain twelve distinguishable states across the intake path.",
+          "source_ids": ["FR-006", "NFR-003"]
+        },
+        {
+          "id": "FR-006-AC-6",
+          "statement": "Malformed parser input is reported as malformed: it does not drag its proof obligation to failed, and it is never transcribed as a pass. The malformed corpus is required to be non-empty, so the state cannot be satisfied vacuously.",
+          "source_ids": ["FR-006", "FR-003", "corpus-manifest"]
+        },
+        {
+          "id": "FR-006-AC-7",
+          "statement": "No repository-local generic runner, evidence envelope, manifest, identity framework, retention store, audit store, anchor file, or aggregate verdict remains in the execution path.",
+          "source_ids": ["FR-006", "NFR-003"]
+        }
+      ],
+      "preservation_constraints": [
+        {
+          "id": "PRESERVE-legacy-bytes",
+          "statement": "Every byte under evidence/ is unchanged by this migration, including ANCHORS, REQUIRED, RETRACTIONS.json, all 12 retained record directories and all 12 .sha256 manifests. The verifier is what was removed; the record is not.",
+          "source_ids": ["NFR-002", "FR-006"]
+        },
+        {
+          "id": "PRESERVE-frozen-schemas",
+          "statement": "schemas/tl-parse-evidence-input-v1.schema.json and schemas/tl-parse-evidence-manifest-v1.schema.json are frozen, not deleted: retained envelopes name them by path and SHA-256. Nothing validates against them any more and no script may reference them.",
+          "source_ids": ["NFR-002"]
+        },
+        {
+          "id": "PRESERVE-parser-behaviour",
+          "statement": "Lexer, parser, precedence and associativity, source spans, diagnostic codes and their spans, bounded resource limits, canonical formatting, the parse-format-parse fixed point, the hostile-input corpus, the fuzz target and its checked seeds, and the CLI's exact source-byte accounting remain owned and executed by this repository.",
+          "source_ids": ["FR-003", "FR-004", "FR-005"]
+        },
+        {
+          "id": "PRESERVE-malformed-is-not-failure",
+          "statement": "A malformed source rejected with its declared diagnostic is a correct outcome reported as malformed. It is not an error of the parser and not a pass of the input.",
+          "source_ids": ["FR-003", "corpus-manifest"]
+        },
+        {
+          "id": "PRESERVE-clean-room-provenance",
+          "statement": "The clean-room authorship basis at tl-syntax 740182f1 and its per-file SHA-256 table remain recorded and re-derived, alongside the compiled revision 953ee825. The negative declaration is unchanged.",
+          "source_ids": ["NFR-002", "attribution", "dialect"]
+        },
+        {
+          "id": "PRESERVE-manual-ci",
+          "statement": "Hosted CI remains workflow_dispatch only and is not dispatched by this change.",
+          "source_ids": ["NFR-003"]
+        }
+      ],
+      "proof_obligations": [
+        {
+          "proof_id": "PROOF-parser-conformance",
+          "statement": "Every fixture in the checked hostile-input corpus replays through the real crate at this candidate revision with the manifest's declared profile, limits, and either its declared canonical formatting or its declared diagnostic code.",
+          "obligation_ids": ["FR-006-AC-2", "FR-006-AC-6"],
+          "evidence_kind": "Integration",
+          "command": {
+            "argv": ["cargo", "run", "--quiet", "--example", "corpus_conformance", "--", "--manifest", "corpus/v1/manifest.json"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse-corpus-conformance",
+          "configuration": "corpus/v1/manifest.json"
+        },
+        {
+          "proof_id": "PROOF-roundtrip-property",
+          "statement": "Over a generated source domain that includes unparenthesised precedence-dependent forms, explicit non-default groupings, deep prefix chains and wide binary chains, every source the parser accepts formats and re-parses to a structurally identical graph under the same limits, and a parenthesis-stripping negative control is shown to break it.",
+          "obligation_ids": ["FR-006-AC-2"],
+          "evidence_kind": "Property",
+          "command": {
+            "argv": ["cargo", "run", "--quiet", "--release", "--example", "roundtrip_sweep"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse-roundtrip-sweep",
+          "configuration": "docs/DIALECT-001-clean-room-mltl-v1.md"
+        },
+        {
+          "proof_id": "PROOF-test-census",
+          "statement": "Every requirement-tagged Rust test in the source tree is a test Cargo actually compiles and runs, and no compiled requirement-tagged test is ignored or configured out.",
+          "obligation_ids": ["FR-006-AC-2"],
+          "evidence_kind": "Static",
+          "command": {
+            "argv": ["python3", "scripts/rust_test_census.py", "--json"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse-test-census",
+          "configuration": "spec/test-matrix.md"
+        },
+        {
+          "proof_id": "PROOF-clean-room-attribution",
+          "statement": "The per-file SHA-256 table in docs/ATTRIBUTION.md is re-derived from the tl-syntax source Cargo actually resolved, and the compiled revision it names agrees with TL_SYNTAX_REVISION in the crate.",
+          "obligation_ids": ["FR-006-AC-2"],
+          "evidence_kind": "Static",
+          "command": {
+            "argv": ["python3", "scripts/check_attribution.py", "--json"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse-attribution",
+          "configuration": "docs/ATTRIBUTION.md"
+        },
+        {
+          "proof_id": "PROOF-quire-static-export",
+          "statement": "The authoritative static specification, obligation, and coverage facts for this revision are the Quire export, which executes no producer.",
+          "obligation_ids": ["FR-006-AC-3"],
+          "evidence_kind": "Static",
+          "command": {
+            "argv": ["quire", "coverage", "--scope", ".", "--json"],
+            "working_directory": "."
+          },
+          "tool_identity": "quire",
+          "configuration": "spec/test-matrix.md"
+        },
+        {
+          "proof_id": "PROOF-legacy-compatibility",
+          "statement": "All 12 retained evidence envelopes are read through the pinned Engineering Assurance mapping, their bytes are unchanged, and the mapping's answer for each is reported as it stands.",
+          "obligation_ids": ["FR-006-AC-4"],
+          "evidence_kind": "Static",
+          "command": {
+            "argv": [".venv-assurance/bin/python", "scripts/legacy_evidence_view.py", "--json"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse/legacy_evidence_view",
+          "configuration": "tests/fixtures/legacy-compat/expectations.json"
+        },
+        {
+          "proof_id": "PROOF-msrv",
+          "statement": "The declared MSRV compiles every target and feature of this crate at this candidate revision, against the locked dependency graph, and reports it in cargo's own JSON message stream.",
+          "obligation_ids": ["FR-006-AC-2"],
+          "evidence_kind": "Static",
+          "command": {
+            "argv": ["rustup", "run", "1.75.0", "cargo", "check", "--locked", "--all-targets", "--all-features", "--message-format=json"],
+            "working_directory": "."
+          },
+          "tool_identity": "cargo",
+          "configuration": "rust-toolchain.toml"
+        }
+      ],
+      "unknowns": [
+        {
+          "id": "UNKNOWN-ea-acceptance-not-in-a-release",
+          "statement": "engineering-assurance v0.2.0 records accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate; the human acceptance exists only on main. This repository reports the state the release records and does not gate on it. Filed as agent-ix/engineering-assurance#20.",
+          "disposition": "open",
+          "owner": "agent-ix/engineering-assurance"
+        },
+        {
+          "id": "UNKNOWN-derivation-evidence-not-mapped",
+          "statement": "map_pgm01_bytes at the pinned release covers quire.pgm01-evidence v1 and v2. This repository's 12 retained envelopes are quire.derivation-evidence/v1, so the mapping refuses them as an unknown schema version. That refusal is reported as the compatibility result; no local mapper was written to make it read as a pass. Filed as agent-ix/engineering-assurance#21.",
+          "disposition": "open",
+          "owner": "agent-ix/engineering-assurance"
+        },
+        {
+          "id": "UNKNOWN-human-decision-absent",
+          "statement": "No ix-flow decision event exists for this change. Only the repository owner may create one, and none was synthesized, so the receipt is expected to read incomplete with a missing decision rather than complete.",
+          "disposition": "open",
+          "owner": "@kreneskyp"
+        },
+        {
+          "id": "UNKNOWN-make-failure-propagation-guard-removed",
+          "statement": "scripts/check_failure_propagation.py and the Makefile parse-time guard that policed Make's own execution controls are removed with the collector they protected. The class they guarded is real: a `-` prefix, `.IGNORE`, or a `SHELL := /usr/bin/true` assignment can make a recipe report success without running. What replaces them is structural rather than another guard — Quoin binds each retained input by digest and the chain derives every attested result from the producer's own bytes, so a Makefile that lies about what it ran produces an absent or empty input, which the chain reports as an error naming the missing target rather than as a pass. This is a genuine reduction in local detection and it is recorded rather than claimed away. Filed as agent-ix/tl-parse#11.",
+          "disposition": "open",
+          "owner": "agent-ix/tl-parse"
+        }
+      ]
+    },
+    "review_workflow": {
+      "run_id": "tl-parse-issue-10",
+      "decision_event_kind": "change_assurance.review_decided"
+    }
+  }
+}

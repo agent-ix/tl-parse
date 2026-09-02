@@ -19,6 +19,16 @@ The separately retained `ATTRIBUTION.md` binds the exact tl-syntax files and
 license texts consulted by SHA-256 and records the negative clean-room
 declaration as a reviewable artifact.
 
+The revision above is the authorship basis and is historical. The revision this
+crate compiles against is `953ee825e5060335b4c79682f5f41a78c5a1bfae`, the head
+of tl-syntax `main` after that repository merged its own shared-assurance
+migration. The two differ only by a bounded wire decoder, a new document
+node-limit error variant, `#[non_exhaustive]` markers on four error types, and
+the removal of the `Node` `Deserialize` derive. No operator, interval, span, or
+`NodeKind` in the vocabulary this grammar was authored from is added, removed,
+or renamed, so the grammar below is unchanged by the repin. `ATTRIBUTION.md`
+carries a SHA-256 table for both revisions.
+
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
 a SHA-256 digest over the normative production and precedence record so drift
 is detectable by tests and evidence.

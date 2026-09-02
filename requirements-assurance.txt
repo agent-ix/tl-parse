@@ -1,0 +1,27 @@
+# The shared assurance lane (FR-006). Install this in its OWN environment.
+#
+#   make assurance-env  ->  .venv-assurance, from this file
+#
+# Why a separate interpreter, since this repository has only one Python lane:
+#
+# tl-syntax needed two environments because its corpus gate was written against
+# jsonschema 3.2.0 (Draft 7) while engineering-assurance declares
+# jsonschema>=4.23,<5, and neither pin could be bent to fit the other. That
+# conflict does not exist here. The three scripts in this repository that
+# imported jsonschema — build_evidence_envelope.py, validate_json_schema.py and
+# test_evidence_tool.py — were all part of the local evidence machinery this
+# migration removes, so after the migration nothing in tl-parse consumes
+# jsonschema at all and there is no second lane to conflict with.
+#
+# The environment is kept anyway, for a different and still-good reason:
+# engineering-assurance is pinned as a git tag rather than a registry release,
+# and resolving a git dependency into the system interpreter would make the
+# pinned version depend on whatever else that interpreter already has. One
+# environment per pinned release keeps the pin meaning what it says.
+#
+# The pin is the accepted release from agent-ix/engineering-assurance#8, which
+# publishes engineering-assurance as a source distribution: the git tag IS the
+# released artifact. It is not a branch head and must not be replaced by one,
+# even though the human acceptance of the FR-012 matrix landed on main after
+# the tag was cut (agent-ix/engineering-assurance#20).
+engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.2.0

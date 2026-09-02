@@ -6,3 +6,6 @@ Cargo.lock.bak
 .DS_Store
 .idea/
 .vscode/
+
+# The pinned shared-assurance interpreter, built by `make assurance-env`.
+.venv-assurance/

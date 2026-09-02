@@ -39,7 +39,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     for required in [
         "independently authored",
         "MIT OR Apache-2.0",
+        // The compiled revision, which moves when the crate repins.
         TL_SYNTAX_REVISION,
+        // The authorship basis, which is historical and must not be silently
+        // rewritten to match the compiled revision when the two diverge.
+        "740182f13b84858008d6f176f75136737d405c1b",
         "tl-parse.clean-ascii/v1",
     ] {
         assert!(dialect.contains(required), "dialect omits {required}");
@@ -50,16 +54,24 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "2004663070c53bda7aa1bf54f0057d83835c3afdbccb91de7ddb312e1e6a6f24"
+        "ae891b5c7e0784e90d2a5f869d8de26ae824cc3b9138792295bb836915ab932d"
     );
     assert_eq!(
         attribution_document_digest(),
-        "58abff30ae6fa05528159f2d9aaf2ef8ee5dac4146d7ba0080ac288a20e36d8e"
+        "464f20c406f328a03acb8d58784638cd2d6fe0f0a6d99aebcf1e00ea0b8a59ef"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
+    // The authorship basis at 740182f1, which is historical and does not move,
+    // and the compiled revision at 953ee825, which is a different fact. Both
+    // tables are asserted so that dropping either one goes red.
     for digest in [
+        // authorship basis, tl-syntax@740182f1
         "04e6a46e697444df8e6764dd0e5e5227b1271199ffc0e9d24f77720c979eb14e",
         "f97005479f1f12511f1fceb2f9a85b94b482170e606c5735758e11aa2e4580f2",
+        // compiled revision, tl-syntax@953ee825
+        "76a5f72f6ee2791b9665ffacab057b1d62a262fa6a56a80bfbe443235d368647",
+        "8ba023faf819b1934b06e47b536e7aa1739143df3a82f7fc426ecf91a6aa1268",
+        // licence files, byte-identical across both revisions
         "97ead12ddb151fc37ffb1c623ab42b9814e21629dee252ff23dc7205f1df9f05",
         "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
     ] {

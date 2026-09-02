@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "tl-parse.legacy-compat-expectations/v1",
+  "purpose": "Every case the compatibility view asserts, and why. Each derived fixture is ONE named edit to bytes shipped by the pinned Engineering Assurance release, re-applied and compared by scripts/legacy_evidence_view.py on every run. A fixture that cannot be re-derived from the pinned source is a hand-written blob claiming to be one named change, and the view refuses it.",
+  "derivation_source": "engineering_assurance/fixtures/verification-semantics/pgm01-v1.json and pgm01-v2.json, both digest-pinned in assurance/pins.json. The release's own known-good records are the only honest base for a derived fixture, because this repository retains no PGM-01 record of its own.",
+  "discrimination": "Two cases return `unreadable` under the real record id and are separable only by the upstream reason text: an unknown check status (`unknown-check-status`) and a structurally undecodable body (`truncated-body`). map_pgm01_bytes offers no structural discriminator for that pair, so `expected_reason_contains` is used for them and the limitation is stated here rather than resolved by re-deriving a discriminator locally — which would mean writing the mapping this migration removed. Every other case asserts a structural field: `source_record_id`, `source_schema_version`, or `outcome`.",
+  "cases": [
+    {
+      "id": "positive-control-v1",
+      "kind": "positive_control",
+      "root": "release",
+      "file": "fixtures/verification-semantics/pgm01-v1.json",
+      "expected_outcome": "lossy",
+      "expected_record_id": "pgm-01-abcdef0",
+      "expected_schema_version": "quire.pgm01-evidence/v1",
+      "requires_states": ["passed", "skipped"],
+      "why": "The release's own v1 record, unedited. A mapping only ever observed refusing is indistinguishable from a step that never worked, so the census requires at least one positive control to be accepted before it can match."
+    },
+    {
+      "id": "positive-control-v2",
+      "kind": "positive_control",
+      "root": "release",
+      "file": "fixtures/verification-semantics/pgm01-v2.json",
+      "expected_outcome": "lossy",
+      "expected_schema_version": "quire.pgm01-evidence/v2",
+      "requires_states": ["failed"],
+      "why": "The v2 positive control. It also supplies the `failed` state from a record the release itself ships, so `failed` is demonstrated by real bytes and not only by an edit this repository made."
+    },
+    {
+      "id": "derived-failed",
+      "kind": "failed",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-failed.json",
+      "derivation": { "operation": "replace", "find": "\"status\": \"pass\"", "replace": "\"status\": \"fail\"", "occurrences": 1 },
+      "expected_outcome": "lossy",
+      "expected_record_id": "pgm-01-abcdef0",
+      "requires_states": ["failed"],
+      "why": "One check's status becomes a failure. The mapping must carry a failure through as `failed` rather than folding it into the record's other passing check."
+    },
+    {
+      "id": "derived-error",
+      "kind": "error",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-error.json",
+      "derivation": { "operation": "replace", "find": "\"status\": \"skipped\"", "replace": "\"status\": \"error\"", "occurrences": 1 },
+      "expected_outcome": "lossy",
+      "expected_record_id": "pgm-01-abcdef0",
+      "requires_states": ["error"],
+      "why": "`error` is a distinct legacy state: a check that could not be run is not a check that ran and failed."
+    },
+    {
+      "id": "derived-inconclusive",
+      "kind": "inconclusive",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-inconclusive.json",
+      "derivation": { "operation": "replace", "find": "\"status\": \"skipped\"", "replace": "\"status\": \"inconclusive\"", "occurrences": 1 },
+      "expected_outcome": "lossy",
+      "expected_record_id": "pgm-01-abcdef0",
+      "requires_states": ["inconclusive"],
+      "why": "A check that ran and reached no verdict. It must not collapse into either a pass or a failure."
+    },
+    {
+      "id": "derived-unavailable",
+      "kind": "unavailable",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-unavailable.json",
+      "derivation": { "operation": "replace", "find": "\"status\": \"skipped\"", "replace": "\"status\": \"unavailable\"", "occurrences": 1 },
+      "expected_outcome": "lossy",
+      "expected_record_id": "pgm-01-abcdef0",
+      "requires_states": ["unavailable"],
+      "why": "A check whose tool was absent. Distinct from skipped, which is a deliberate omission, and from error, which is a failed attempt."
+    },
+    {
+      "id": "unknown-check-status",
+      "kind": "unreadable",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-unknown-status.json",
+      "derivation": { "operation": "replace", "find": "\"status\": \"skipped\"", "replace": "\"status\": \"not-computed\"", "occurrences": 1 },
+      "expected_outcome": "unreadable",
+      "expected_record_id": "pgm-01-abcdef0",
+      "expected_reason_contains": "is unknown",
+      "requires_states": [],
+      "why": "A status the legacy vocabulary never defined. The mapping refuses the record rather than guessing which of the six states a novel word meant — which is the behaviour that keeps an unknown from silently becoming a pass. Note that `not-computed` is a perfectly good word in the NEW vocabulary; that it is unknown to the LEGACY one is exactly the point."
+    },
+    {
+      "id": "truncated-body",
+      "kind": "unreadable",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-truncated.json",
+      "derivation": { "operation": "truncate", "bytes": 200 },
+      "expected_outcome": "unreadable",
+      "expected_record_id": "unreadable-source",
+      "expected_reason_contains": "invalid JSON",
+      "requires_states": [],
+      "why": "Bytes that are not a record at all. The mapping reports `unreadable-source` as the record id, because it cannot attribute an answer to a record whose identity it could not read."
+    },
+    {
+      "id": "unsupported-schema-version",
+      "kind": "incompatible",
+      "source": "fixtures/verification-semantics/pgm01-v1.json",
+      "file": "derived-unsupported-schema.json",
+      "derivation": { "operation": "replace", "find": "quire.pgm01-evidence/v1", "replace": "quire.pgm01-evidence/v9", "occurrences": 1 },
+      "expected_outcome": "incompatible",
+      "expected_record_id": "pgm-01-abcdef0",
+      "expected_schema_version": "quire.pgm01-evidence/v9",
+      "requires_states": [],
+      "why": "A schema version the mapping does not cover. This is the same refusal this repository's own 12 retained envelopes receive, reproduced on a record whose other fields are known-good, so the refusal is shown to be about the version and not about the record being unusual."
+    },
+    {
+      "id": "tampered-source-identity",
+      "kind": "tampered",
+      "root": "release",
+      "file": "fixtures/verification-semantics/pgm01-v1.json",
+      "bind_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "expected_outcome": "incompatible",
+      "expected_record_id": "tampered-source",
+      "requires_states": [],
+      "why": "Known-good bytes offered under an identity that is not theirs. The mapping refuses and says `tampered-source`, which is structurally distinct from `unreadable-source`, so tampering and undecodability are told apart by a field rather than by wording."
+    },
+    {
+      "id": "retained-derivation-envelope",
+      "kind": "incompatible",
+      "root": "repository",
+      "file": "evidence/tl-parse-v01-2b295d21fef6-20260831T233256Z/evidence-envelope.json",
+      "expected_outcome": "incompatible",
+      "expected_schema_version": "quire.derivation-evidence/v1",
+      "expected_reason_contains": "unknown PGM-01 schema version",
+      "requires_states": [],
+      "why": "One of this repository's own retained envelopes, read as a declared case rather than only in the bulk census, so the refusal this migration reports is asserted by id and not merely observed in aggregate. agent-ix/engineering-assurance#21."
+    }
+  ]
+}

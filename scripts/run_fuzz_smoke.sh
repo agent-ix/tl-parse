@@ -38,9 +38,8 @@ else
 fi
 
 set +e
-ASAN_OPTIONS=detect_leaks=1 /usr/bin/python3 scripts/run_cargo_toolchain.py nightly \
-  fuzz run parser \
-  --target-dir "$CARGO_TARGET_DIR/fuzz" \
+ASAN_OPTIONS=detect_leaks=1 rustup run nightly cargo fuzz run parser \
+  --target-dir "${CARGO_TARGET_DIR:-target}/fuzz" \
   "$generated_corpus" "$seed_corpus" -- \
   "-artifact_prefix=$artifact_dir/" -runs=64
 status=$?

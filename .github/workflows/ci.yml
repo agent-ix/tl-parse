@@ -1,12 +1,12 @@
 name: CI
 
+# Manual dispatch only, deliberately. There is no push or pull_request trigger:
+# local `make ci` is the iteration gate, and a hosted run is dispatched once for
+# a finalized revision so parallel pull-request work does not generate repeated
+# billable runs. The `tool_profile` input is gone with `tools.lock`, which this
+# migration removed along with the rest of the local evidence machinery.
 on:
   workflow_dispatch:
-    inputs:
-      tool_profile:
-        description: Exact reviewed tools.lock profile (runner profile must be committed first)
-        required: true
-        default: peter-linux-x86_64-v1
 
 jobs:
   msrv:
@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install MSRV
         uses: dtolnay/rust-toolchain@master
         with:
@@ -21,18 +23,27 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
       - name: Check library, CLI, and integration tests
-        run: cargo check --all-targets --all-features
+        run: cargo check --locked --all-targets --all-features
 
   rust:
     name: Rust Checks
     runs-on: ubuntu-24.04
     steps:
+      # The compatibility view asks Git whether the retained evidence bytes are
+      # the committed bytes, so the full history has to be present.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+
+      - name: Install MSRV toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.75.0
 
       - name: Install nightly fuzz toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -40,34 +51,44 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Install evidence tools
-        run: pip install 'jsonschema[format]==4.25.1'
-
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      # The accepted pins from agent-ix/engineering-assurance#8, from the public
+      # registry. quoin was pinned at 0.22.5, which the packaged compatibility
+      # matrix names explicitly incompatible — it "predates the `quoin
+      # change-assurance` surface; seal, intake, and receipt commands do not
+      # exist", and every command this repository's chain runs is on that
+      # surface. ix-flow was absent entirely and is now installed.
       - name: Install specification tools and modules
         run: |
-          npm install --global '@agent-ix/quire-cli@0.31.0' '@agent-ix/quoin@0.22.5'
+          npm install --global '@agent-ix/quire-cli@0.31.0' '@agent-ix/quoin@0.23.1' 'ix-flow@0.0.4'
           quoin module ensure-defaults
 
-      - name: Install cargo-deny
+      # The shared-assurance lane is its own interpreter, built by
+      # `make assurance-env` from requirements-assurance.txt. There is no second
+      # Python lane: the three scripts that imported jsonschema were part of the
+      # local evidence machinery this migration removed.
+      - name: Build the pinned assurance environment
+        run: make assurance-env
+
+      - name: Install cargo-deny and cargo-fuzz
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-deny,cargo-fuzz
 
       - name: Complete local gate
-        env:
-          TL_PARSE_SELECTED_PROFILE: ${{ inputs.tool_profile }}
-        run: make TL_PARSE_TOOL_PROFILE="$TL_PARSE_SELECTED_PROFILE" ci
+        run: make ci
 
   licenses:
     name: License Check
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo artifacts

@@ -10,19 +10,23 @@ type: SuiteRegistry
 
 | ID | Name | Command | Tool | Evidence Kind |
 |---|---|---|---|---|
-| SUITE-001 | Complete local candidate gate | `make ci` | Rust/Cargo/Python/Quire tooling | Integration |
-| SUITE-002 | Requirements and assurance validation | `quire validate --scope . 'spec/**/*.md' 'docs/*.md'` | Quire 0.31.0 | Analysis |
-| SUITE-003 | Requirement coverage | `python3 scripts/check_traceability_coverage.py` | Quire 0.31.0 plus repository completeness policy | Analysis |
+| SUITE-001 | Complete local candidate gate | `make ci` | Rust/Cargo/Python/Quire/Quoin tooling | Integration |
+| SUITE-002 | Requirements and assurance validation | `quire validate --scope . 'spec/**/*.md' 'docs/*.md' --strict --summary` | Quire 0.31.0 | Analysis |
+| SUITE-003 | Requirement coverage | `quire coverage --scope . --strict` | Quire 0.31.0 | Analysis |
 | SUITE-004 | Rustdoc warnings | `RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features` | rustdoc | Analysis |
 | SUITE-005 | Corpus integrity | `make check-corpus` | sha256sum | Static |
-| SUITE-006 | Minimum supported Rust boundary | `python3 scripts/run_cargo_toolchain.py 1.75.0 check --all-targets --all-features` | Rust 1.75.0 | Analysis |
-| SUITE-007 | PGM-01 evidence validation | `make evidence-tool` | JSON Schema/PGM validator | Analysis |
+| SUITE-006 | Minimum supported Rust boundary | `rustup run 1.75.0 cargo check --locked --all-targets --all-features` | Rust 1.75.0 | Analysis |
+| SUITE-007 | Shared assurance intake | `make assurance` | quire-cli 0.31.0, Quoin 0.23.1, engineering-assurance 0.2.0 | Integration |
 | SUITE-008 | Hosted candidate confirmation | Manual `workflow_dispatch` once for a finalized PR revision | GitHub Actions | Integration |
-| SUITE-009 | Authored diff integrity | `git diff --check origin/main...HEAD -- . ':(exclude)evidence/**'` | Git | Static |
+| SUITE-009 | Parser conformance and round-trip | `make conformance roundtrip` | tl-parse corpus runner and round-trip sweep | Integration |
 
-Hosted CI intentionally has no push or pull-request trigger. Local `make ci`
-is the iteration gate; a hosted run is dispatched deliberately for a finalized
+Hosted CI intentionally has no push or pull-request trigger. Local `make ci` is
+the iteration gate; a hosted run is dispatched deliberately for a finalized
 revision so parallel PR work does not generate repeated billable runs.
-Retained evidence payloads are excluded only from SUITE-009 because third-party
-tools may emit trailing spaces; their exact bytes remain covered by the inner
-artifact manifests, outer manifests, and committed anchors.
+
+SUITE-007 replaces the former local PGM-01 evidence validation suite. Retained
+evidence is no longer verified by a repository-local verifier: its bytes are
+immutable, Git history and pull-request review are the integrity boundary for
+them, and they are read through the Engineering Assurance compatibility mapping.
+The former SUITE-009 authored-diff integrity check went with the collector whose
+staging it protected.

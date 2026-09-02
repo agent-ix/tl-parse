@@ -25,7 +25,7 @@ pub const DIALECT_REVISION: &str = "tl-parse.clean-ascii/v1";
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
 
 /// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "740182f13b84858008d6f176f75136737d405c1b";
+pub const TL_SYNTAX_REVISION: &str = "953ee825e5060335b4c79682f5f41a78c5a1bfae";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";

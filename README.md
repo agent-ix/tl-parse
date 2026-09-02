@@ -7,11 +7,13 @@ The v0.1 boundary uses the independently authored, versioned ASCII dialect in
 It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
-The current dependency pin is
-`740182f13b84858008d6f176f75136737d405c1b`. It is a temporary exact git
-source candidate pending upstream review and merge; source release remains
-blocked until the exception is removed, the merged revision is pinned, and
-candidate evidence is regenerated.
+The crate compiles against `tl-syntax` at
+`953ee825e5060335b4c79682f5f41a78c5a1bfae`, the head of that repository's
+`main`. The dialect was authored from the earlier revision `740182f1`, which is
+a separate and historical fact; `docs/ATTRIBUTION.md` records a SHA-256 table
+for both. The dependency still resolves by exact git revision because
+`tl-syntax` has no registry release, and source release remains blocked while
+that is true.
 
 ## Build
 
@@ -31,8 +33,20 @@ printf 'p0 U[1,2] true' | cargo run --bin tl-parse -- format --profile online -
 ```
 
 The checksum-protected hostile-input corpus is in `corpus/v1`; fuzz seeds and
-the `cargo-fuzz` target are under `fuzz/`. Exact-candidate evidence is retained
-under `evidence/` and can be verified with `make verify-evidence`.
+the `cargo-fuzz` target are under `fuzz/`.
+
+## Assurance
+
+Verification results are produced by this repository's own tools, transcribed
+and retained by [Quoin](https://github.com/agent-ix/quoin), and described by
+static facts exported from [Quire](https://github.com/agent-ix/quire-rs).
+Neither tool executes a producer. `make assurance` classifies the toolchain
+through the packaged Engineering Assurance compatibility matrix, reads the
+retained evidence under `evidence/` through that release's compatibility
+mapping, and drives the seal/intake/receipt chain.
+
+Retained evidence is immutable and is no longer verified by a repository-local
+verifier: Git history and pull-request review are its integrity boundary.
 
 ## Development status
 

@@ -39,8 +39,8 @@ human review/release state to remain pending.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-002-AC-1 | The dialect record names its authorship basis, license boundary, exact tl-syntax pin, stable revision, and digest. | Inspection (TC-020) |
-| NFR-002-AC-2 | Retained evidence identifies exact source, dependency, corpus, schemas, limits, and toolchain while leaving review/release authority pending. | Test (TC-022) |
+| NFR-002-AC-1 | The dialect record names its authorship basis, license boundary, exact compiled tl-syntax pin, stable revision, and digest; the authorship basis and the compiled revision are recorded as separate facts and the compiled digests are re-derived from the source Cargo resolved. | Inspection (TC-020) |
+| NFR-002-AC-2 | Retained evidence is read through the pinned shared compatibility mapping without a byte moving, its reported identity is compared to the bytes read, and review/release authority remains pending. | Test (TC-025) |
 
 ## Qualification Boundary
 
