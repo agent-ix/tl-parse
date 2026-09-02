@@ -42,17 +42,23 @@ the base, all nine suites were backed by a single test — `tests/evidence_contr
 the binding shape PR #6's reviewers criticised repeatedly: a row can be backed by
 a tag on a test that does not exercise it.
 
-Five suites are now backed by a test that actually invokes that suite's command:
-SUITE-005 by `tests/corpus.rs` (which runs `sha256sum --check`), and
-SUITE-003/006/007/009 by `tests/shared_assurance.rs` (which drives the Quire
-export, the MSRV attestation, the whole assurance chain, and both domain
-producers' results). Four are honestly unbacked: SUITE-001 is the composite
-gate, SUITE-002 is `quire validate`, SUITE-004 is `rustdoc`, SUITE-008 is a
-manual hosted dispatch. No test invokes any of them, and the only available way
-to make them read as backed is to assert that the Makefile *contains* the
-command.
+Five suites now have a bound test. **Corrected after the adversarial round:** an
+earlier version of this section said those tests "actually invoke that suite's
+command", and none of them does. They bind to the suite's *retained output* —
+TC-024 reads the Quire export rather than running `quire coverage --strict`,
+TC-023 reads `msrv.jsonl` rather than running the MSRV check, and so on. That is
+the architecture working as intended, since verdicts are supposed to come from
+producer bytes, but it is a weaker claim and `spec/evidence/suites.md` now states
+it as the weaker claim with a per-suite table.
 
-An honest 5/9 backed by behaviour is worth more than 9/9 backed by one tag.
+Four are unbacked entirely: SUITE-001 is the composite gate, SUITE-002 is `quire
+validate`, SUITE-004 is `rustdoc`, SUITE-008 is a manual hosted dispatch. The
+only available way to make them read as backed is to assert that the Makefile
+*contains* the command.
+
+Five output-bound rows and four honestly empty ones is a better record than nine
+rows backed by one test that tagged every suite at once — but it is not the
+"invokes the command" claim originally written, and the distinction is the point.
 
 ## Traceability of the new requirement
 
@@ -73,7 +79,7 @@ FR-006 has seven acceptance criteria and each is owned by exactly one test:
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-701 | medium | Four suite-registry rows are unbacked. Deliberate, explained in the registry, and preferable to the single over-broad tag it replaces — but it is a real gap and a reader comparing 100% to 94% deserves the reason rather than the number | `spec/evidence/suites.md` |
-| FND-702 | medium | `make ci` prerequisites that are pure gates with no retained output — `fmt-check`, `lint`, `deny`, `audit-unsafe`, `rustdoc` — are not covered by the structural replacement for the deleted Make execution-control guard. Filed as `agent-ix/tl-parse#11` | `Makefile` |
+| FND-702 | high | Raised from medium by the adversarial round, which demonstrated it rather than reasoning about it: `.IGNORE:` neuters `fmt-check`, `lint`, `test`, `check-corpus`, `fuzz-build`, `fuzz-smoke`, `deny`, `audit-unsafe`, `rustdoc` and half of `spec`, and every remaining check stays green. The claim that the structural replacement covered the class was false and is corrected in NFR-003, AA-001, the declaration and the Makefile header. Filed as `agent-ix/tl-parse#11` | `Makefile` |
 | FND-703 | low | `[status-column-matches-nothing]` persists: the traceability declaration expects a `Status` column and the matrix authors `Coverage Status`, so status classification is skipped and complete-but-unbacked rows cannot be detected. Not this repository's to fix alone; tracked program-wide as `agent-ix/quire-contract-ir#21` | `spec/test-matrix.md` |
 | FND-704 | low | `[catch-all-universal]`: 2 of 7 documents binding extractable criteria name a specific property shape for none of them. Carried over from the base revision, unchanged by this migration | `spec/requirements/FR-003-diagnostics-limits.md` |
 

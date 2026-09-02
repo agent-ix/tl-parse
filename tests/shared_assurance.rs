@@ -206,11 +206,19 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
 /// never run look identical from the outside, so the shims write down every call
 /// and the test reads the file rather than assuming.
 ///
-/// `--version` is answered rather than refused, and deliberately so. Asking a
-/// tool its version is an observation — it is what the compatibility matrix's
+/// A version query is answered rather than refused, and deliberately so. Asking
+/// a tool its version is an observation — it is what the compatibility matrix's
 /// own `observe` column does — and it is not the thing this test forbids. What
 /// is forbidden is asking a tool to build, compile, test, parse, or replay
 /// anything. Every such invocation is logged and the log must be empty.
+///
+/// `--version` is matched anywhere in the argv, not just in `$1`, because the
+/// MSRV attestation observes `rustup run 1.75.0 cargo --version`: its declared
+/// command runs cargo through the pinned toolchain, so the version sealed into
+/// the attestation has to come from that toolchain rather than from ambient
+/// cargo. That is still a version observation. Anything without a version flag
+/// — `cargo build`, `cargo check`, `rustup run … check` — is logged and fails
+/// the test, which is what keeps it able to fail.
 fn producer_shims(directory: &Path, names: &[&str]) -> PathBuf {
     fs::create_dir_all(directory).unwrap();
     let log = directory.join("invocations.log");
@@ -221,9 +229,11 @@ fn producer_shims(directory: &Path, names: &[&str]) -> PathBuf {
             &path,
             format!(
                 "#!/bin/sh\n\
-                 case \"$1\" in\n\
+                 for argument in \"$@\"; do\n\
+                 case \"$argument\" in\n\
                  --version|-V) echo \"{name} 9.9.9 (shim)\"; exit 0 ;;\n\
                  esac\n\
+                 done\n\
                  echo \"$0 $@\" >> {}\n\
                  exit 97\n",
                 log.display()
@@ -338,6 +348,25 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     assert!(
         parsed.is_object() && !parsed.as_object().unwrap().is_empty(),
         "the Quire export is not a populated document"
+    );
+
+    // The measured coverage, pinned. `derive_result` refuses an export that
+    // measured nothing or carries a status lie, but a partially-backed export is
+    // legitimately not a failure here — four suite rows are deliberately
+    // unbacked and SR-007 says why. So the figures themselves are asserted: an
+    // export reporting different totals has to move a number in this file.
+    let totals = &parsed["totals"];
+    assert_eq!(totals["total"], 72, "matrix row count changed: {totals}");
+    assert_eq!(
+        totals["backed"], 68,
+        "backed-row count changed: {totals}. Four suite rows are unbacked on \
+         purpose; if that number moved, update spec/evidence/suites.md and SR-007 \
+         deliberately rather than adjusting this assertion."
+    );
+    assert!(
+        parsed["status_lies"].as_array().unwrap().is_empty(),
+        "Quire reported a row whose declared status disagrees with its evidence: {}",
+        parsed["status_lies"]
     );
 
     // And the chain must have read it as such rather than as a not-computed run.
@@ -460,6 +489,13 @@ fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() 
     let report = chain_report();
     let census = json_gate(&python, &["scripts/legacy_evidence_view.py", "--json"]);
 
+    // Only MEASURED outcomes count. The chain's `states_demonstrated` is already
+    // built from cases that ran and matched. The compatibility lane contributes
+    // the outcome the mapping actually returned and the states it actually
+    // mapped — never the case's `kind`, which is a free-text label in
+    // expectations.json. Counting the label meant a state could stop being
+    // demonstrated while this test stayed green, which is the exact failure mode
+    // this test exists to rule out.
     let mut demonstrated: BTreeSet<String> = report["states_demonstrated"]
         .as_array()
         .unwrap()
@@ -467,7 +503,12 @@ fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() 
         .map(|value| value.as_str().unwrap().to_owned())
         .collect();
     for case in census["cases"].as_array().unwrap() {
-        demonstrated.insert(case["kind"].as_str().unwrap().replace('_', "-"));
+        if case["matched"] != serde_json::Value::Bool(true) {
+            continue;
+        }
+        for state in case["mapped_states"].as_array().unwrap() {
+            demonstrated.insert(state.as_str().unwrap().to_owned());
+        }
     }
 
     let missing: Vec<&str> = REQUIRED
@@ -479,6 +520,25 @@ fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() 
         missing.is_empty(),
         "these verification outcomes were never demonstrated: {missing:?}; \
          demonstrated: {demonstrated:?}"
+    );
+
+    // The compatibility lane's own six-state vocabulary, measured the same way:
+    // the census reports which states it observed and which it did not.
+    assert!(
+        census["undemonstrated_states"]
+            .as_array()
+            .unwrap()
+            .is_empty(),
+        "the compatibility mapping's state vocabulary is not fully demonstrated: {}",
+        census["undemonstrated_states"]
+    );
+    assert!(
+        census["undemonstrated_outcomes"]
+            .as_array()
+            .unwrap()
+            .is_empty(),
+        "the compatibility mapping's outcome vocabulary is not fully demonstrated: {}",
+        census["undemonstrated_outcomes"]
     );
 
     // Every negative names the positive control that proves the step it refuses
@@ -686,10 +746,31 @@ fn no_local_evidence_framework_remains_and_the_frozen_schemas_are_referenced_by_
         let Ok(source) = fs::read_to_string(path) else {
             continue;
         };
+        // Three files name the frozen schemas on purpose: this test pins their
+        // digests, schemas/README.md documents the freeze, and the
+        // change-assurance declaration states the preservation constraint. They
+        // are named here rather than described as "only this file", which was
+        // not true. Everything else must not mention them at all.
+        const MAY_NAME: [&str; 3] = ["shared_assurance.rs", "README.md", "change-assurance.json"];
+        let file_name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
+        let parent = path
+            .parent()
+            .and_then(|value| value.file_name())
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
+        let permitted = match file_name {
+            "shared_assurance.rs" => true,
+            "README.md" => parent == "schemas",
+            "change-assurance.json" => parent == "assurance",
+            _ => false,
+        };
+        let _ = MAY_NAME;
         for (schema, _) in frozen {
             let name = Path::new(schema).file_name().unwrap().to_str().unwrap();
-            // This file names them in order to pin them; nothing else may.
-            if path.file_name().and_then(|value| value.to_str()) == Some("shared_assurance.rs") {
+            if permitted {
                 continue;
             }
             assert!(
@@ -719,4 +800,113 @@ fn no_local_evidence_framework_remains_and_the_frozen_schemas_are_referenced_by_
             "the Makefile still carries the {gone} self-attestation target"
         );
     }
+}
+
+// Trace: TC-026, FR-006-AC-5, NFR-003-AC-3
+#[test]
+fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
+    // NFR-003-AC-3 claims this guard is checked. It was not: the guard existed
+    // and nothing exercised it, which is the same shape of gap the guard itself
+    // is there to catch.
+    //
+    // The driver is copied and one `pairs_with` — and only that one — is
+    // renamed. Renaming the scenario as well would leave the pairing consistent
+    // and prove nothing, which is exactly how the first version of this probe
+    // failed to detect anything.
+    let scratch = root().join("target/dangling-probe");
+    let _ = fs::remove_dir_all(&scratch);
+    fs::create_dir_all(scratch.join("scripts")).unwrap();
+    let driver = fs::read_to_string(root().join("scripts/assurance_chain.py")).unwrap();
+
+    let control_marker =
+        "        \"verify-accepts-an-unedited-receipt\",\n        \"refuse-an-edited-receipt\",";
+    assert!(
+        driver.contains(control_marker),
+        "the control this probe renames is no longer present in the driver"
+    );
+    let mutated = driver.replacen(
+        control_marker,
+        "        \"verify-accepts-an-unedited-receipt\",\n        \"refuse-an-edited-receipt-typo\",",
+        1,
+    );
+    assert_ne!(mutated, driver, "the mutation did not apply");
+    fs::write(scratch.join("scripts/assurance_chain.py"), &mutated).unwrap();
+
+    // Everything else the driver reads comes from the real tree. Every root
+    // entry except `scripts` is symlinked, rather than an enumerated list, so
+    // that a driver which starts reading a new directory does not turn this
+    // probe into one that fails for an unrelated reason.
+    for entry in fs::read_dir(root()).expect("repository root") {
+        let path = entry.expect("directory entry").path();
+        let name = path
+            .file_name()
+            .and_then(|v| v.to_str())
+            .unwrap_or("")
+            .to_owned();
+        if name == "scripts" || name == ".git" {
+            continue;
+        }
+        let _ = std::os::unix::fs::symlink(&path, scratch.join(&name));
+    }
+
+    let revision = head_revision();
+    let output = Command::new("python3")
+        .args([
+            "scripts/assurance_chain.py",
+            "--candidate-revision",
+            &revision,
+        ])
+        .current_dir(&scratch)
+        .output()
+        .expect("failed to run the mutated chain");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "a control naming a non-existent scenario was not refused\n{stderr}"
+    );
+    assert!(
+        stderr.contains("name a scenario that does not exist"),
+        "the refusal did not name the cause: {stderr}"
+    );
+}
+
+// Trace: TC-022, FR-006-AC-1
+#[test]
+fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
+    // The structural branch of `mirror_references` (pins.json) already has a
+    // control. The file-scan branch did not: it was never observed to fire, so
+    // it was indistinguishable from a loop over files that never match.
+    let python = assurance_python();
+    let (code, stdout, stderr) = run(
+        &python,
+        &[
+            "-c",
+            "import json,sys,tempfile,pathlib;sys.path.insert(0,'scripts');\
+             import check_shared_pins as m;\
+             original=pathlib.Path('requirements-assurance.txt').read_text();\
+             pathlib.Path('requirements-assurance.txt').write_text(\
+             original+'\\n--registry=https://npm.ix/\\n');\
+             pins=json.load(open('assurance/pins.json'));\
+             found=m.mirror_references(pins);\
+             pathlib.Path('requirements-assurance.txt').write_text(original);\
+             print(json.dumps(found))",
+        ],
+    );
+    assert_eq!(code, 0, "the mirror file-scan probe failed: {stderr}");
+    let offenders: Vec<String> = serde_json::from_str(stdout.trim()).unwrap();
+    assert!(
+        offenders
+            .iter()
+            .any(|entry| entry.starts_with("requirements-assurance.txt:")),
+        "a mirror reference written into a scanned FILE was not detected; the \
+         file-scan branch matches nothing. Detected: {offenders:?}"
+    );
+
+    // And the file must be restored, or this test has dirtied the tree.
+    let restored = fs::read_to_string(root().join("requirements-assurance.txt")).unwrap();
+    assert!(
+        !restored.contains("npm.ix/"),
+        "the probe left a mirror reference in requirements-assurance.txt"
+    );
 }

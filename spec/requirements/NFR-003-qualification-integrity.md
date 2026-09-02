@@ -24,14 +24,24 @@ compatibility view `scripts/legacy_evidence_view.py`, the pin classifier
 It no longer owns `tools.lock`, a local-CI runner, Make execution-control
 probes, a collector, a finalizer, a manifest verifier, an anchor file, or a
 retraction registry. Those were removed with the local evidence framework they
-belonged to. That is a real reduction in local detection — a Makefile recipe can
-now be made to report success without running, and nothing in this repository
-inspects Make's own execution controls to notice. What replaces it is
-structural rather than another guard: Quoin binds each retained input by digest,
-and every attested result is derived from the producer's own bytes, so a recipe
-that did not run produces an absent or empty input and the chain reports that by
-name. The residue is recorded as an open unknown in the change-assurance
-declaration and tracked as `agent-ix/tl-parse#11`.
+belonged to.
+
+That is a real reduction in local detection, and the extent of it is stated here
+rather than minimised. Adding `.IGNORE:` to the `Makefile` makes every recipe
+report success without running, and nothing in this repository inspects Make's
+own execution controls to notice.
+
+A structural backstop exists but covers only part of the gate set. Quoin binds
+each retained input by digest and every attested result is derived from the
+producer's own bytes, so a *producer* that did not run yields an absent or empty
+input the chain names. That protects the five targets whose work is re-run
+inside `make assurance-inputs`. It does **not** protect a gate whose recipe
+writes nothing the chain reads: `fmt-check`, `lint`, `test`, `check-corpus`, `fuzz-build`, `fuzz-smoke`, `deny`, `audit-unsafe`, `rustdoc`, and the `quire validate` half of `spec`
+can each be neutered and every remaining check stays green. This was found by an
+adversarial review of this change, not predicted by it.
+
+The residue is recorded as an open unknown in the change-assurance declaration
+and tracked as `agent-ix/tl-parse#11`, which carries the reproduction.
 
 ## Measurement and Evaluation
 

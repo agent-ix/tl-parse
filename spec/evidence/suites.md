@@ -33,18 +33,31 @@ staging it protected.
 
 ## Backing
 
-Five of the nine suites are backed by a test that actually invokes that suite's
-command: SUITE-003 and SUITE-006/007/009 through `tests/shared_assurance.rs`,
-and SUITE-005 through `tests/corpus.rs`.
+Five of the nine suites have a bound test. What that binding is, precisely,
+matters more than the count, because an earlier version of this section claimed
+those tests "actually invoke that suite's command" and **none of them does**:
 
-Four are deliberately unbacked, and it is worth saying why rather than closing
-the gap with a tag. SUITE-001 is the composite gate, SUITE-002 is `quire
-validate`, SUITE-004 is `rustdoc`, and SUITE-008 is a manual hosted dispatch. No
-test in this repository invokes any of them, and the only way to make them read
-as backed would be to assert that the Makefile *contains* the command — a
-source-text grep, which is the binding shape reviewers of PR #6 rejected because
-it is satisfied by the string rather than by the behaviour. An honest 5/9 is
-better than a fabricated 9/9.
+| Suite | Bound test | What the test actually does |
+|---|---|---|
+| SUITE-003 | TC-024 | reads the `quire coverage --json` export and pins its totals; it does not run `--strict` |
+| SUITE-005 | TC-018 | runs `sha256sum --check` over `corpus/v1` only, not `fuzz/corpus/parser` |
+| SUITE-006 | TC-023 | reads `msrv.jsonl` and asserts the attested result, rather than running the MSRV check |
+| SUITE-007 | TC-023 | runs `scripts/assurance_chain.py` directly, so it covers the chain but not `pins` or `compat-view` |
+| SUITE-009 | TC-023 | reads the two producers' retained results rather than running `make conformance roundtrip` |
 
-Before this migration all nine rows were backed by a single test tagging every
-suite at once, which is the same defect in a different arrangement.
+So these tests bind to the **retained output** of a suite, not to its
+invocation. That is the architecture working as intended — the whole point is
+that verdicts come from producer bytes — but it is a weaker claim than "invokes
+the command", and it is stated here as the weaker claim it is.
+
+Four suites have no bound test at all: SUITE-001 is the composite gate,
+SUITE-002 is `quire validate`, SUITE-004 is `rustdoc`, and SUITE-008 is a manual
+hosted dispatch. The only available way to make them read as backed is to assert
+that the Makefile *contains* the command, which is the binding shape PR #6's
+reviewers rejected because it is satisfied by the string rather than by the
+behaviour.
+
+Before this migration all nine rows were backed by a single test whose `// Trace:`
+comment named SUITE-001 through SUITE-009 at once. Five output-bound rows and
+four honestly empty ones is a better record than that, and the difference is
+worth reading for what it is rather than as a coverage regression.

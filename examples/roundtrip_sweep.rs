@@ -242,10 +242,21 @@ fn main() -> ExitCode {
         let counts = sweep(&sources, profile);
         checked += counts.checked;
         drifted += counts.drift;
+        // `checked` is the only population the property was actually evaluated
+        // over. A sweep that parsed almost nothing and compared the remainder
+        // would report `pass` on a handful of cases, so the share of the
+        // declared domain that reached comparison is part of the verdict rather
+        // than prose in `detail`.
+        let offered = counts.checked + counts.rejected + counts.format_failed;
         let outcome = if counts.drift > 0 {
             "fail"
         } else if counts.checked == 0 {
             // Nothing was actually compared. That is not a pass.
+            "vacuous"
+        } else if offered == 0 || counts.checked * 2 < offered {
+            // Fewer than half the generated sources reached a comparison. The
+            // property may hold on what was checked, but the sweep no longer
+            // covers the domain it claims to, and that is not a pass either.
             "vacuous"
         } else {
             "pass"
@@ -262,11 +273,14 @@ fn main() -> ExitCode {
 
     // The control, reported as its own row so it cannot be quietly dropped.
     let (compared, broke) = control(&sources, SemanticProfile::ClosedTraceV1);
+    // The docstring promises the control breaks "a substantial share" of cases,
+    // so that is what is required. `broke > 0` would be satisfied by a single
+    // case out of thousands, which is not the claim the file makes.
     let control_outcome = if compared == 0 {
         "vacuous"
-    } else if broke == 0 {
-        // The property held even with parentheses removed, which means the
-        // sweep is not exercising precedence at all.
+    } else if broke * 4 < compared {
+        // Parenthesis removal barely changed anything, which means the sweep is
+        // not exercising precedence and the property is close to vacuous.
         "fail"
     } else {
         "pass"
@@ -281,5 +295,11 @@ fn main() -> ExitCode {
         "roundtrip sweep: {} sources, {checked} checked, {drifted} drift, control {broke}/{compared}",
         sources.len()
     );
+    // `make roundtrip` is a CI gate. A gate whose command always returns 0 is
+    // not a gate. The rows stay the authority for the chain; this is the exit
+    // status for the shell.
+    if drifted > 0 || control_outcome != "pass" {
+        return ExitCode::FAILURE;
+    }
     ExitCode::SUCCESS
 }

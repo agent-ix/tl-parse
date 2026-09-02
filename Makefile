@@ -11,12 +11,17 @@
 # This file is not a trust root and no longer tries to be one. The parse-time
 # guards that used to police Make's own execution controls — SHELL, .SHELLFLAGS,
 # MAKEFLAGS, the `-` prefix, $(eval) — went with the collector they were
-# protecting. That is a deliberate reduction in local detection and it is
-# recorded as an open unknown in assurance/change-assurance.json rather than
-# claimed away: what replaces them is structural, not another guard. Quoin binds
-# each retained input by digest and the chain derives every attested result from
-# the producer's own bytes, so a Makefile that lies about what it ran produces an
-# absent or empty input, and the chain reports that by name instead of passing.
+# protecting.
+#
+# Read this before trusting a green `make ci`: adding `.IGNORE:` to this file
+# makes every recipe below report success without running, and nothing here
+# notices. The structural backstop only goes so far — Quoin binds each retained
+# input by digest and the chain derives every attested result from the producer's
+# own bytes, so a producer that did not run yields an absent or empty input the
+# chain names. That covers the work re-run inside `assurance-inputs`. It does not
+# cover fmt-check, lint, test, check-corpus, fuzz-build, fuzz-smoke, deny,
+# audit-unsafe, rustdoc, or the `quire validate` half of spec. Tracked as
+# agent-ix/tl-parse#11.
 
 CARGO ?= cargo
 PYTHON ?= python3
@@ -168,7 +173,11 @@ rustdoc:
 # Shared assurance
 # =============================================================================
 
-$(ASSURANCE_PYTHON):
+# Rebuilt when the pin changes. Without this prerequisite, editing the pinned
+# release never rebuilds the environment and the toolchain keeps whatever it
+# already had.
+$(ASSURANCE_PYTHON): requirements-assurance.txt
+	rm -rf $(ASSURANCE_VENV)
 	$(PYTHON) -m venv $(ASSURANCE_VENV)
 	$(ASSURANCE_VENV)/bin/pip install --quiet --disable-pip-version-check \
 		-r requirements-assurance.txt

@@ -322,8 +322,12 @@ fn main() -> ExitCode {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."));
 
+    let mut failed = 0usize;
     for case in &manifest.cases {
         let row = evaluate(&corpus, case);
+        if row.outcome == "fail" {
+            failed += 1;
+        }
         println!(
             "{{\"protocol\":\"{PROTOCOL}\",\"symbol\":\"{}\",\"outcome\":\"{}\",\
              \"traceIds\":[\"TC-018\",\"FR-005-AC-1\"],\"detail\":\"{}\"}}",
@@ -331,6 +335,14 @@ fn main() -> ExitCode {
             row.outcome,
             escape(&row.detail)
         );
+    }
+    // A producer that reported a failing row must exit non-zero. `make conformance`
+    // is listed as a CI gate, and a gate whose command always returns 0 is not a
+    // gate — it is a print statement. The rows remain the authority for the chain;
+    // this is the exit status for the shell.
+    if failed > 0 {
+        eprintln!("{failed} corpus fixture(s) disagreed with the manifest");
+        return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
 }

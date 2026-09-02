@@ -14,5 +14,11 @@ migration removed. They are kept because all twelve retained envelopes under
 deleting the schemas would break a reference inside a record this repository is
 required to leave untouched.
 
-`tests/shared_assurance.rs` asserts both digests and censuses the source tree to
-prove nothing references them. That test is the only file permitted to name them.
+`tests/shared_assurance.rs` asserts both digests and censuses the whole source
+tree — every directory except `evidence/`, `target/` and the assurance
+virtualenv — to prove nothing validates against them.
+
+Three files name them on purpose and are allow-listed by that census: the test
+itself (which pins the digests), this README (which documents the freeze), and
+`assurance/change-assurance.json` (which states the preservation constraint).
+Anything else naming them fails TC-028.

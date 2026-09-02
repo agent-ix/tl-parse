@@ -270,7 +270,13 @@ class Chain:
         """
         crate = self.crate_version()
         probes = {
-            "cargo": lambda: semantic_version(tool_version(["cargo", "--version"])),
+            # PROOF-msrv's declared command runs cargo THROUGH rustup at the
+            # pinned MSRV, so the version sealed into the attestation has to be
+            # that toolchain's. Observing ambient `cargo --version` named a
+            # version that did not produce the bytes being attested.
+            "cargo": lambda: semantic_version(
+                tool_version(["rustup", "run", "1.75.0", "cargo", "--version"])
+            ),
             "quire": lambda: semantic_version(
                 (self.environment.get("quire") or "").split(" ")[0] or None
             ),
@@ -502,6 +508,22 @@ def _rows_result(rows: list[dict[str, Any]], where: str) -> str:
     return _worst(results)
 
 
+def _load_json(raw: str, path: Path) -> Any:
+    """Parse a producer's JSON, or say which file and which target, and stop.
+
+    A bare JSONDecodeError traceback exits 1, which is the code a scenario
+    mismatch uses. Unreadable producer output is an environment fault, so it gets
+    exit 2 and names the target that writes the file.
+    """
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise ChainError(
+            f"{path.relative_to(ROOT)} is not readable JSON ({error}). This is what "
+            "`make assurance-inputs` writes; a result that cannot be read is not a pass."
+        ) from error
+
+
 def derive_result(proof_id: str, path: Path) -> str:
     """Read the producer's own structured verdict out of the bytes it wrote.
 
@@ -516,33 +538,57 @@ def derive_result(proof_id: str, path: Path) -> str:
     single worst failure this file could have.
     """
     raw = path.read_text(encoding="utf-8")
+    if not raw.strip():
+        raise ChainError(
+            f"{path.relative_to(ROOT)} is empty. A producer that wrote nothing has not "
+            "reported a result, and an empty file is not a pass. Run `make assurance-inputs`."
+        )
     if proof_id in ("PROOF-parser-conformance", "PROOF-roundtrip-property"):
-        rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        rows = [_load_json(line, path) for line in raw.splitlines() if line.strip()]
         return _rows_result(rows, path.name)
     if proof_id == "PROOF-test-census":
-        return _rows_result(json.loads(raw)["entries"], path.name)
+        return _rows_result(_load_json(raw, path)["entries"], path.name)
     if proof_id == "PROOF-clean-room-attribution":
-        report = json.loads(raw)
+        report = _load_json(raw, path)
         return "passed" if report["matched"] else "failed"
     if proof_id == "PROOF-legacy-compatibility":
-        census = json.loads(raw)
+        census = _load_json(raw, path)
         return "passed" if census["matched"] else "failed"
     if proof_id == "PROOF-quire-static-export":
-        export = json.loads(raw)
+        export = _load_json(raw, path)
         # Quire's export is a static fact set, not a run, so it has no outcome
-        # field. What it can be held to is that it actually contains the facts
-        # the impact snapshot claims: an empty document is `not_computed`, which
-        # is a different answer from a clean export and must not read as one.
+        # field. What it can be held to is that it carries the coverage facts the
+        # impact snapshot claims.
+        #
+        # An earlier version asked only whether ANY nested value was non-empty.
+        # That is true of every real Quire output — `engine` alone satisfies it —
+        # so `not_computed` was unreachable and an export reporting 0 of 72 rows
+        # backed still attested `passed`. The verdict now reads the totals Quire
+        # itself computed.
         if not isinstance(export, dict) or not export:
             return "not_computed"
-        populated = any(
-            isinstance(export.get(key), (list, dict)) and export.get(key) for key in export
-        )
-        return "passed" if populated else "not_computed"
+        totals = export.get("totals")
+        if not isinstance(totals, dict) or "backed" not in totals or "total" not in totals:
+            # No totals means nothing was measured, which is not a clean export.
+            return "not_computed"
+        total = totals.get("total") or 0
+        backed = totals.get("backed") or 0
+        if total == 0 or backed == 0:
+            # A coverage export over no rows, or one in which nothing is backed,
+            # measured nothing worth snapshotting.
+            return "not_computed"
+        if export.get("status_lies"):
+            # Quire found a row whose declared status disagrees with its evidence.
+            return "failed"
+        # A partially-backed export is not a failure — four suite rows here are
+        # deliberately unbacked and SR-007 says why. The exact figures are pinned
+        # by TC-024, so a doctored export changes a number a test asserts rather
+        # than only a threshold this driver applies.
+        return "passed"
     if proof_id == "PROOF-msrv":
         # `cargo --message-format=json` emits one JSON object per line and ends
         # with `build-finished`. The verdict is that object's `success` field.
-        messages = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        messages = [_load_json(line, path) for line in raw.splitlines() if line.strip()]
         finished = [item for item in messages if item.get("reason") == "build-finished"]
         if not finished:
             # The build did not report finishing. That is not a failure and it is
