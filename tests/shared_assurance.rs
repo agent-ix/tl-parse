@@ -148,7 +148,7 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
     );
 }
 
-// Trace: TC-023, FR-006-AC-2, NFR-003-AC-1
+// Trace: TC-023, FR-006-AC-2, NFR-003-AC-1, SUITE-006, SUITE-007, SUITE-009
 #[test]
 fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
     let report = chain_report();
@@ -297,7 +297,7 @@ fn the_chain_never_executes_a_producer_and_the_probe_can_prove_it() {
     );
 }
 
-// Trace: TC-024, FR-006-AC-3
+// Trace: TC-024, FR-006-AC-3, SUITE-003
 #[test]
 fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     let report = chain_report();

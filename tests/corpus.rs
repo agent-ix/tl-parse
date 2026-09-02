@@ -27,7 +27,7 @@ fn code_name(code: DiagnosticCode) -> &'static str {
     code.as_str()
 }
 
-// Trace: TC-018, FR-005-AC-1, StR-002-VC-2
+// Trace: TC-018, FR-005-AC-1, StR-002-VC-2, SUITE-005
 #[test]
 fn malformed_resource_corpus_is_checksummed_and_matches_its_manifest() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

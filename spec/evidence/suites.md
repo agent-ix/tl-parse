@@ -30,3 +30,21 @@ immutable, Git history and pull-request review are the integrity boundary for
 them, and they are read through the Engineering Assurance compatibility mapping.
 The former SUITE-009 authored-diff integrity check went with the collector whose
 staging it protected.
+
+## Backing
+
+Five of the nine suites are backed by a test that actually invokes that suite's
+command: SUITE-003 and SUITE-006/007/009 through `tests/shared_assurance.rs`,
+and SUITE-005 through `tests/corpus.rs`.
+
+Four are deliberately unbacked, and it is worth saying why rather than closing
+the gap with a tag. SUITE-001 is the composite gate, SUITE-002 is `quire
+validate`, SUITE-004 is `rustdoc`, and SUITE-008 is a manual hosted dispatch. No
+test in this repository invokes any of them, and the only way to make them read
+as backed would be to assert that the Makefile *contains* the command — a
+source-text grep, which is the binding shape reviewers of PR #6 rejected because
+it is satisfied by the string rather than by the behaviour. An honest 5/9 is
+better than a fabricated 9/9.
+
+Before this migration all nine rows were backed by a single test tagging every
+suite at once, which is the same defect in a different arrangement.
