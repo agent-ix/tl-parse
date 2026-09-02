@@ -17,8 +17,8 @@ relationships:
 | FR-002 | FR-002-AC-1 through FR-002-AC-3 | TC-005 through TC-008 | ✅ covered |
 | FR-003 | FR-003-AC-1 through FR-003-AC-3 | TC-009 through TC-013 | ✅ covered |
 | FR-004 | FR-004-AC-1 through FR-004-AC-3 | TC-014 through TC-017 | ✅ covered |
-| FR-005 | FR-005-AC-1 through FR-005-AC-4 | TC-018 through TC-021, TC-025 | ✅ covered |
-| FR-006 | FR-006-AC-1 through FR-006-AC-7 | TC-022 through TC-028 | ✅ covered |
+| FR-005 | FR-005-AC-1 through FR-005-AC-3 | TC-018 through TC-021 | ✅ covered |
+| FR-006 | FR-006-AC-1 through FR-006-AC-3, FR-006-AC-5 through FR-006-AC-7 | TC-022 through TC-024, TC-026 through TC-028 | ✅ covered |
 
 ## Stakeholder Requirement Coverage
 
@@ -32,8 +32,8 @@ relationships:
 | Non-Functional Req | Verification Method | Evidence/Test Cases | Status |
 |---|---|---|---|
 | NFR-001 | deterministic and resource-bound tests | TC-011 through TC-017, TC-021 | ✅ covered |
-| NFR-002 | dialect and retained-evidence inspection | TC-020, TC-025 | ✅ covered |
-| NFR-003 | qualification integrity and fail-closed shared intake | TC-023, TC-025, TC-026 | ✅ covered |
+| NFR-002 | dialect and provenance inspection | TC-020 | ✅ covered |
+| NFR-003 | qualification integrity and fail-closed shared intake | TC-023, TC-026 | ✅ covered |
 
 ## Test Case Summary
 
@@ -63,7 +63,6 @@ relationships:
 | TC-022 | Classify every shared component through the packaged compatibility matrix and refuse a mirror reference | Integration | P0 | FR-006-AC-1 | ✅ implemented |
 | TC-023 | Reach Quoin intake from producer bytes, and prove neither Quoin nor Quire executes a producer | Integration | P0 | FR-006-AC-2, NFR-003-AC-1, NFR-003-AC-2 | ✅ implemented |
 | TC-024 | Bind the sealed record's impact snapshot to a populated Quire export naming every requirement | Integration | P0 | FR-006-AC-3 | ✅ implemented |
-| TC-025 | Read every retained envelope through the shared mapping without moving a byte, with an accepted positive control and mutation probes | Integration | P0 | FR-006-AC-4, FR-005-AC-4, NFR-002-AC-2, NFR-003-AC-4 | ✅ implemented |
 | TC-026 | Demonstrate all twelve verification outcomes and pair every negative with a positive control | Integration | P0 | FR-006-AC-5, NFR-003-AC-3 | ✅ implemented |
 | TC-027 | Report malformed input as malformed, agreeing with the corpus manifest and surviving into the retained bytes | Integration | P0 | FR-006-AC-6, StR-002-VC-2 | ✅ implemented |
-| TC-028 | Prove no local evidence framework remains and the two frozen schemas are referenced by nothing | Integration | P0 | FR-006-AC-7 | ✅ implemented |
+| TC-028 | Prove no local evidence framework remains and none of its files came back | Integration | P0 | FR-006-AC-7 | ✅ implemented |

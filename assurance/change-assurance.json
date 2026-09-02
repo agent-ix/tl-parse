@@ -1,6 +1,6 @@
 {
   "schema_version": "tl-parse.change-assurance-declaration/v1",
-  "purpose": "What this repository states about the change under issue #10, in the shape Quoin's FR-063 record requires. Quoin owns the record schema, its digest, and its retention; this file is the author's statement that gets sealed into one.",
+  "purpose": "What this repository states about the change under issue #13, in the shape Quoin's FR-063 record requires. Quoin owns the record schema, its digest, and its retention; this file is the author's statement that gets sealed into one.",
   "not_an_envelope": "Quoin's packaged change-assurance-record-v1, proof-attestation-v1, and verification-receipt-v1 schemas are the shapes. This file projects into the record body Quoin requires and derives nothing beyond the digests its own derived_fields names. It is not a local evidence envelope, it retains nothing, and it computes no verdict.",
   "derived_fields": [
     "subject.base_revision and impact_snapshot.revision come from the candidate revision the caller names.",
@@ -27,7 +27,7 @@
   "record": {
     "schema_version": 1,
     "record_type": "change_assurance",
-    "record_id": "tl-parse/issue-10",
+    "record_id": "tl-parse/issue-13",
     "revision": 1,
     "parent_digest": null,
     "subject": {
@@ -36,7 +36,6 @@
         "src",
         "corpus",
         "examples",
-        "schemas",
         "scripts",
         "spec",
         "docs",
@@ -84,11 +83,6 @@
           "source_ids": ["FR-006", "TM-001"]
         },
         {
-          "id": "FR-006-AC-4",
-          "statement": "Retained evidence bytes are read through the Engineering Assurance compatibility mapping and are not modified, and the mapping's answer is reported without collapsing it into pass or fail.",
-          "source_ids": ["FR-006", "NFR-002"]
-        },
-        {
           "id": "FR-006-AC-5",
           "statement": "Pass, fail, unavailable, unsupported, inconclusive, not-computed, malformed, partial, stale, suspect, vacuous, and tampered remain twelve distinguishable states across the intake path.",
           "source_ids": ["FR-006", "NFR-003"]
@@ -105,16 +99,6 @@
         }
       ],
       "preservation_constraints": [
-        {
-          "id": "PRESERVE-legacy-bytes",
-          "statement": "Every byte under evidence/ is unchanged by this migration, including ANCHORS, REQUIRED, RETRACTIONS.json, all 12 retained record directories and all 12 .sha256 manifests. The verifier is what was removed; the record is not.",
-          "source_ids": ["NFR-002", "FR-006"]
-        },
-        {
-          "id": "PRESERVE-frozen-schemas",
-          "statement": "schemas/tl-parse-evidence-input-v1.schema.json and schemas/tl-parse-evidence-manifest-v1.schema.json are frozen, not deleted: retained envelopes name them by path and SHA-256. Nothing validates against them any more and no script may reference them.",
-          "source_ids": ["NFR-002"]
-        },
         {
           "id": "PRESERVE-parser-behaviour",
           "statement": "Lexer, parser, precedence and associativity, source spans, diagnostic codes and their spans, bounded resource limits, canonical formatting, the parse-format-parse fixed point, the hostile-input corpus, the fuzz target and its checked seeds, and the CLI's exact source-byte accounting remain owned and executed by this repository.",
@@ -198,18 +182,6 @@
           "configuration": "spec/test-matrix.md"
         },
         {
-          "proof_id": "PROOF-legacy-compatibility",
-          "statement": "All 12 retained evidence envelopes are read through the pinned Engineering Assurance mapping, their bytes are unchanged, and the mapping's answer for each is reported as it stands.",
-          "obligation_ids": ["FR-006-AC-4"],
-          "evidence_kind": "Static",
-          "command": {
-            "argv": [".venv-assurance/bin/python", "scripts/legacy_evidence_view.py", "--json"],
-            "working_directory": "."
-          },
-          "tool_identity": "tl-parse/legacy_evidence_view",
-          "configuration": "tests/fixtures/legacy-compat/expectations.json"
-        },
-        {
           "proof_id": "PROOF-msrv",
           "statement": "The declared MSRV compiles every target and feature of this crate at this candidate revision, against the locked dependency graph, and reports it in cargo's own JSON message stream.",
           "obligation_ids": ["FR-006-AC-2"],
@@ -230,12 +202,6 @@
           "owner": "agent-ix/engineering-assurance"
         },
         {
-          "id": "UNKNOWN-derivation-evidence-not-mapped",
-          "statement": "map_pgm01_bytes at the pinned release covers quire.pgm01-evidence v1 and v2. This repository's 12 retained envelopes are quire.derivation-evidence/v1, so the mapping refuses them as an unknown schema version. That refusal is reported as the compatibility result; no local mapper was written to make it read as a pass. Filed as agent-ix/engineering-assurance#21.",
-          "disposition": "open",
-          "owner": "agent-ix/engineering-assurance"
-        },
-        {
           "id": "UNKNOWN-human-decision-absent",
           "statement": "No ix-flow decision event exists for this change. Only the repository owner may create one, and none was synthesized, so the receipt is expected to read incomplete with a missing decision rather than complete.",
           "disposition": "open",
@@ -250,7 +216,7 @@
       ]
     },
     "review_workflow": {
-      "run_id": "tl-parse-issue-10",
+      "run_id": "tl-parse-issue-13",
       "decision_event_kind": "change_assurance.review_decided"
     }
   }

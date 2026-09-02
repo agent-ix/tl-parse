@@ -29,8 +29,8 @@ jobs:
     name: Rust Checks
     runs-on: ubuntu-24.04
     steps:
-      # The compatibility view asks Git whether the retained evidence bytes are
-      # the committed bytes, so the full history has to be present.
+      # Full history: the attribution check and the assurance chain both name an
+      # exact revision, and a shallow checkout cannot resolve one.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

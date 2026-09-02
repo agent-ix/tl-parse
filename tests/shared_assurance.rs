@@ -175,8 +175,8 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
         .expect("attested_results");
     assert_eq!(
         attested.len(),
-        7,
-        "seven proof obligations are declared; {} were attested",
+        6,
+        "six proof obligations are declared; {} were attested",
         attested.len()
     );
     for (proof, result) in attested {
@@ -356,9 +356,9 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // unbacked and SR-007 says why. So the figures themselves are asserted: an
     // export reporting different totals has to move a number in this file.
     let totals = &parsed["totals"];
-    assert_eq!(totals["total"], 72, "matrix row count changed: {totals}");
+    assert_eq!(totals["total"], 67, "matrix row count changed: {totals}");
     assert_eq!(
-        totals["backed"], 68,
+        totals["backed"], 63,
         "backed-row count changed: {totals}. Four suite rows are unbacked on \
          purpose; if that number moved, update spec/evidence/suites.md and SR-007 \
          deliberately rather than adjusting this assertion."
@@ -377,89 +377,6 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     );
 }
 
-fn walk(directory: &Path) -> u64 {
-    let mut count = 0;
-    for entry in fs::read_dir(directory).expect("evidence directory") {
-        let path = entry.expect("directory entry").path();
-        if path.is_dir() {
-            count += walk(&path);
-        } else {
-            count += 1;
-        }
-    }
-    count
-}
-
-// Trace: TC-025, FR-006-AC-4, FR-005-AC-4, NFR-002-AC-2, NFR-003-AC-4
-#[test]
-fn retained_evidence_is_read_through_the_shared_mapping_without_moving_a_byte() {
-    let python = assurance_python();
-    let census = json_gate(&python, &["scripts/legacy_evidence_view.py", "--json"]);
-
-    // Two different claims, kept apart. The first is that this run wrote nothing;
-    // the second is that the retained bytes are the bytes that were committed.
-    // Only Git can answer the second, and it is asked rather than assumed.
-    assert!(census["evidence_bytes_moved_during_this_run"]
-        .as_array()
-        .unwrap()
-        .is_empty());
-    assert!(
-        census["uncommitted_evidence_changes"]
-            .as_array()
-            .unwrap()
-            .is_empty(),
-        "retained evidence differs from what was committed: {}",
-        census["uncommitted_evidence_changes"]
-    );
-    assert!(census["misattributed_records"]
-        .as_array()
-        .unwrap()
-        .is_empty());
-    assert_eq!(census["matched"], true);
-
-    let files = census["evidence_files_read"].as_u64().unwrap();
-    let on_disk = walk(&root().join("evidence"));
-    assert_eq!(
-        files, on_disk,
-        "the compatibility view read {files} evidence files but {on_disk} are present"
-    );
-
-    let retained = &census["retained"];
-    assert_eq!(
-        retained["count"].as_u64().unwrap(),
-        12,
-        "this repository retains twelve evidence records"
-    );
-    // The honest answer for this repository. Its retained family is
-    // quire.derivation-evidence/v1, which the pinned mapping does not cover, so
-    // every envelope is refused. That refusal is reported as it stands and is
-    // not converted into a pass. Filed as agent-ix/engineering-assurance#21.
-    assert_eq!(
-        retained["outcomes"],
-        serde_json::json!(["incompatible"]),
-        "the retained-evidence outcome changed; if the shared mapping gained a \
-         derivation-evidence reader this assertion should be updated deliberately"
-    );
-
-    // The mapping must be seen to accept, or a refusal proves nothing.
-    let accepted = census["accepted_positive_controls"].as_array().unwrap();
-    assert!(
-        !accepted.is_empty(),
-        "no positive control was accepted; a mapping only ever seen refusing is \
-         indistinguishable from a step that never worked"
-    );
-
-    let (code, stdout, stderr) = run(
-        &python,
-        &["scripts/legacy_evidence_view.py", "--mutation-probes"],
-    );
-    assert_eq!(
-        code, 0,
-        "a load-bearing compatibility check was removed and the census did not \
-         notice\n{stdout}\n{stderr}"
-    );
-}
-
 // Trace: TC-026, FR-006-AC-5, NFR-003-AC-3
 #[test]
 fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() {
@@ -467,9 +384,9 @@ fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() 
     // that owns each. A state nobody demonstrates is a state nobody would notice
     // the loss of.
     //
-    // `malformed` is owned by the parser corpus rather than by the compatibility
-    // lane, which is where tl-syntax demonstrated it. That is this repository's
-    // domain behaviour: six of its seven corpus fixtures are malformed by design.
+    // `malformed` is owned by the parser corpus rather than by an evidence lane,
+    // which is where tl-syntax demonstrated it. That is this repository's domain
+    // behaviour: six of its seven corpus fixtures are malformed by design.
     const REQUIRED: [(&str, &str); 12] = [
         ("pass", "chain"),
         ("fail", "chain"),
@@ -485,31 +402,24 @@ fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() 
         ("tampered", "chain"),
     ];
 
-    let python = assurance_python();
     let report = chain_report();
-    let census = json_gate(&python, &["scripts/legacy_evidence_view.py", "--json"]);
 
-    // Only MEASURED outcomes count. The chain's `states_demonstrated` is already
-    // built from cases that ran and matched. The compatibility lane contributes
-    // the outcome the mapping actually returned and the states it actually
-    // mapped — never the case's `kind`, which is a free-text label in
-    // expectations.json. Counting the label meant a state could stop being
-    // demonstrated while this test stayed green, which is the exact failure mode
-    // this test exists to rule out.
-    let mut demonstrated: BTreeSet<String> = report["states_demonstrated"]
+    // Only MEASURED outcomes count. The chain's `states_demonstrated` is built
+    // from scenarios and adapter probes that ran and matched, never from a
+    // free-text label a fixture declares about itself. Counting a label would
+    // let a state stop being demonstrated while this test stayed green, which is
+    // the exact failure mode this test exists to rule out.
+    //
+    // All twelve now come from the chain alone. They used to be split with the
+    // retained-evidence compatibility lane, which was deleted along with the
+    // records it read; the chain already demonstrated every one of the twelve on
+    // its own, so nothing moved out of reach.
+    let demonstrated: BTreeSet<String> = report["states_demonstrated"]
         .as_array()
         .unwrap()
         .iter()
         .map(|value| value.as_str().unwrap().to_owned())
         .collect();
-    for case in census["cases"].as_array().unwrap() {
-        if case["matched"] != serde_json::Value::Bool(true) {
-            continue;
-        }
-        for state in case["mapped_states"].as_array().unwrap() {
-            demonstrated.insert(state.as_str().unwrap().to_owned());
-        }
-    }
 
     let missing: Vec<&str> = REQUIRED
         .iter()
@@ -520,25 +430,6 @@ fn all_twelve_verification_outcomes_are_demonstrated_and_paired_with_controls() 
         missing.is_empty(),
         "these verification outcomes were never demonstrated: {missing:?}; \
          demonstrated: {demonstrated:?}"
-    );
-
-    // The compatibility lane's own six-state vocabulary, measured the same way:
-    // the census reports which states it observed and which it did not.
-    assert!(
-        census["undemonstrated_states"]
-            .as_array()
-            .unwrap()
-            .is_empty(),
-        "the compatibility mapping's state vocabulary is not fully demonstrated: {}",
-        census["undemonstrated_states"]
-    );
-    assert!(
-        census["undemonstrated_outcomes"]
-            .as_array()
-            .unwrap()
-            .is_empty(),
-        "the compatibility mapping's outcome vocabulary is not fully demonstrated: {}",
-        census["undemonstrated_outcomes"]
     );
 
     // Every negative names the positive control that proves the step it refuses
@@ -636,30 +527,9 @@ fn malformed_input_is_reported_as_malformed_and_never_as_a_pass() {
     );
 }
 
-/// Collect every readable source file under `directory`, recursively.
-fn collect_sources(directory: &Path, into: &mut Vec<PathBuf>) {
-    let Ok(entries) = fs::read_dir(directory) else {
-        return;
-    };
-    for entry in entries {
-        let path = entry.expect("directory entry").path();
-        if path.is_dir() {
-            collect_sources(&path, into);
-            continue;
-        }
-        let extension = path.extension().and_then(|value| value.to_str());
-        if matches!(
-            extension,
-            Some("py" | "sh" | "rs" | "txt" | "toml" | "yml" | "md" | "json")
-        ) {
-            into.push(path);
-        }
-    }
-}
-
 // Trace: TC-028, FR-006-AC-7
 #[test]
-fn no_local_evidence_framework_remains_and_the_frozen_schemas_are_referenced_by_nothing() {
+fn no_local_evidence_framework_remains_and_none_of_its_files_came_back() {
     let root = root();
 
     // The generic machinery is gone, by name.
@@ -686,104 +556,20 @@ fn no_local_evidence_framework_remains_and_the_frozen_schemas_are_referenced_by_
         "scripts/test_traceability_gate.py",
         "tools.lock",
         "tests/evidence_contract.rs",
+        // Deleted under the owner's pre-stable release of the preservation
+        // constraint (agent-ix/engineering-assurance#7, agent-ix/tl-parse#13).
+        // Named here so a reintroduction is a test failure rather than a quiet
+        // return of the machinery this repository decided not to carry.
+        "evidence",
+        "schemas",
+        "scripts/legacy_evidence_view.py",
+        "tests/fixtures/legacy-compat",
     ] {
         assert!(
             !root.join(removed).exists(),
             "{removed} is still present; the generic evidence machinery was not removed"
         );
     }
-
-    // The two evidence schemas are frozen, not deleted: retained envelopes name
-    // them by path and by SHA-256, and removing them would break a reference
-    // inside bytes this migration is required to leave untouched.
-    let frozen = [
-        (
-            "schemas/tl-parse-evidence-input-v1.schema.json",
-            "1e6683eb04231f18d1ad4c6bf95f1b039798374f3d26483c7fe25333bf6669d2",
-        ),
-        (
-            "schemas/tl-parse-evidence-manifest-v1.schema.json",
-            "0717400327650c92e4311fdf2f47720f969906c207ec595e3d3d31ef937a80f9",
-        ),
-    ];
-    for (path, expected) in frozen {
-        let file = root.join(path);
-        assert!(
-            file.is_file(),
-            "{path} was deleted; it is frozen, not removed"
-        );
-        let output = Command::new("sha256sum").arg(&file).output().unwrap();
-        let digest = String::from_utf8_lossy(&output.stdout)
-            .split_whitespace()
-            .next()
-            .unwrap()
-            .to_owned();
-        assert_eq!(
-            digest, expected,
-            "{path} changed; a frozen schema is immutable"
-        );
-    }
-
-    // Nothing validates against them any more. The census walks recursively and
-    // covers the build and workflow files too, because a reintroduced validator
-    // one directory down, or a CI step, would otherwise not be caught. A census
-    // this small would be vacuous, so its size is asserted as well.
-    let mut sources = Vec::new();
-    for directory in [
-        "scripts", "tests", "examples", "src", "spec", "docs", ".github",
-    ] {
-        collect_sources(&root.join(directory), &mut sources);
-    }
-    for file in ["Makefile", "Cargo.toml", "requirements-assurance.txt"] {
-        let path = root.join(file);
-        if path.is_file() {
-            sources.push(path);
-        }
-    }
-    let mut inspected = 0;
-    for path in &sources {
-        inspected += 1;
-        let Ok(source) = fs::read_to_string(path) else {
-            continue;
-        };
-        // Three files name the frozen schemas on purpose: this test pins their
-        // digests, schemas/README.md documents the freeze, and the
-        // change-assurance declaration states the preservation constraint. They
-        // are named here rather than described as "only this file", which was
-        // not true. Everything else must not mention them at all.
-        const MAY_NAME: [&str; 3] = ["shared_assurance.rs", "README.md", "change-assurance.json"];
-        let file_name = path
-            .file_name()
-            .and_then(|value| value.to_str())
-            .unwrap_or("");
-        let parent = path
-            .parent()
-            .and_then(|value| value.file_name())
-            .and_then(|value| value.to_str())
-            .unwrap_or("");
-        let permitted = match file_name {
-            "shared_assurance.rs" => true,
-            "README.md" => parent == "schemas",
-            "change-assurance.json" => parent == "assurance",
-            _ => false,
-        };
-        let _ = MAY_NAME;
-        for (schema, _) in frozen {
-            let name = Path::new(schema).file_name().unwrap().to_str().unwrap();
-            if permitted {
-                continue;
-            }
-            assert!(
-                !source.contains(name),
-                "{} references the frozen schema {name}; nothing may validate against it",
-                path.display()
-            );
-        }
-    }
-    assert!(
-        inspected > 30,
-        "the source census is unexpectedly small ({inspected}) to make this claim"
-    );
 
     // The Makefile is orchestration, not a trust root, and carries no gate that
     // polices its own execution.
@@ -794,6 +580,7 @@ fn no_local_evidence_framework_remains_and_the_frozen_schemas_are_referenced_by_
         "verify-evidence",
         "evidence-tool",
         "rust-test-census",
+        "compat-view",
     ] {
         assert!(
             !makefile.contains(gone),

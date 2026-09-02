@@ -1,9 +1,0 @@
-DuplicateArchetype: 'ADR' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
-DuplicateArchetype: 'Plan' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
-DuplicateArchetype: 'Review' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
-DuplicateArchetype: 'SpecReview' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
-DuplicateArchetype: 'Standard' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
-DuplicateInverseEdge: inverse label 'part_of' declared by verbs ["aggregates", "contains"]; first-wins
-[status-column-matches-nothing] declaration 'functional-coverage' uses configured status column 'Status', which the table under 'Functional Requirement Coverage' in spec/test-matrix.md does not have — the columns it has are 'Functional Req', 'Acceptance Criteria', 'Test Cases', 'Coverage Status'. Status classification was skipped, so complete-but-unbacked rows could not be checked. Align `traceability.status.column` with the authored header or rename the document column; the engine will not guess between those change targets (spec/test-matrix.md)
-[archetype-matches-nothing] declaration 'inspection' declares archetype 'Inspections', which no document in the corpus has — it scans nothing and mints no rows (/home/peter/.ix/filament/modules/spec-artifacts-process/manifest.yaml)
-[catch-all-universal] 2 of 5 documents binding extractable criteria named a specific property shape for none of them — for example `FR-003-AC-2` at spec/requirements/FR-003-diagnostics-limits.md:35; the extractable headline counts what a generator could quantify over, and this is the part it could not tell you what to write (spec/requirements/FR-003-diagnostics-limits.md)

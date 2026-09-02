@@ -1,2 +1,0 @@
-quire validate --scope . 'spec/**/*.md' 'docs/*.md'
-python3 scripts/check_traceability_coverage.py
