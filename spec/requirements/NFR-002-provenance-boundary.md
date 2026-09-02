@@ -10,13 +10,13 @@ quality_attribute: compliance
 ## Statement
 
 The source shall remain independently authored from the permitted tl-syntax
-operator model and repository requirements, with exact revision and evidence
-pins and no claim that automated checks replace human review.
+operator model and repository requirements, with exact revision pins and no
+claim that automated checks replace human review.
 
 ## Scope
 
 The requirement covers grammar authorship, dependency/dialect/corpus pins,
-candidate evidence, qualification language, and release authority.
+qualification language, and release authority.
 
 ## Rationale
 
@@ -28,19 +28,19 @@ version, license, or decision owner can drift silently.
 | Metric | Target | Threshold | Method |
 |---|---|---|---|
 | Unpinned governed inputs | 0 | 0 | Inspection |
-| Automated release approvals | 0 | 0 | Test |
+| Automated release approvals | 0 | 0 | Inspection |
 
 ## Verification
 
-Dialect, wire, corpus, and evidence tests inspect exact identities and require
-human review/release state to remain pending.
+Dialect, wire, and corpus tests inspect exact identities. No automated check
+grants review or release authority; that remains a human's and is established by
+inspection rather than by a gate.
 
 ## Acceptance Criteria
 
 | ID | Criteria | Verification |
 |---|---|---|
 | NFR-002-AC-1 | The dialect record names its authorship basis, license boundary, exact compiled tl-syntax pin, stable revision, and digest; the authorship basis and the compiled revision are recorded as separate facts and the compiled digests are re-derived from the source Cargo resolved. | Inspection (TC-020) |
-| NFR-002-AC-2 | Retained evidence is read through the pinned shared compatibility mapping without a byte moving, its reported identity is compared to the bytes read, and review/release authority remains pending. | Test (TC-025) |
 
 ## Qualification Boundary
 

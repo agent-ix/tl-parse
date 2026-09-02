@@ -28,9 +28,8 @@ make ci             # complete local iteration gate
 make assurance-env     # build .venv-assurance from requirements-assurance.txt
 make assurance-inputs  # the ONLY target that runs a producer
 make pins              # classify the toolchain through the packaged matrix
-make compat-view       # read retained evidence through the shared mapping
 make assurance-chain   # seal, retain, and verify through Quoin
-make assurance         # pins + compat-view + assurance-chain
+make assurance         # pins + assurance-chain
 ```
 
 `make assurance-inputs` is the only target that runs a producer. Everything
@@ -63,8 +62,6 @@ examples/              # the two domain producers: corpus replay, round-trip swe
 tests/                 # unit, property, corpus, CLI, and shared-assurance tests
 corpus/v1/             # checksum-protected hostile-input fixtures
 fuzz/                  # isolated cargo-fuzz target and checked seeds
-evidence/              # immutable retained evidence; read-only, never rewritten
-schemas/               # two FROZEN evidence schemas; nothing validates against them
 assurance/             # pins.json and change-assurance.json: declarations only
 spec/                  # requirements artifacts (from /spec-create-spec)
 scripts/               # local tooling
@@ -79,10 +76,14 @@ declares their results in structured formats the shared tools transcribe.
 Neither Quire nor Quoin executes a producer, and `tests/shared_assurance.rs`
 asserts that behaviourally rather than by inspection.
 
-Retained bytes under `evidence/` are immutable. There is no local verifier,
-anchor file, manifest, or tool lock any more; Git history and pull-request
-review are the integrity boundary, and the compatibility view asks Git rather
-than implying a stronger claim.
+This repository retains no evidence of its own. There is no local verifier,
+anchor file, manifest, or tool lock; Git history and pull-request review are the
+integrity boundary. The twelve historical records under `evidence/` were deleted
+on 2026-09-02 under the owner's pre-stable release of the preservation
+constraint (`agent-ix/engineering-assurance#7`, `agent-ix/tl-parse#13`). Do not
+reintroduce an `evidence/` directory, a `schemas/` freeze, or a compatibility
+view over them — `tests/shared_assurance.rs` fails if any of them comes back.
+The constraint re-applies when this repository moves toward stable releases.
 
 ## The tl-syntax pin
 

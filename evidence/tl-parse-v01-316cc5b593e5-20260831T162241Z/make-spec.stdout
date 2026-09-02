@@ -1,3 +1,0 @@
-quire validate --scope . 'spec/**/*.md' 'docs/*.md'
-python3 scripts/check_traceability_coverage.py
-strict traceability coverage is complete: 54/54

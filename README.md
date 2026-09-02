@@ -41,12 +41,12 @@ Verification results are produced by this repository's own tools, transcribed
 and retained by [Quoin](https://github.com/agent-ix/quoin), and described by
 static facts exported from [Quire](https://github.com/agent-ix/quire-rs).
 Neither tool executes a producer. `make assurance` classifies the toolchain
-through the packaged Engineering Assurance compatibility matrix, reads the
-retained evidence under `evidence/` through that release's compatibility
-mapping, and drives the seal/intake/receipt chain.
+through the packaged Engineering Assurance compatibility matrix and drives the
+seal/intake/receipt chain.
 
-Retained evidence is immutable and is no longer verified by a repository-local
-verifier: Git history and pull-request review are its integrity boundary.
+This repository retains no evidence of its own. Verification evidence is what
+the chain produces at the reviewed revision; Git history and pull-request review
+are the integrity boundary for the source.
 
 ## Development status
 

@@ -18,7 +18,7 @@ It is not a verdict. It runs `quoin` and reports what `quoin` said. Where a
 scenario expects a refusal, the refusal is the expected result and the run is
 green because the tool refused, not because the tool agreed.
 
-It is not a retention store. Nothing is written under `evidence/`, nothing is
+It is not a retention store. It writes no repository-local record, nothing is
 committed, and the Quoin store it uses lives under `target/`, which is ignored.
 
 Exit status: 0 when every scenario, control and probe matched, 1 when one did
@@ -58,7 +58,6 @@ INPUTS = {
     "PROOF-test-census": ("test-census.json", "application/json"),
     "PROOF-clean-room-attribution": ("attribution.json", "application/json"),
     "PROOF-quire-static-export": ("quire-static-export.json", "application/json"),
-    "PROOF-legacy-compatibility": ("legacy-compatibility.json", "application/json"),
     "PROOF-msrv": ("msrv.jsonl", "application/x-ndjson"),
 }
 
@@ -551,9 +550,6 @@ def derive_result(proof_id: str, path: Path) -> str:
     if proof_id == "PROOF-clean-room-attribution":
         report = _load_json(raw, path)
         return "passed" if report["matched"] else "failed"
-    if proof_id == "PROOF-legacy-compatibility":
-        census = _load_json(raw, path)
-        return "passed" if census["matched"] else "failed"
     if proof_id == "PROOF-quire-static-export":
         export = _load_json(raw, path)
         # Quire's export is a static fact set, not a run, so it has no outcome

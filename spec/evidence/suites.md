@@ -24,12 +24,13 @@ Hosted CI intentionally has no push or pull-request trigger. Local `make ci` is
 the iteration gate; a hosted run is dispatched deliberately for a finalized
 revision so parallel PR work does not generate repeated billable runs.
 
-SUITE-007 replaces the former local PGM-01 evidence validation suite. Retained
-evidence is no longer verified by a repository-local verifier: its bytes are
-immutable, Git history and pull-request review are the integrity boundary for
-them, and they are read through the Engineering Assurance compatibility mapping.
-The former SUITE-009 authored-diff integrity check went with the collector whose
-staging it protected.
+SUITE-007 replaces the former local PGM-01 evidence validation suite. There is
+no retained-evidence suite of any kind any more: the historical records this
+repository kept were deleted under the owner's pre-stable release of the
+preservation constraint (`agent-ix/engineering-assurance#7`), and the
+compatibility view that read them went with them. The former SUITE-009
+authored-diff integrity check went with the collector whose staging it
+protected.
 
 ## Backing
 
@@ -42,7 +43,7 @@ those tests "actually invoke that suite's command" and **none of them does**:
 | SUITE-003 | TC-024 | reads the `quire coverage --json` export and pins its totals; it does not run `--strict` |
 | SUITE-005 | TC-018 | runs `sha256sum --check` over `corpus/v1` only, not `fuzz/corpus/parser` |
 | SUITE-006 | TC-023 | reads `msrv.jsonl` and asserts the attested result, rather than running the MSRV check |
-| SUITE-007 | TC-023 | runs `scripts/assurance_chain.py` directly, so it covers the chain but not `pins` or `compat-view` |
+| SUITE-007 | TC-023 | runs `scripts/assurance_chain.py` directly, so it covers the chain but not `pins` |
 | SUITE-009 | TC-023 | reads the two producers' retained results rather than running `make conformance roundtrip` |
 
 So these tests bind to the **retained output** of a suite, not to its

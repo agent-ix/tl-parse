@@ -17,37 +17,11 @@
   },
   "consumed_artifacts": [
     {
-      "path": "verification_semantics.py",
-      "sha256": "af9f92fcec60463fe3e9398a5ce0c1acde76b738816b10baf1b94e123c9b50bc",
-      "why": "map_pgm01_bytes is the only sanctioned reader of this repository's retained evidence. scripts/legacy_evidence_view.py calls it and implements no mapping of its own."
-    },
-    {
-      "path": "schemas/pgm01-compatibility-view-v1.schema.json",
-      "sha256": "317294d04e430f26612a6c7cbde937e06d9e655585a59de1f1e4a0dd66855ca6",
-      "why": "The shape map_pgm01_bytes validates every view against before returning it. Pinned because the compatibility result this repository reports is only as meaningful as the shape it is reported in."
-    },
-    {
-      "path": "fixtures/verification-semantics/pgm01-v1.json",
-      "sha256": "ab20a39d307a0d3e7d2eda9d50e295ba43de34b527c8f514484cd48af6b7b7f5",
-      "why": "The release's own known-good PGM-01 v1 record. This repository retains no PGM-01 record of its own (see legacy_compatibility below), so this fixture is the positive control that proves the mapping accepts as well as refuses."
-    },
-    {
-      "path": "fixtures/verification-semantics/pgm01-v2.json",
-      "sha256": "947baf2f16a11809ca488935cb8b89fb75015eae2204293eac049b5789bd17bc",
-      "why": "The v2 positive control, for the same reason."
-    },
-    {
       "path": "compatibility-matrix.json",
       "why": "The authority on which component versions are pinned. Deliberately carries no digest here: it is expected to advance as the matrix is re-accepted, and pinning its bytes locally would make this repository a second acceptance authority."
     }
   ],
-  "legacy_compatibility": {
-    "retained_family": "quire.derivation-evidence/v1",
-    "retained_records": 12,
-    "pgm01_records": 0,
-    "statement": "This repository never retained a quire.pgm01-evidence record. Its 12 retained envelopes are quire.derivation-evidence/v1, a different schema family that the PGM-01 program governed but did not define. map_pgm01_bytes therefore classifies every one of them 'incompatible' with an unknown PGM-01 schema version. That is the mapping refusing to interpret a shape it does not know, which is the correct behaviour and an explicit reported state; it is not a pass, not a failure of this repository, and not a licence to write a local mapper. tl-syntax reported the identical refusal over its own 23 envelopes.",
-    "filed_upstream": "agent-ix/engineering-assurance#21"
-  },
+  "consumed_artifacts_note": "This list shrank to one entry when the retained evidence was deleted. verification_semantics.py, schemas/pgm01-compatibility-view-v1.schema.json and the two PGM-01 positive-control fixtures were pinned by digest because the compatibility view read them; that view is gone, so this repository no longer reads them and pinning bytes it does not read would be a claim about work it does not do. The consequence is stated rather than hidden: artifact_digest_mismatches now has nothing with a digest to re-hash and reports an empty list for that reason, not because a comparison passed.",
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
@@ -56,7 +30,6 @@
   },
   "known_drift": [
     "engineering-assurance v0.2.0 packages compatibility-matrix.json with accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate. Both landed on main after the tag and no v0.2.1 was cut. Filed as agent-ix/engineering-assurance#20. scripts/check_shared_pins.py reports the acceptance state the installed package records and gates only on the local toolchain, so an absent field is never read as an approval in either direction.",
-    "The human acceptance itself is not in doubt: Peter Krenesky accepted the FR-012 matrix on 2026-09-01 and it is attributed on engineering-assurance main as ae50e13. What is missing is a release carrying it. Pinning a branch head to obtain it is exactly what FR-012-AC-1 forbids, so this repository does not.",
-    "map_pgm01_bytes at v0.2.0 covers quire.pgm01-evidence v1 and v2 only. It has no mapping for quire.derivation-evidence/v1, which is the family this repository and its temporal siblings retained. Filed as agent-ix/engineering-assurance#21. Reported, not worked around."
+    "The human acceptance itself is not in doubt: Peter Krenesky accepted the FR-012 matrix on 2026-09-01 and it is attributed on engineering-assurance main as ae50e13. What is missing is a release carrying it. Pinning a branch head to obtain it is exactly what FR-012-AC-1 forbids, so this repository does not."
   ]
 }
