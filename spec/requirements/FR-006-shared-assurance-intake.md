@@ -39,7 +39,7 @@ a producer and without a repository-local generic evidence framework.
 | ID | Criteria | Verification |
 |---|---|---|
 | FR-006-AC-1 | The adopted component versions are classified by the packaged Engineering Assurance compatibility matrix, not by a local restatement of it, and no component resolves from the internal mirror. | Test (TC-022) |
-| FR-006-AC-2 | Native parser, formatter, corpus, round-trip, test-census and attribution results are produced by this repository's tools in a declared structured format and transcribed by Quoin without Quoin or Quire executing the producer. | Test (TC-023) |
+| FR-006-AC-2 | Native parser, formatter, corpus, round-trip and test-census results are produced by this repository's tools in a declared structured format and transcribed by Quoin without Quoin or Quire executing the producer. | Test (TC-023) |
 | FR-006-AC-3 | Static specification, obligation, and coverage facts come from a Quire export that names every requirement in the repository, and Quire executes no producer. | Test (TC-024) |
 | FR-006-AC-5 | Pass, fail, unavailable, unsupported, inconclusive, not-computed, malformed, partial, stale, suspect, vacuous, and tampered remain twelve distinguishable states, each demonstrated and each negative paired with a positive control. | Test (TC-026) |
 | FR-006-AC-6 | A malformed source rejected with its declared diagnostic is reported as malformed, the count agrees with the corpus manifest's own declaration, and the state survives into the bytes Quoin retained. | Test (TC-027) |

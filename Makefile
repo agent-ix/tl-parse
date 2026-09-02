@@ -41,7 +41,6 @@ ASSURANCE_DIR := target/assurance
 CONFORMANCE_RESULT := $(ASSURANCE_DIR)/parser-conformance.jsonl
 ROUNDTRIP_RESULT := $(ASSURANCE_DIR)/roundtrip-property.jsonl
 CENSUS_RESULT := $(ASSURANCE_DIR)/test-census.json
-ATTRIBUTION_RESULT := $(ASSURANCE_DIR)/attribution.json
 QUIRE_EXPORT := $(ASSURANCE_DIR)/quire-static-export.json
 MSRV_RESULT := $(ASSURANCE_DIR)/msrv.jsonl
 REVISION ?= $(shell git rev-parse HEAD)
@@ -57,7 +56,6 @@ help:
 	@echo "  make conformance      - Replay the hostile-input corpus through the crate"
 	@echo "  make roundtrip        - Sweep the parse-format-parse fixed point"
 	@echo "  make test-census      - Bind requirement-tagged tests to compiled tests"
-	@echo "  make attribution      - Re-derive the clean-room attribution digests"
 	@echo "  make fuzz-build       - Compile the checked-in cargo-fuzz target"
 	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
 	@echo "  make deny             - cargo deny check licenses and sources"
@@ -117,10 +115,6 @@ roundtrip:
 .PHONY: test-census
 test-census:
 	$(PYTHON) scripts/rust_test_census.py
-
-.PHONY: attribution
-attribution:
-	$(PYTHON) scripts/check_attribution.py
 
 .PHONY: fuzz-build
 fuzz-build:
@@ -192,7 +186,6 @@ assurance-inputs: assurance-env
 		--manifest corpus/v1/manifest.json > $(CONFORMANCE_RESULT)
 	$(CARGO) run --quiet --release --example roundtrip_sweep > $(ROUNDTRIP_RESULT)
 	$(PYTHON) scripts/rust_test_census.py --json > $(CENSUS_RESULT)
-	$(PYTHON) scripts/check_attribution.py --json > $(ATTRIBUTION_RESULT)
 	$(QUIRE) coverage --scope . --json > $(QUIRE_EXPORT)
 	rustup run 1.75.0 $(CARGO) check --locked --all-targets --all-features \
 		--message-format=json > $(MSRV_RESULT)
@@ -229,5 +222,5 @@ assurance-record: assurance-inputs
 # =============================================================================
 
 .PHONY: ci
-ci: fmt-check lint test check-corpus conformance roundtrip test-census attribution \
+ci: fmt-check lint test check-corpus conformance roundtrip test-census \
 	fuzz-build fuzz-smoke deny audit-unsafe spec msrv rustdoc assurance

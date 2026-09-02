@@ -10,16 +10,9 @@ status: active
 
 The tl-parse dialect was independently authored from only the checked syntax
 vocabulary and value model in `agent-ix/tl-syntax` revision
-`740182f13b84858008d6f176f75136737d405c1b`, licensed MIT OR Apache-2.0.
-
-Files consulted at that revision:
-
-| File | SHA-256 |
-|---|---|
-| `src/syntax.rs` | `04e6a46e697444df8e6764dd0e5e5227b1271199ffc0e9d24f77720c979eb14e` |
-| `src/document.rs` | `f97005479f1f12511f1fceb2f9a85b94b482170e606c5735758e11aa2e4580f2` |
-| `LICENSE-MIT` | `97ead12ddb151fc37ffb1c623ab42b9814e21629dee252ff23dc7205f1df9f05` |
-| `LICENSE-APACHE` | `62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a` |
+`740182f13b84858008d6f176f75136737d405c1b`, licensed MIT OR Apache-2.0. The
+files consulted at that revision were `src/syntax.rs`, `src/document.rs`,
+`LICENSE-MIT` and `LICENSE-APACHE`.
 
 No third-party parser implementation, parser grammar, grammar production, or
 grammar prose was consulted or copied. Conventional ASCII operator spellings
@@ -35,29 +28,43 @@ against* is separate, and it has advanced.
 
 `tl-syntax` merged its own shared-assurance migration as
 `953ee825e5060335b4c79682f5f41a78c5a1bfae`, and `Cargo.toml`, `Cargo.lock`,
-`fuzz/Cargo.lock` and [`TL_SYNTAX_REVISION`] now name that revision.
+`fuzz/Cargo.lock` and [`TL_SYNTAX_REVISION`] now name that revision. Those files
+are where the pin is enforced: cargo resolves the dependency by exact revision
+and refuses a graph that disagrees. This document records the boundary and does
+not restate a checksum of it.
 
-| File | SHA-256 at `953ee825` |
-|---|---|
-| `src/syntax.rs` | `76a5f72f6ee2791b9665ffacab057b1d62a262fa6a56a80bfbe443235d368647` |
-| `src/document.rs` | `8ba023faf819b1934b06e47b536e7aa1739143df3a82f7fc426ecf91a6aa1268` |
-| `LICENSE-MIT` | `97ead12ddb151fc37ffb1c623ab42b9814e21629dee252ff23dc7205f1df9f05` |
-| `LICENSE-APACHE` | `62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a` |
+The two source files did change between the two revisions, and the clean-room
+claim survives it because of *what* changed rather than because the change was
+small. The delta over `src/` is a bounded wire decoder
+(`MAX_FORMULA_DOCUMENT_NODES`), a `DocumentNodeLimitExceeded` variant,
+`FormulaDocument::from_formula` returning `Result`, `#[non_exhaustive]` on four
+error types, removal of the `Node` `Deserialize` derive, and a duplicate-name
+check moved to a `BTreeMap`. No `NodeKind` variant, interval semantic, span
+semantic, or operator spelling is added, removed, or renamed. The vocabulary
+this dialect was authored from is therefore the same vocabulary, and the
+authored grammar in `DIALECT-001-clean-room-mltl-v1.md` is unaffected.
 
 Both licence files are byte-identical across the two revisions, so the licence
 boundary is unchanged.
 
-The two source files did change, and the clean-room claim survives it because
-of *what* changed rather than because the change was small. The delta over
-`src/` is a bounded wire decoder (`MAX_FORMULA_DOCUMENT_NODES`), a
-`DocumentNodeLimitExceeded` variant, `FormulaDocument::from_formula` returning
-`Result`, `#[non_exhaustive]` on four error types, removal of the `Node`
-`Deserialize` derive, and a duplicate-name check moved to a `BTreeMap`. No
-`NodeKind` variant, interval semantic, span semantic, or operator spelling is
-added, removed, or renamed. The vocabulary this dialect was authored from is
-therefore the same vocabulary, and the authored grammar in
-`DIALECT-001-clean-room-mltl-v1.md` is unaffected.
-
 `tl-parse` uses none of the changed API surface: it never calls
 `from_formula`, never deserializes a `Node`, and matches on none of the four
 error types made `non_exhaustive`.
+
+## Why there is no digest table
+
+Earlier revisions of this document carried per-file SHA-256 tables for both
+revisions, re-derived by a repository-local script. They are gone as of
+`agent-ix/tl-parse#15`.
+
+A digest is evidence only if a reader can fetch the same bytes independently and
+arrive at the same number. The authorship basis is not fetchable: `740182f1` was
+reachable only from tl-syntax's `feat/tl-syntax-v0.1` branch, which has been
+deleted, and no ref in that repository reaches it. Its digests could be checked
+for shape but never re-derived, which made an unverifiable claim look like a
+verified one — worse than recording no number at all.
+
+The compiled revision needs no local table. `Cargo.lock` pins it and cargo
+enforces it, which is the ordinary mechanism and a stronger one than a markdown
+table maintained by hand. Machine-checkable per-file provenance, if it is ever
+wanted here, belongs in a generated SBOM verified against a live source.

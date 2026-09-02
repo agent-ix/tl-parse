@@ -111,7 +111,7 @@
         },
         {
           "id": "PRESERVE-clean-room-provenance",
-          "statement": "The clean-room authorship basis at tl-syntax 740182f1 and its per-file SHA-256 table remain recorded and re-derived, alongside the compiled revision 953ee825. The negative declaration is unchanged.",
+          "statement": "The clean-room authorship basis at tl-syntax 740182f1 remains recorded as a separate fact from the compiled revision 953ee825, whose pin is enforced by Cargo.toml and Cargo.lock. The negative declaration is unchanged. The per-file SHA-256 tables and the local re-derivation gate are removed under issue #15: the authorship basis is on a deleted branch and cannot be re-derived by anyone, so its digests recorded an unverifiable claim in a verifiable-looking shape.",
           "source_ids": ["NFR-002", "attribution", "dialect"]
         },
         {
@@ -156,18 +156,6 @@
           },
           "tool_identity": "tl-parse-test-census",
           "configuration": "spec/test-matrix.md"
-        },
-        {
-          "proof_id": "PROOF-clean-room-attribution",
-          "statement": "The per-file SHA-256 table in docs/ATTRIBUTION.md is re-derived from the tl-syntax source Cargo actually resolved, and the compiled revision it names agrees with TL_SYNTAX_REVISION in the crate.",
-          "obligation_ids": ["FR-006-AC-2"],
-          "evidence_kind": "Static",
-          "command": {
-            "argv": ["python3", "scripts/check_attribution.py", "--json"],
-            "working_directory": "."
-          },
-          "tool_identity": "tl-parse-attribution",
-          "configuration": "docs/ATTRIBUTION.md"
         },
         {
           "proof_id": "PROOF-quire-static-export",
