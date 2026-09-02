@@ -5,7 +5,7 @@ type: Plan
 status: in_progress
 relationships:
   - target: ix://agent-ix/tl-parse/FR-006
-    type: implements
+    type: references
 ---
 # PLAN-002: Shared assurance migration
 
