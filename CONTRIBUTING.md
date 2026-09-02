@@ -11,3 +11,9 @@ agent-assisted workflows. The standard is the same for every contribution:
 Do not push directly to `main`. Generated artifacts must retain their declared
 derivation metadata and licensing. Do not copy material from repositories or
 documents whose license does not permit reuse.
+
+Local CI intentionally refuses non-empty `MAKEFLAGS`, including parallel,
+dry-run, touch, and ignore-error modes such as `make -j4 ci`. Run `make ci`
+without Make control flags so the failure-propagation and transcript censuses
+remain meaningful. The qualified `quire` executable and every other mandatory
+tool are exact path-and-SHA-256 entries in `tools.lock`.

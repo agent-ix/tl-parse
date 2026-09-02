@@ -9,13 +9,22 @@ license = "MIT OR Apache-2.0"
 publish = false
 repository = "https://github.com/agent-ix/tl-parse"
 
+[lints.rust]
+unsafe_code = "forbid"
+
 [lib]
 name = "tl_parse"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tl-syntax = { git = "https://github.com/agent-ix/tl-syntax.git", rev = "953ee825e5060335b4c79682f5f41a78c5a1bfae", features = ["serde"] }
 
 [dev-dependencies]
+proptest = "=1.5.0"
+tempfile = "=3.10.1"
 
 [profile.release]
 lto = "thin"

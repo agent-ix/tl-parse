@@ -1,0 +1,107 @@
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-targets --all-features
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+test cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes ... ok
+test dialect_provenance_and_cli_valid_paths_are_exact ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+test malformed_resource_corpus_is_checksummed_and_matches_its_manifest ... ok
+test every_checked_fuzz_seed_is_bounded_and_successes_round_trip ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test evidence_gates_and_manual_ci_boundary_are_machine_checkable ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+
+running 3 tests
+test canonical_format_is_parseable_and_idempotent ... ok
+test every_operator_has_one_exact_canonical_rendering ... ok
+test deep_shared_graphs_and_formatter_limits_are_bounded ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 11 tests
+test complete_dialect_vocabulary_maps_to_exact_node_kinds ... ok
+test diagnostic_and_work_limits_fail_closed_without_growth ... ok
+test every_success_validates_and_preserves_the_selected_profile ... ok
+test diagnostics_have_stable_golden_fields_and_versioned_json ... ok
+test graph_is_topological_and_nodes_retain_full_source_spans ... ok
+test invalid_characters_and_identifiers_have_utf8_byte_spans ... ok
+test noncanonical_overflowing_and_inverted_numbers_are_rejected ... ok
+test identical_requests_produce_byte_identical_reports ... ok
+test precedence_and_associativity_are_unambiguous ... ok
+test recovery_diagnostics_never_expose_partial_documents ... ok
+test source_token_node_and_depth_limits_fail_closed ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test generated_formulas_parse_format_parse_without_structural_drift ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+cd corpus/v1 && sha256sum --check SHA256SUMS
+depth-limit.txt: OK
+inverted-interval.txt: OK
+leading-zero.txt: OK
+missing-delimiter.txt: OK
+token-limit.txt: OK
+unexpected-unicode.txt: OK
+valid-canonical.txt: OK
+manifest.json: OK
+cd fuzz/corpus/parser && sha256sum --check SHA256SUMS
+invalid.txt: OK
+resource.txt: OK
+valid.txt: OK
+cargo deny check licenses
+licenses ok
+cargo deny check sources
+sources ok
+bash scripts/check_unsafe_comments.sh
+python3 -m py_compile scripts/build_evidence_envelope.py scripts/finalize_collection.py scripts/test_evidence_tool.py scripts/validate_json_schema.py
+python3 scripts/test_evidence_tool.py
+evidence outcome behavior is valid
+quire validate --scope . 'spec/**/*.md' 'docs/*.md'
+quire coverage --scope . --strict
+Coverage: 54/54 rows backed (100%)
+rust: 20/20/21 bound/tagged/candidates (95% read; 95% authored; forms: rust-trace-attribute, rust-trace-line, rust-comment-id, rust-test-name-id, rust-doc-comment-id)
+spec/evidence/suites.md: 8/8 (100%)
+spec/requirements/FR-001-dialect-lexer.md: 3/3 (100%)
+spec/requirements/FR-002-parser-graph.md: 3/3 (100%)
+spec/requirements/FR-003-diagnostics-limits.md: 3/3 (100%)
+spec/requirements/FR-004-canonical-format.md: 3/3 (100%)
+spec/requirements/FR-005-corpus-cli-evidence.md: 4/4 (100%)
+spec/requirements/NFR-001-determinism-resources.md: 2/2 (100%)
+spec/requirements/NFR-002-provenance-boundary.md: 2/2 (100%)
+spec/requirements/StR-001-clean-text-boundary.md: 2/2 (100%)
+spec/requirements/StR-002-canonical-bounded-tools.md: 2/2 (100%)
+spec/test-matrix.md: 22/22 (100%)
+coverage.backed: over 54 matrix row(s), examined 21, matched 20
+authoring.tag_rate: over 21 evidence symbol(s), examined 21, matched 21
+coverage.property_shaped: over 24 acceptance criterion(s), examined 24, matched 24
+coverage.specific_shaped: over 24 acceptance criterion(s), examined 24, matched 24
+minting.section_hit_rate: over 11 declared minting document(s), examined 11, matched 11
+RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --all-features
+bash scripts/verify_evidence.sh
+no retained evidence yet; exact-candidate collection is pending

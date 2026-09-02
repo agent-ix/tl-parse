@@ -1,0 +1,122 @@
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+Warning: can't set `imports_granularity = Crate`, unstable features are only available in nightly channel.
+Warning: can't set `group_imports = StdExternalCrate`, unstable features are only available in nightly channel.
+    Checking tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+   Compiling tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running unittests src/lib.rs (/tmp/tl-parse-evidence-target/debug/deps/tl_parse-c906a0a33a32e948)
+     Running unittests src/bin/tl-parse.rs (/tmp/tl-parse-evidence-target/debug/deps/tl_parse-533ab2739be22da0)
+     Running tests/cli.rs (/tmp/tl-parse-evidence-target/debug/deps/cli-417372e058bd80f6)
+     Running tests/corpus.rs (/tmp/tl-parse-evidence-target/debug/deps/corpus-fcaec6a086548211)
+     Running tests/evidence_contract.rs (/tmp/tl-parse-evidence-target/debug/deps/evidence_contract-a368a1ab574e4cc5)
+     Running tests/format.rs (/tmp/tl-parse-evidence-target/debug/deps/format-78f405b95f8301e2)
+     Running tests/parser.rs (/tmp/tl-parse-evidence-target/debug/deps/parser-ccaba9b8ba80c0a0)
+     Running tests/property.rs (/tmp/tl-parse-evidence-target/debug/deps/property-a68adec9b0ececc3)
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.06s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.02s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.02s
+     Running `/tmp/tl-parse-evidence-target/x86_64-unknown-linux-gnu/release/parser -artifact_prefix=/home/peter/dev/tl-parse/fuzz/artifacts/parser/ -artifact_prefix=/tmp/tmp.Yf2uTsnhnt/artifacts/ -runs=64 /tmp/tmp.Yf2uTsnhnt/generated /tmp/tmp.Yf2uTsnhnt/seeds`
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2980872838
+INFO: Loaded 1 modules   (4673 inline 8-bit counters): 4673 [0x5fc9b1d67250, 0x5fc9b1d68491), 
+INFO: Loaded 1 PC tables (4673 PCs): 4673 [0x5fc9b1d68498,0x5fc9b1d7a8a8), 
+INFO:        0 files found in /tmp/tmp.Yf2uTsnhnt/generated
+INFO:        4 files found in /tmp/tmp.Yf2uTsnhnt/seeds
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: seed corpus: files: 4 min: 15b max: 67b total: 168b rss: 31Mb
+#5	INITED cov: 885 ft: 1417 corp: 4/168b exec/s: 0 rss: 33Mb
+#6	NEW    cov: 885 ft: 1431 corp: 5/214b lim: 67 exec/s: 0 rss: 33Mb L: 46/67 MS: 1 EraseBytes-
+#7	NEW    cov: 886 ft: 1433 corp: 6/229b lim: 67 exec/s: 0 rss: 33Mb L: 15/67 MS: 1 CopyPart-
+#8	NEW    cov: 887 ft: 1477 corp: 7/295b lim: 67 exec/s: 0 rss: 34Mb L: 66/67 MS: 1 InsertByte-
+#9	NEW    cov: 901 ft: 1620 corp: 8/360b lim: 67 exec/s: 0 rss: 34Mb L: 65/67 MS: 1 ChangeByte-
+#10	NEW    cov: 901 ft: 1624 corp: 9/408b lim: 67 exec/s: 0 rss: 34Mb L: 48/67 MS: 1 EraseBytes-
+#11	NEW    cov: 903 ft: 1681 corp: 10/462b lim: 67 exec/s: 0 rss: 34Mb L: 54/67 MS: 1 CMP- DE: "\005\000\000\000\000\000\000\000"-
+#12	NEW    cov: 907 ft: 1687 corp: 11/528b lim: 67 exec/s: 0 rss: 34Mb L: 66/67 MS: 1 ChangeASCIIInt-
+#13	NEW    cov: 919 ft: 1814 corp: 12/549b lim: 67 exec/s: 0 rss: 34Mb L: 21/67 MS: 1 ChangeBinInt-
+#15	NEW    cov: 926 ft: 1957 corp: 13/577b lim: 67 exec/s: 0 rss: 35Mb L: 28/67 MS: 2 CopyPart-CrossOver-
+#20	NEW    cov: 934 ft: 2015 corp: 14/593b lim: 67 exec/s: 0 rss: 35Mb L: 16/67 MS: 5 CrossOver-ChangeByte-CMP-CMP-CrossOver- DE: "7\000\000\000\000\000\000\000"-"\377?"-
+#24	NEW    cov: 936 ft: 2033 corp: 15/639b lim: 67 exec/s: 0 rss: 36Mb L: 46/67 MS: 4 ChangeASCIIInt-ShuffleBytes-ChangeASCIIInt-ChangeByte-
+#25	NEW    cov: 936 ft: 2036 corp: 16/656b lim: 67 exec/s: 0 rss: 36Mb L: 17/67 MS: 1 InsertByte-
+#31	NEW    cov: 936 ft: 2053 corp: 17/672b lim: 67 exec/s: 0 rss: 36Mb L: 16/67 MS: 1 PersAutoDict- DE: "7\000\000\000\000\000\000\000"-
+#37	NEW    cov: 936 ft: 2106 corp: 18/704b lim: 67 exec/s: 0 rss: 36Mb L: 32/67 MS: 1 CopyPart-
+#43	NEW    cov: 936 ft: 2135 corp: 19/764b lim: 67 exec/s: 0 rss: 36Mb L: 60/67 MS: 1 InsertRepeatedBytes-
+#45	NEW    cov: 936 ft: 2137 corp: 20/810b lim: 67 exec/s: 0 rss: 36Mb L: 46/67 MS: 2 ShuffleBytes-ChangeBit-
+#51	NEW    cov: 946 ft: 2150 corp: 21/866b lim: 67 exec/s: 0 rss: 37Mb L: 56/67 MS: 1 CMP- DE: "\001d"-
+#52	NEW    cov: 946 ft: 2153 corp: 22/883b lim: 67 exec/s: 0 rss: 37Mb L: 17/67 MS: 1 PersAutoDict- DE: "\001d"-
+#53	NEW    cov: 946 ft: 2177 corp: 23/948b lim: 67 exec/s: 0 rss: 37Mb L: 65/67 MS: 1 PersAutoDict- DE: "\005\000\000\000\000\000\000\000"-
+#54	NEW    cov: 946 ft: 2276 corp: 24/1012b lim: 67 exec/s: 0 rss: 37Mb L: 64/67 MS: 1 CrossOver-
+#55	NEW    cov: 946 ft: 2277 corp: 25/1029b lim: 67 exec/s: 0 rss: 37Mb L: 17/67 MS: 1 ChangeByte-
+#56	NEW    cov: 946 ft: 2308 corp: 26/1040b lim: 67 exec/s: 0 rss: 37Mb L: 11/67 MS: 1 EraseBytes-
+#57	NEW    cov: 951 ft: 2353 corp: 27/1097b lim: 67 exec/s: 0 rss: 37Mb L: 57/67 MS: 1 InsertRepeatedBytes-
+#58	NEW    cov: 952 ft: 2354 corp: 28/1146b lim: 67 exec/s: 0 rss: 37Mb L: 49/67 MS: 1 InsertByte-
+#60	NEW    cov: 953 ft: 2361 corp: 29/1210b lim: 67 exec/s: 0 rss: 38Mb L: 64/67 MS: 2 CopyPart-ChangeBinInt-
+#61	NEW    cov: 961 ft: 2389 corp: 30/1240b lim: 67 exec/s: 0 rss: 38Mb L: 30/67 MS: 1 PersAutoDict- DE: "\001d"-
+#63	NEW    cov: 961 ft: 2407 corp: 31/1249b lim: 67 exec/s: 0 rss: 38Mb L: 9/67 MS: 2 PersAutoDict-EraseBytes- DE: "\377?"-
+#64	NEW    cov: 961 ft: 2409 corp: 32/1298b lim: 67 exec/s: 0 rss: 38Mb L: 49/67 MS: 1 ChangeByte-
+#64	DONE   cov: 961 ft: 2409 corp: 32/1298b lim: 67 exec/s: 0 rss: 38Mb
+###### Recommended dictionary. ######
+"\005\000\000\000\000\000\000\000" # Uses: 1
+"7\000\000\000\000\000\000\000" # Uses: 2
+"\377?" # Uses: 1
+"\001d" # Uses: 2
+###### End of recommended dictionary. ######
+Done 64 runs in 0 second(s)
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:6:6
+  │
+6 │     "BSD-2-Clause",
+  │      ━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:7:6
+  │
+7 │     "BSD-3-Clause",
+  │      ━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:8:6
+  │
+8 │     "CDLA-Permissive-2.0",
+  │      ━━━━━━━━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+  ┌─ /home/peter/dev/tl-parse/deny.toml:9:6
+  │
+9 │     "ISC",
+  │      ━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /home/peter/dev/tl-parse/deny.toml:11:6
+   │
+11 │     "Zlib",
+   │      ━━━━ unmatched license allowance
+
+DuplicateArchetype: 'ADR' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Plan' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Review' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'SpecReview' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Standard' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateInverseEdge: inverse label 'part_of' declared by verbs ["aggregates", "contains"]; first-wins
+DuplicateArchetype: 'ADR' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Plan' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Review' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'SpecReview' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateArchetype: 'Standard' contributed by modules ["spec-artifacts-process", "spec-artifacts-process"]; first-wins
+DuplicateInverseEdge: inverse label 'part_of' declared by verbs ["aggregates", "contains"]; first-wins
+ Documenting tl-parse v0.1.0 (/home/peter/dev/tl-parse)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.44s
+   Generated /tmp/tl-parse-evidence-target/doc/tl_parse/index.html

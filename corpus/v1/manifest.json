@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "tl-parse.corpus/v1",
+  "revision": "tl-parse-corpus/v1",
+  "cases": [
+    {
+      "path": "valid-canonical.txt",
+      "profile": "closed",
+      "expectedCanonical": "G[0,2](p0->F[1,1]p1)"
+    },
+    {
+      "path": "unexpected-unicode.txt",
+      "profile": "closed",
+      "expectedCode": "unexpected_character"
+    },
+    {
+      "path": "leading-zero.txt",
+      "profile": "closed",
+      "expectedCode": "non_canonical_number"
+    },
+    {
+      "path": "inverted-interval.txt",
+      "profile": "closed",
+      "expectedCode": "invalid_interval"
+    },
+    {
+      "path": "missing-delimiter.txt",
+      "profile": "online",
+      "expectedCode": "missing_token"
+    },
+    {
+      "path": "token-limit.txt",
+      "profile": "closed",
+      "maxTokens": 1,
+      "expectedCode": "token_limit"
+    },
+    {
+      "path": "depth-limit.txt",
+      "profile": "closed",
+      "maxDepth": 2,
+      "expectedCode": "depth_limit"
+    }
+  ]
+}

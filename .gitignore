@@ -1,6 +1,11 @@
 /target
+__pycache__/
+*.pyc
 Cargo.lock.bak
 *.swp
 .DS_Store
 .idea/
 .vscode/
+
+# The pinned shared-assurance interpreter, built by `make assurance-env`.
+.venv-assurance/

@@ -1,0 +1,2 @@
+cargo +1.75.0 check --all-targets --all-features
+msrv gate passed
