@@ -69,7 +69,7 @@ check at a time and require the corresponding gate to go red.
 |---|---|---|
 | NFR-003-AC-1 | Every attested proof result is derived from the producer's own structured output; a producer whose output is absent, empty, or unreadable is an error naming the target that writes it, and never a pass. | Test (TC-023) |
 | NFR-003-AC-2 | Neither Quire nor Quoin executes a producer, demonstrated by stubbing every producer and requiring no invocation, together with a control that stubs Quoin and requires the chain to fail. | Test (TC-023) |
-| NFR-003-AC-3 | The twelve verification outcomes stay distinguishable, each demonstrated by a case that produced it and matched, with every negative paired with a positive control and a control naming a non-existent scenario refused. | Test (TC-026) |
+| NFR-003-AC-3 | The twelve verification outcomes stay distinguishable, each demonstrated by a case that produced it and matched, with every negative paired with a positive control and a control naming a non-existent scenario refused. The dangling-control fixture owns its Quoin store, shares only produced inputs, and proves the unmutated chain succeeds in the same scratch. | Test (TC-026) |
 
 ## Qualification Boundary
 
