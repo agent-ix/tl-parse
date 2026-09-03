@@ -63,6 +63,6 @@ relationships:
 | TC-022 | Classify every shared component through the packaged compatibility matrix and refuse a mirror reference | Integration | P0 | FR-006-AC-1 | ✅ implemented |
 | TC-023 | Reach Quoin intake from producer bytes, and prove neither Quoin nor Quire executes a producer | Integration | P0 | FR-006-AC-2, NFR-003-AC-1, NFR-003-AC-2 | ✅ implemented |
 | TC-024 | Bind the sealed record's impact snapshot to a populated Quire export naming every requirement | Integration | P0 | FR-006-AC-3 | ✅ implemented |
-| TC-026 | Demonstrate all twelve verification outcomes and pair every negative with a positive control | Integration | P0 | FR-006-AC-5, NFR-003-AC-3 | ✅ implemented |
+| TC-026 | Demonstrate all twelve verification outcomes, pair every negative with a positive control, and refuse a dangling control in a scratch-owned Quoin store while the unmutated chain succeeds in the same scratch | Integration | P0 | FR-006-AC-5, NFR-003-AC-3 | ✅ implemented |
 | TC-027 | Report malformed input as malformed, agreeing with the corpus manifest and surviving into the retained bytes | Integration | P0 | FR-006-AC-6, StR-002-VC-2 | ✅ implemented |
 | TC-028 | Prove no local evidence framework remains and none of its files came back | Integration | P0 | FR-006-AC-7 | ✅ implemented |
