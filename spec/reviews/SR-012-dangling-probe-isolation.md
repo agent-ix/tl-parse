@@ -21,16 +21,24 @@ the fixture did not prove that its environment could complete an unmutated run.
 
 | ID | Severity | Summary | Refs | Escape Cause |
 |---|---|---|---|---|
-| FND-1201 | medium | FIXED. The scratch owns an ordinary `target/`, shares only the already-produced `target/assurance` inputs, canonicalizes both stores and requires them to differ. | NFR-003-AC-4, TC-026 | implementation-bug-despite-evidence |
-| FND-1202 | low | FIXED. The deliberately mutated driver must refuse the dangling scenario, while the original driver must succeed in the same scratch. | NFR-003-AC-4, TC-026 | correct-requirement-no-evidence |
-| FND-1203 | low | FIXED. Symlink creation is fail-closed, and cleanup explicitly unlinks every shared input before removing only the owned scratch directories. | NFR-003-AC-4, TC-026 | implementation-bug-despite-evidence |
+| FND-1201 | medium | FIXED. The scratch owns an ordinary `target/`, shares only the already-produced `target/assurance` inputs, canonicalizes both stores and requires them to differ. | NFR-003-AC-3, TC-026 | implementation-bug-despite-evidence |
+| FND-1202 | low | FIXED. The deliberately mutated driver must refuse the dangling scenario, while the original driver must succeed in the same scratch. | NFR-003-AC-3, TC-026 | correct-requirement-no-evidence |
+| FND-1203 | low | FIXED. Symlink creation is fail-closed, and cleanup explicitly unlinks every shared input before removing only the owned scratch directories. | NFR-003-AC-3, TC-026 | implementation-bug-despite-evidence |
 
 ## Disposition
 
-All three findings are fixed under issue #17. Creating `target/` after the
-root-entry loop makes the ownership assertion fail if the skip set regresses.
+All three findings are fixed under issue #17. An existence check before
+creating `target/` is the first reactor if the root-entry skip set regresses.
 The deliberate mutation must exit 2 naming the dangling scenario, then the
 original driver must exit 0 in the same scratch.
+
+The sweep originated in tl-rewrite PR #17, whose corrected head is
+`ee5a32956f7425c0c9ed60cdbc06f3bbda26d129` and awaits exact-head re-review.
+Its tl-mltl half was reviewed at
+`f0a9a0fdfbdc56bc727c9d397aec1befd4f82363` and merged as
+`53f5c6f4e2e9a1a5b9a5268a7f35936f9578ac6a`; the post-merge hermeticity repair
+is tracked by tl-mltl issue #20. This tl-parse fix likewise awaits exact-head
+re-review, so every sibling disposition is explicit.
 
 This changes only the test environment. It does not change the parser, domain
 producers, Quoin/Quire boundary, evidence contract, or manual-only hosted

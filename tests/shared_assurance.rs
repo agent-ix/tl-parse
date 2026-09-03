@@ -601,7 +601,14 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
     // and prove nothing, which is exactly how the first version of this probe
     // failed to detect anything.
     let scratch = root().join("target/dangling-probe");
-    let _ = fs::remove_dir_all(&scratch);
+    // A failed probe intentionally retains its scratch for diagnosis. The next
+    // run must either remove that exact owned tree or fail with that cause;
+    // swallowing the error would turn stale links into a misleading EEXIST.
+    match fs::remove_dir_all(&scratch) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => panic!("failed to clear the previous dangling-probe scratch: {error}"),
+    }
     fs::create_dir_all(scratch.join("scripts")).unwrap();
     let driver = fs::read_to_string(root().join("scripts/assurance_chain.py")).unwrap();
 
@@ -639,8 +646,16 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
         std::os::unix::fs::symlink(&path, scratch.join(&name))
             .unwrap_or_else(|error| panic!("failed to link {name} into the probe: {error}"));
     }
-    // Create this after the loop so dropping `target` from the skip set creates
-    // a symlink that the ownership assertion below can see and reject.
+    // Check ownership before creating anything under target. If `target` drops
+    // out of the skip set, this is the first reactor and no self-referential
+    // link can be created through the repository target.
+    match fs::symlink_metadata(&scratch_target) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Ok(_) => panic!(
+            "the dangling-scenario probe must own target/ rather than inherit a root-entry link"
+        ),
+        Err(error) => panic!("could not establish scratch target ownership: {error}"),
+    }
     fs::create_dir_all(&scratch_target).expect("create isolated probe target");
     std::os::unix::fs::symlink(
         root().join("target/assurance"),
@@ -677,11 +692,12 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
     );
     let scratch_store = fs::canonicalize(scratch_target.join("assurance-store"))
         .expect("the mutated driver created its isolated Quoin store");
-    let real_store = fs::canonicalize(root().join("target/assurance-store"))
-        .expect("canonical real Quoin store");
-    assert_ne!(
-        scratch_store, real_store,
-        "the dangling-scenario probe resolved its Quoin store into the real tree"
+    let real_store = fs::canonicalize(root().join("target"))
+        .expect("canonical repository target directory")
+        .join("assurance-store");
+    assert!(
+        !scratch_store.starts_with(&real_store),
+        "the dangling-scenario probe placed its Quoin store in the real store: {scratch_store:?}"
     );
 
     // The same isolated environment must succeed once the deliberate dangling
@@ -705,8 +721,9 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
         String::from_utf8_lossy(&bypassed.stderr)
     );
 
-    // Unlink shared repository inputs explicitly before recursively removing
-    // only the real scratch directories.
+    // `remove_dir_all` does not follow directory symlinks, but explicitly
+    // unlinking every shared input keeps that safety boundary visible and stops
+    // a future walk-and-delete replacement reaching repository inputs.
     fs::remove_file(scratch_target.join("assurance")).expect("unlink shared assurance inputs");
     for entry in fs::read_dir(&scratch).expect("read dangling-probe scratch") {
         let path = entry.expect("scratch entry").path();
