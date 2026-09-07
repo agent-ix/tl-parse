@@ -39,8 +39,9 @@ AST, or run tools/evidence collection.
   a proposition name or parser location.
 - The report carries a catalog identity digest and a domain-separated binding
   request digest. The request digest binds the validated formula document,
-  exact catalog document, and explicit nullable requirement context so altered
-  or dropped inputs cannot retain the same bound result identity.
+  exact catalog document, explicit nullable requirement context, and exact
+  pinned tl-syntax revision so altered or dropped inputs cannot retain the
+  same bound result identity.
 - The report is a local parser result envelope with its own strict versioned
   wire form. This does not redefine any shared tl-syntax signal, domain,
   binding, or context type.
