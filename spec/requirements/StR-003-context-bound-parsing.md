@@ -2,10 +2,9 @@
 id: StR-003
 title: Bound parsed formula traceability
 type: StR
-status: proposed
 ---
 
-# StR-003 Bound parsed formula traceability
+# StR-003: Bound parsed formula traceability
 
 ## Stakeholder Need
 
