@@ -253,9 +253,6 @@ impl Parser<'_> {
                 let closing = self.current();
                 if closing.kind == TokenKind::RightParenthesis {
                     self.advance();
-                    if let Some(node) = self.nodes.get_mut(inner.0 as usize) {
-                        node.span = Some(checked_span(token.start, closing.end));
-                    }
                 } else {
                     self.push_diagnostic(
                         DiagnosticCode::MissingToken,

@@ -147,7 +147,25 @@ fn graph_is_topological_and_nodes_retain_full_source_spans() {
     }
     let root = &document.nodes()[document.root().0 as usize];
     let root_span = root.span.expect("root span");
-    assert_eq!((root_span.start(), root_span.end()), (0, 16));
+    assert_eq!(
+        (root_span.start(), root_span.end()),
+        (0, 15),
+        "the root span covers syntax nodes, not grouping delimiters"
+    );
+}
+
+// Trace: TC-029, FR-002-AC-4
+#[test]
+fn grouping_preserves_the_inner_node_diagnostic_span() {
+    let report = parse_closed("(p1)&p2");
+    assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
+    let document = report.document.expect("valid grouped formula");
+    let proposition = document.nodes()[0].span.expect("proposition span");
+    assert_eq!(
+        (proposition.start(), proposition.end()),
+        (1, 3),
+        "a diagnostic for p1 must not underline its grouping delimiters"
+    );
 }
 
 // Trace: TC-007, FR-002-AC-2, StR-001-VC-2
