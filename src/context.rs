@@ -62,16 +62,23 @@ struct ContextualParseReportWire {
     formula_document: FormulaDocument,
     signal_catalog: SignalCatalogDocument,
     signal_catalog_sha256: String,
-    #[serde(deserialize_with = "deserialize_required_context")]
-    requirement_context: Option<RequirementContextDocument>,
+    requirement_context: ExplicitNullableContext,
     request_sha256: String,
     bindings: Vec<BoundProposition>,
 }
+
+/// A present wire field whose value may be explicitly `null`.
+///
+/// The wrapper is intentionally not an `Option`: serde therefore rejects an
+/// omitted field, while its inner `Option` accepts JSON `null`.
+#[derive(Deserialize)]
+struct ExplicitNullableContext(Option<RequirementContextDocument>);
 
 impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
     type Error = String;
 
     fn try_from(wire: ContextualParseReportWire) -> Result<Self, Self::Error> {
+        let requirement_context = wire.requirement_context.0;
         let expected_catalog_digest =
             digest(&wire.signal_catalog).map_err(|error| error.to_string())?;
         if wire.signal_catalog_sha256 != expected_catalog_digest {
@@ -80,7 +87,7 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
         let expected_request_digest = request_digest(
             &wire.formula_document,
             &wire.signal_catalog,
-            wire.requirement_context.as_ref(),
+            requirement_context.as_ref(),
         )
         .map_err(|error| error.to_string())?;
         if wire.request_sha256 != expected_request_digest {
@@ -97,7 +104,7 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
             formula_document: wire.formula_document,
             signal_catalog: wire.signal_catalog,
             signal_catalog_sha256: wire.signal_catalog_sha256,
-            requirement_context: wire.requirement_context,
+            requirement_context,
             request_sha256: wire.request_sha256,
             bindings: wire.bindings,
         })
@@ -114,15 +121,6 @@ where
     } else {
         Err(serde::de::Error::custom("unexpected tl-syntax revision"))
     }
-}
-
-fn deserialize_required_context<'de, D>(
-    deserializer: D,
-) -> Result<Option<RequirementContextDocument>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Option::deserialize(deserializer)
 }
 
 /// Non-success outcomes for context-bound parsing.

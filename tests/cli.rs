@@ -62,9 +62,9 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
-    // and the exact compiled revision reachable from reviewed tl-syntax main
-    // when admitted, which is a different fact. The per-file digest tables
-    // that used to be asserted here were dropped under
+        // and the exact compiled revision reachable from reviewed tl-syntax main
+        // when admitted, which is a different fact. The per-file digest tables
+        // that used to be asserted here were dropped under
     // issue #15: 740182f1 is on a deleted branch, so half of them could never be
     // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.
     for required in [
