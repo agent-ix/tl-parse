@@ -39,6 +39,16 @@ GitHub Actions is intentionally manual-only. Do not add `push` or
 `pull_request` triggers. Run local `make ci` while iterating and dispatch the
 hosted workflow once for a finalized PR revision.
 
+## Specification workflow
+
+All implementation and specification changes require a Quoin authoring and
+review record before review: run `quoin write . --types <relevant-types>` before
+authoring artifacts, then run `quoin review --target <affected-spec-scope>` and
+record the selected review set. Validate with
+`quire validate --scope . "spec/**/*.md"`; register each validated review
+artifact with the workflow. Leave the final workflow acceptance for a human —
+it is not an agent approval gate.
+
 ## Safety scaffolding
 
 Backported from `agent-ix/ecaz`:
