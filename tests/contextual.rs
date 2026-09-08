@@ -119,10 +119,12 @@ fn binding_identities_are_deterministic_and_change_with_declared_inputs() {
     let repeated = bind("p1", Some(&first_context));
     let changed_context = bind("p1", Some(&context("brake.applied")));
     let changed_formula = bind("p2", Some(&first_context));
+    let changed_source = bind(" p1", Some(&first_context));
 
     assert_eq!(first, repeated);
     assert_ne!(first.request_sha256, changed_context.request_sha256);
     assert_ne!(first.request_sha256, changed_formula.request_sha256);
+    assert_ne!(first.request_sha256, changed_source.request_sha256);
     assert_eq!(
         first.signal_catalog_sha256,
         changed_formula.signal_catalog_sha256
