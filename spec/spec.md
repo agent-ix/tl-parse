@@ -33,6 +33,8 @@ does not introduce a second AST or temporal semantics.
 - Explicit source, token, node, nesting, diagnostic, work, and output limits.
 - Canonical formatting, round-trip properties, malformed fixtures, fuzz seeds,
   and thin validation/formatting CLI surfaces.
+- Additive binding of successful parsed formulas to tl-syntax typed signal
+  catalogs and optional caller requirement context.
 
 ### Out of Scope
 
@@ -40,6 +42,8 @@ does not introduce a second AST or temporal semantics.
 - Copying grammar text from third-party implementations or publications.
 - Unicode proposition names, application name resolution, or unbounded input.
 - Automatic qualification, certification, publication, or release approval.
+- FRETish parsing, contract-IR field derivation, signal-name inference, or a
+  second formula or signal model.
 
 ## System Overview
 
@@ -53,7 +57,8 @@ declared resource limits.
 
 FR-001 owns the dialect and lexer, FR-002 parsing and graph construction,
 FR-003 diagnostics and fail-closed limits, FR-004 canonical formatting and
-round trips, and FR-005 corpora, fuzzing, CLI, and evidence interchange.
+round trips, FR-005 corpora, fuzzing, CLI, and evidence interchange, and
+FR-007 opt-in typed signal-catalog and caller-context binding.
 NFR-001 constrains determinism/resources and NFR-002 provenance and authority.
 
 ## References

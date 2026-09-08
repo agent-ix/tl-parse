@@ -19,6 +19,7 @@ relationships:
 | FR-004 | FR-004-AC-1 through FR-004-AC-3 | TC-014 through TC-017 | ✅ covered |
 | FR-005 | FR-005-AC-1 through FR-005-AC-3 | TC-018 through TC-021 | ✅ covered |
 | FR-006 | FR-006-AC-1 through FR-006-AC-3, FR-006-AC-5 through FR-006-AC-7 | TC-022 through TC-024, TC-026 through TC-028 | ✅ covered |
+| FR-007 | FR-007-AC-1 through FR-007-AC-5 | TC-029 through TC-033 | planned |
 
 ## Stakeholder Requirement Coverage
 
@@ -66,3 +67,8 @@ relationships:
 | TC-026 | Demonstrate all twelve verification outcomes, pair every negative with a positive control, and refuse a dangling control in a scratch-owned Quoin store while the unmutated chain succeeds in the same scratch | Integration | P0 | FR-006-AC-5, NFR-003-AC-3 | ✅ implemented |
 | TC-027 | Report malformed input as malformed, agreeing with the corpus manifest and surviving into the retained bytes | Integration | P0 | FR-006-AC-6, StR-002-VC-2 | ✅ implemented |
 | TC-028 | Prove no local evidence framework remains and none of its files came back | Integration | P0 | FR-006-AC-7 | ✅ implemented |
+| TC-029 | Bind canonical propositions to declared Boolean signals in deterministic order | Integration | P0 | FR-007-AC-1, StR-003-VC-1 | 🚧 planned |
+| TC-030 | Refuse missing and non-Boolean proposition bindings at the original MLTL span | Integration | P0 | FR-007-AC-2, StR-003-VC-2 | 🚧 planned |
+| TC-031 | Preserve canonical parse/format/bind structure, catalog identity, and caller context | Integration | P0 | FR-007-AC-3, StR-003-VC-1, StR-003-VC-2 | 🚧 planned |
+| TC-032 | Round-trip strict contextual wire reports and refuse missing, unknown, or cross-version fields | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | 🚧 planned |
+| TC-033 | Preserve every context-free public path and dependency boundary | Integration | P0 | FR-007-AC-5, StR-003-VC-3 | 🚧 planned |
