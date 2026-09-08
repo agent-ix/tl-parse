@@ -54,12 +54,14 @@ found these changes:
   source-census and qualification controls, property/fuzz targets, and their
   specification and review records.
 
-tl-parse directly consumes none of those new API families. It continues to use
-the pre-existing `Formula`, `FormulaDocument`, `Interval`, `Node`, `NodeId`,
-`NodeKind`, `PropositionId`, `SemanticProfile`, and `SourceSpan` graph,
-interval, span, proposition, and semantic-profile contracts. No later grammar
-source was consulted: `src/syntax.rs` introduced no operator or grammar change
-in this range, and the independently authored grammar in
+tl-parse consumes the shared `RequirementContextDocument`,
+`SignalCatalogDocument`, and `SignalId` families for its additive context-bound
+parse report. It continues to use the pre-existing `Formula`,
+`FormulaDocument`, `Interval`, `Node`, `NodeId`, `NodeKind`, `PropositionId`,
+`SemanticProfile`, and `SourceSpan` graph, interval, span, proposition, and
+semantic-profile contracts; it does not consume the span-free semantic-formula
+identity family. No later grammar source was consulted: `src/syntax.rs`
+introduced no operator or grammar change in this range, and the independently authored grammar in
 `DIALECT-001-clean-room-mltl-v1.md` is unaffected.
 
 The clean-room claim therefore survives these implementation and assurance

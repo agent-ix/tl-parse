@@ -72,9 +72,9 @@ relationships:
 | TC-030 | Preserve grouped child lexical spans and enclosing ancestor extents | Unit | P0 | FR-002-AC-4 | ✅ implemented |
 | TC-031 | Preserve the authorship basis and enumerate the source-inspected compiled-pin delta with consumed and unconsumed upstream API families | Integration | P0 | NFR-002-AC-2 | ✅ implemented |
 | TC-032 | Select semantic job-step run scalars and enforce one comment-safe scoped ix-flow package across command-position bare/path-qualified npm after assignments, shell groups, the complete documented npm-install alias family, and literal nested shell commands; fail closed on unquoted redirection and executable expansion scripts, reject alternate identities while ignoring inert command arguments and non-`-c` shell invocations without suppressing later commands, and observe the semantic manual-trigger set and exact runtime version | Integration | P0 | NFR-003-AC-5 | ✅ implemented |
-| TC-029 | Report ordered free propositions with parser spans and shared documents | Unit | P0 | FR-007-AC-1, StR-003-VC-1 | 🚧 planned |
-| TC-030 | Refuse an unresolved proposition with its parser byte span | Unit | P0 | FR-007-AC-2, StR-003-VC-2 | 🚧 planned |
-| TC-031 | Preserve shared requirement context distinct from parser spans | Unit | P0 | FR-007-AC-3, StR-003-VC-1 | 🚧 planned |
-| TC-032 | Bind every input identity deterministically and detect mutations | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | 🚧 planned |
-| TC-033 | Preserve context-free compatibility and strictly version binding wires | Integration | P0 | FR-007-AC-5, StR-003-VC-2 | 🚧 planned |
-| TC-034 | Retain public dependency and evidence-tool boundaries | Integration | P1 | FR-007-AC-6 | 🚧 planned |
+| TC-029 | Report ordered free propositions with parser spans and shared documents | Unit | P0 | FR-007-AC-1, StR-003-VC-1 | ✅ implemented |
+| TC-030 | Refuse an unresolved proposition with its parser byte span | Unit | P0 | FR-007-AC-2, StR-003-VC-2 | ✅ implemented |
+| TC-031 | Preserve shared requirement context distinct from parser spans | Unit | P0 | FR-007-AC-3, StR-003-VC-1 | ✅ implemented |
+| TC-032 | Bind every input identity deterministically and detect mutations | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | ✅ implemented |
+| TC-033 | Preserve context-free compatibility and strictly version binding wires | Integration | P0 | FR-007-AC-5, StR-003-VC-2 | ✅ implemented |
+| TC-034 | Retain public dependency and evidence-tool boundaries | Integration | P1 | FR-007-AC-6 | ✅ implemented |
