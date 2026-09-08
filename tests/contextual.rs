@@ -196,13 +196,26 @@ fn v1_parse_wire_remains_compatible_and_v2_binding_wire_is_closed() {
     let mut wrong_revision = value;
     wrong_revision["tlSyntaxRevision"] = Value::String("not-this-pin".into());
     assert!(serde_json::from_value::<ContextualParseReport>(wrong_revision).is_err());
+
+    let mut wrong_catalog_digest: Value = serde_json::from_str(&encoded).unwrap();
+    wrong_catalog_digest["signalCatalogSha256"] = Value::String("0".repeat(64));
+    assert!(serde_json::from_value::<ContextualParseReport>(wrong_catalog_digest).is_err());
+    let mut wrong_request_digest: Value = serde_json::from_str(&encoded).unwrap();
+    wrong_request_digest["requestSha256"] = Value::String("0".repeat(64));
+    assert!(serde_json::from_value::<ContextualParseReport>(wrong_request_digest).is_err());
+    let mut wrong_binding: Value = serde_json::from_str(&encoded).unwrap();
+    wrong_binding["bindings"][0]["signal"] = Value::from(999_u32);
+    assert!(serde_json::from_value::<ContextualParseReport>(wrong_binding).is_err());
 }
 
 // Trace: TC-034, FR-007-AC-6
 #[test]
 fn contextual_public_surface_uses_shared_types_not_assurance_runtime_types() {
-    let source = include_str!("../src/context.rs");
-    for forbidden in ["use quire", "use quoin", "engineering_assurance"] {
-        assert!(!source.to_ascii_lowercase().contains(forbidden));
+    let manifest = include_str!("../Cargo.toml").to_ascii_lowercase();
+    for forbidden in ["quire", "quoin", "engineering-assurance", "contract-ir"] {
+        assert!(
+            !manifest.contains(forbidden),
+            "contextual parsing must not acquire a {forbidden} runtime dependency"
+        );
     }
 }

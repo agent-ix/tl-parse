@@ -33,12 +33,11 @@ pub struct BoundProposition {
 
 /// Complete versioned result of parsing and binding a formula to shared inputs.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase", try_from = "ContextualParseReportWire")]
 pub struct ContextualParseReport {
     /// Closed wire identity for this report family.
     pub schema_version: ContextualParseSchemaVersion,
     /// Exact pinned tl-syntax revision used to validate the shared documents.
-    #[serde(deserialize_with = "deserialize_tl_syntax_revision")]
     pub tl_syntax_revision: String,
     /// Successfully parsed, validated formula document.
     pub formula_document: FormulaDocument,
@@ -47,12 +46,62 @@ pub struct ContextualParseReport {
     /// Digest of the exact serialized shared signal catalog.
     pub signal_catalog_sha256: String,
     /// Explicitly nullable caller-supplied shared requirement context.
-    #[serde(deserialize_with = "deserialize_required_context")]
     pub requirement_context: Option<RequirementContextDocument>,
     /// Domain-separated digest of all binding request identities.
     pub request_sha256: String,
     /// Resolved free propositions in first parser-node order.
     pub bindings: Vec<BoundProposition>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ContextualParseReportWire {
+    schema_version: ContextualParseSchemaVersion,
+    #[serde(deserialize_with = "deserialize_tl_syntax_revision")]
+    tl_syntax_revision: String,
+    formula_document: FormulaDocument,
+    signal_catalog: SignalCatalogDocument,
+    signal_catalog_sha256: String,
+    #[serde(deserialize_with = "deserialize_required_context")]
+    requirement_context: Option<RequirementContextDocument>,
+    request_sha256: String,
+    bindings: Vec<BoundProposition>,
+}
+
+impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
+    type Error = String;
+
+    fn try_from(wire: ContextualParseReportWire) -> Result<Self, Self::Error> {
+        let expected_catalog_digest =
+            digest(&wire.signal_catalog).map_err(|error| error.to_string())?;
+        if wire.signal_catalog_sha256 != expected_catalog_digest {
+            return Err("signal catalog digest does not match the retained catalog".into());
+        }
+        let expected_request_digest = request_digest(
+            &wire.formula_document,
+            &wire.signal_catalog,
+            wire.requirement_context.as_ref(),
+        )
+        .map_err(|error| error.to_string())?;
+        if wire.request_sha256 != expected_request_digest {
+            return Err("request digest does not match the retained inputs".into());
+        }
+        let expected_bindings = bindings_for(&wire.formula_document, &wire.signal_catalog)
+            .map_err(|error| error.to_string())?;
+        if wire.bindings != expected_bindings {
+            return Err("bindings do not match the retained formula and catalog".into());
+        }
+        Ok(Self {
+            schema_version: wire.schema_version,
+            tl_syntax_revision: wire.tl_syntax_revision,
+            formula_document: wire.formula_document,
+            signal_catalog: wire.signal_catalog,
+            signal_catalog_sha256: wire.signal_catalog_sha256,
+            requirement_context: wire.requirement_context,
+            request_sha256: wire.request_sha256,
+            bindings: wire.bindings,
+        })
+    }
 }
 
 fn deserialize_tl_syntax_revision<'de, D>(deserializer: D) -> Result<String, D::Error>
@@ -137,6 +186,26 @@ pub fn parse_with_context(
 ) -> Result<ContextualParseReport, ContextualParseError> {
     let report = parse(source, profile, limits);
     let formula_document = report.document.ok_or(ContextualParseError::ParseFailed)?;
+    let bindings = bindings_for(&formula_document, catalog_document)?;
+
+    let signal_catalog_sha256 = digest(catalog_document)?;
+    let request_sha256 = request_digest(&formula_document, catalog_document, requirement_context)?;
+    Ok(ContextualParseReport {
+        schema_version: ContextualParseSchemaVersion::V2,
+        tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
+        formula_document,
+        signal_catalog: catalog_document.clone(),
+        signal_catalog_sha256,
+        requirement_context: requirement_context.cloned(),
+        request_sha256,
+        bindings,
+    })
+}
+
+fn bindings_for(
+    formula_document: &FormulaDocument,
+    catalog_document: &SignalCatalogDocument,
+) -> Result<Vec<BoundProposition>, ContextualParseError> {
     let catalog = catalog_document
         .validate()
         .map_err(|error| ContextualParseError::InvalidCatalog(error.to_string()))?;
@@ -167,24 +236,21 @@ pub fn parse_with_context(
         });
     }
 
-    let signal_catalog_sha256 = digest(catalog_document)?;
-    let request_sha256 = digest(&serde_json::json!({
+    Ok(bindings)
+}
+
+fn request_digest(
+    formula_document: &FormulaDocument,
+    catalog_document: &SignalCatalogDocument,
+    requirement_context: Option<&RequirementContextDocument>,
+) -> Result<String, ContextualParseError> {
+    digest(&serde_json::json!({
         "domain": "tl-parse.contextual-binding/request/v2",
-        "formulaDocument": &formula_document,
+        "formulaDocument": formula_document,
         "signalCatalog": catalog_document,
         "requirementContext": requirement_context,
         "tlSyntaxRevision": TL_SYNTAX_REVISION,
-    }))?;
-    Ok(ContextualParseReport {
-        schema_version: ContextualParseSchemaVersion::V2,
-        tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
-        formula_document,
-        signal_catalog: catalog_document.clone(),
-        signal_catalog_sha256,
-        requirement_context: requirement_context.cloned(),
-        request_sha256,
-        bindings,
-    })
+    }))
 }
 
 fn digest(value: &impl Serialize) -> Result<String, ContextualParseError> {
