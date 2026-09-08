@@ -6,6 +6,7 @@
 //! [`tl_syntax::FormulaDocument`] model; tl-parse owns no second temporal AST.
 
 mod diagnostic;
+mod context;
 mod format;
 mod lexer;
 mod parser;
@@ -14,6 +15,7 @@ pub use diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
     FormatLimits, FormatReport, FormatStats, ParseLimits, ParseReport, ParseStats, RecoveryAction,
 };
+pub use context::{parse_with_context, BoundProposition, ContextualParseError, ContextualParseReport};
 pub use format::{format_document, format_formula};
 pub use parser::{parse, source_limit_report};
 pub use tl_syntax;
