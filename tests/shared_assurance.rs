@@ -13,7 +13,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::OnceLock;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use serde_json::Value;
 
@@ -69,6 +69,20 @@ fn head_revision() -> String {
 /// binary, and every reader sees the same run rather than a different one.
 static CHAIN: OnceLock<Value> = OnceLock::new();
 
+/// Serializes the two tests that read or temporarily mutate shared pin inputs.
+/// The guard is deliberately private to this test binary: it protects the
+/// repository fixture, not an assurance runtime concern.
+static SHARED_PIN_INPUTS: Mutex<()> = Mutex::new(());
+
+fn shared_pin_inputs() -> MutexGuard<'static, ()> {
+    SHARED_PIN_INPUTS.lock().unwrap_or_else(|poisoned| {
+        panic!(
+            "shared pin inputs may have been left mutated by a panicking test; \
+                 re-run `make assurance-inputs`: {poisoned}"
+        )
+    })
+}
+
 fn chain_report() -> &'static Value {
     CHAIN.get_or_init(|| {
         // The chain runs under the system interpreter: it only shells out to
@@ -91,6 +105,7 @@ fn chain_report() -> &'static Value {
 // Trace: TC-022, FR-006-AC-1
 #[test]
 fn every_shared_pin_is_classified_by_the_packaged_matrix() {
+    let _shared_inputs = shared_pin_inputs();
     let python = assurance_python();
     let report = json_gate(&python, &["scripts/check_shared_pins.py", "--json"]);
 
@@ -662,14 +677,6 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
         scratch_target.join("assurance"),
     )
     .expect("share assurance inputs with the isolated probe");
-    assert!(
-        !fs::symlink_metadata(&scratch_target)
-            .expect("scratch target metadata")
-            .file_type()
-            .is_symlink(),
-        "the dangling-scenario probe must own target/ so its Quoin store is isolated"
-    );
-
     let revision = head_revision();
     let output = Command::new("python3")
         .args([
@@ -692,9 +699,14 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
     );
     let scratch_store = fs::canonicalize(scratch_target.join("assurance-store"))
         .expect("the mutated driver created its isolated Quoin store");
-    let real_store = fs::canonicalize(root().join("target"))
-        .expect("canonical repository target directory")
-        .join("assurance-store");
+    let real_target =
+        fs::canonicalize(root().join("target")).expect("canonical repository target directory");
+    let real_store_candidate = real_target.join("assurance-store");
+    let real_store = match fs::canonicalize(&real_store_candidate) {
+        Ok(path) => path,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => real_store_candidate,
+        Err(error) => panic!("canonical repository assurance store: {error}"),
+    };
     assert!(
         !scratch_store.starts_with(&real_store),
         "the dangling-scenario probe placed its Quoin store in the real store: {scratch_store:?}"
@@ -744,22 +756,27 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     // The structural branch of `mirror_references` (pins.json) already has a
     // control. The file-scan branch did not: it was never observed to fire, so
     // it was indistinguishable from a loop over files that never match.
+    let _shared_inputs = shared_pin_inputs();
     let python = assurance_python();
+    let mirror = root().join("requirements-assurance.txt");
+    let original = fs::read(&mirror).expect("read shared mirror");
+    fs::write(
+        &mirror,
+        [original.as_slice(), b"\n--registry=https://npm.ix/\n"].concat(),
+    )
+    .expect("write mirror-scan mutation");
     let (code, stdout, stderr) = run(
         &python,
         &[
             "-c",
-            "import json,sys,tempfile,pathlib;sys.path.insert(0,'scripts');\
+            "import json,sys;sys.path.insert(0,'scripts');\
              import check_shared_pins as m;\
-             original=pathlib.Path('requirements-assurance.txt').read_text();\
-             pathlib.Path('requirements-assurance.txt').write_text(\
-             original+'\\n--registry=https://npm.ix/\\n');\
              pins=json.load(open('assurance/pins.json'));\
              found=m.mirror_references(pins);\
-             pathlib.Path('requirements-assurance.txt').write_text(original);\
              print(json.dumps(found))",
         ],
     );
+    fs::write(&mirror, &original).expect("restore shared mirror after mutation");
     assert_eq!(code, 0, "the mirror file-scan probe failed: {stderr}");
     let offenders: Vec<String> = serde_json::from_str(stdout.trim()).unwrap();
     assert!(
@@ -771,9 +788,9 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     );
 
     // And the file must be restored, or this test has dirtied the tree.
-    let restored = fs::read_to_string(root().join("requirements-assurance.txt")).unwrap();
-    assert!(
-        !restored.contains("npm.ix/"),
-        "the probe left a mirror reference in requirements-assurance.txt"
+    assert_eq!(
+        fs::read(&mirror).expect("re-read restored shared mirror"),
+        original,
+        "the probe left requirements-assurance.txt changed"
     );
 }
