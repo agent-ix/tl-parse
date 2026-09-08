@@ -142,11 +142,9 @@ def mirror_references(pins: dict[str, Any]) -> list[str]:
 def upstream_pin_mismatches(pins: dict[str, Any]) -> list[str]:
     """Check the tl-syntax pin this repository actually compiles against.
 
-    The migration moved the compiled revision off an open pull request's branch
-    and onto tl-syntax `main`. Three files name that revision and they must agree:
-    a lockfile that drifted from `Cargo.toml`, or a `TL_SYNTAX_REVISION` constant
-    that still names the old pin, would make the crate report a dependency
-    identity it is not actually built from.
+    A lockfile that drifted from `Cargo.toml`, a `TL_SYNTAX_REVISION` constant
+    that still named an old pin, or active guidance that named a superseded pin
+    would make the crate report a dependency identity it is not built from.
     """
     declared = pins["upstream_dependency"]["compiled_revision"]
     problems: list[str] = []
@@ -163,6 +161,12 @@ def upstream_pin_mismatches(pins: dict[str, Any]) -> list[str]:
             continue
         if needle not in path.read_text(encoding="utf-8"):
             problems.append(f"{name}: does not name the compiled revision {declared}")
+    current_records = ("README.md", "CLAUDE.md", "deny.toml")
+    for superseded in pins["upstream_dependency"].get("superseded_compiled_revisions", []):
+        for name in current_records:
+            path = ROOT / name
+            if path.is_file() and superseded in path.read_text(encoding="utf-8"):
+                problems.append(f"{name}: still names superseded compiled revision {superseded}")
     return problems
 
 

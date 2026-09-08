@@ -718,6 +718,31 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
         !offenders.is_empty(),
         "a mirror registry reference was not detected; the check matches nothing"
     );
+
+    // The active pin records must also be seen to reject a revision declared
+    // superseded. Giving the checker its own compiled revision as a temporary
+    // superseded value makes every current record a controlled counterexample;
+    // deleting the sweep would leave this probe green.
+    let (code, stdout, stderr) = run(
+        &python,
+        &[
+            "-c",
+            "import json,sys;sys.path.insert(0,'scripts');\
+             import check_shared_pins as m;\
+             pins=json.load(open('assurance/pins.json'));\
+             revision=pins['upstream_dependency']['compiled_revision'];\
+             pins['upstream_dependency']['superseded_compiled_revisions']=[revision];\
+             print(json.dumps(m.upstream_pin_mismatches(pins)))",
+        ],
+    );
+    assert_eq!(code, 0, "the superseded-pin probe failed: {stderr}");
+    let problems: Vec<String> = serde_json::from_str(stdout.trim()).unwrap();
+    for name in ["README.md", "CLAUDE.md", "deny.toml"] {
+        assert!(
+            problems.iter().any(|problem| problem.starts_with(name)),
+            "the superseded-pin sweep did not inspect {name}: {problems:?}"
+        );
+    }
 }
 
 // Trace: TC-023, FR-006-AC-2, NFR-003-AC-1, SUITE-006, SUITE-007, SUITE-009
