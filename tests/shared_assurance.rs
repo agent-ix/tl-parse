@@ -78,7 +78,8 @@ fn shared_pin_inputs() -> MutexGuard<'static, ()> {
     SHARED_PIN_INPUTS.lock().unwrap_or_else(|poisoned| {
         panic!(
             "shared pin inputs may have been left mutated by a panicking test; \
-                 re-run `make assurance-inputs`: {poisoned}"
+                 inspect and, if needed, run `git restore -- requirements-assurance.txt`: \
+                 {poisoned}"
         )
     })
 }

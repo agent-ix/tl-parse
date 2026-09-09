@@ -19,3 +19,9 @@ one active non-functional requirement from its ownership summary.
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-1301 | medium | The Requirements Architecture names NFR-001 and NFR-002 but omits active NFR-003, even though NFR-003 owns the qualification-integrity boundary and is covered by the matrix. Update the master index so all active requirements have one visible architectural home. | MRS-001, NFR-003, TM-001 |
+
+## Dispositions
+
+| Finding | Disposition | Evidence |
+| --- | --- | --- |
+| FND-1301 | **FIXED** | MRS-001 now allocates FR-006 and NFR-003 explicitly and records their shared-tool and human-authority boundaries. |

@@ -18,3 +18,9 @@ allocate every requirement to an owning component and responsibility class.
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-1901 | medium | The corpus has scope prose but no complete responsibility allocation for FR-001 through FR-006 and NFR-001 through NFR-003, nor an assumed-versus-guaranteed table for tl-syntax, Quire, Quoin, Engineering Assurance, and ix-flow. Add that allocation before using the corpus to split cross-repository work. | MRS-001, FR-006, NFR-003 |
+
+## Dispositions
+
+| Finding | Disposition | Evidence |
+| --- | --- | --- |
+| FND-1901 | **FIXED** | MRS-001 now separates tl-parse guarantees from assumptions and external responsibilities for tl-syntax, Quire, Quoin, Engineering Assurance, ix-flow, and the human release owner. |
