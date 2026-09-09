@@ -3,7 +3,7 @@ id: SR-013
 title: "Base review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: base
-scope: "spec/"
+scope: "complete spec/ corpus at agent-ix/tl-parse#23 review head"
 review_set: all
 ---
 

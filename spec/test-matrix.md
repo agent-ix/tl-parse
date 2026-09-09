@@ -33,7 +33,7 @@ relationships:
 |---|---|---|---|
 | NFR-001 | deterministic and resource-bound tests | TC-011 through TC-017, TC-021 | ✅ covered |
 | NFR-002 | dialect and provenance inspection | TC-020 | ✅ covered |
-| NFR-003 | qualification integrity and fail-closed shared intake | TC-023, TC-026 | ✅ covered |
+| NFR-003 | qualification integrity and fail-closed shared intake | TC-023, TC-026, TC-029 | 🚧 planned |
 
 ## Test Case Summary
 
@@ -66,3 +66,4 @@ relationships:
 | TC-026 | Demonstrate all twelve verification outcomes, pair every negative with a positive control, and refuse a dangling control in a scratch-owned Quoin store while the unmutated chain succeeds in the same scratch | Integration | P0 | FR-006-AC-5, NFR-003-AC-3 | ✅ implemented |
 | TC-027 | Report malformed input as malformed, agreeing with the corpus manifest and surviving into the retained bytes | Integration | P0 | FR-006-AC-6, StR-002-VC-2 | ✅ implemented |
 | TC-028 | Prove no local evidence framework remains and none of its files came back | Integration | P0 | FR-006-AC-7 | ✅ implemented |
+| TC-029 | Refuse duplicate or vacuously empty tracked SpecReview identity populations, including equal plain and quoted YAML spellings | Integration | P0 | NFR-003-AC-4 | 🚧 planned |

@@ -3,7 +3,7 @@ id: SR-014
 title: "Failure-domain review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: failure-domain
-scope: "spec/"
+scope: "complete spec/ corpus at agent-ix/tl-parse#23 review head"
 review_set: all
 ---
 

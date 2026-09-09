@@ -3,7 +3,7 @@ id: SR-018
 title: "Risk and complexity review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: risk-complexity
-scope: "spec/"
+scope: "complete spec/ corpus at agent-ix/tl-parse#23 review head"
 review_set: all
 ---
 

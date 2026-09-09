@@ -3,7 +3,7 @@ id: SR-019
 title: "Scope-boundary review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: scope-boundary
-scope: "spec/"
+scope: "complete spec/ corpus at agent-ix/tl-parse#23 review head"
 review_set: all
 ---
 

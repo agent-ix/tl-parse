@@ -3,7 +3,7 @@ id: SR-020
 title: "EARS conformance review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: ears-conformance
-scope: "spec/"
+scope: "complete spec/ corpus at agent-ix/tl-parse#23 review head"
 review_set: all
 ---
 
