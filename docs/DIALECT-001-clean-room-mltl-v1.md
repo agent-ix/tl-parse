@@ -20,8 +20,8 @@ license texts consulted by SHA-256 and records the negative clean-room
 declaration as a reviewable artifact.
 
 The revision above is the authorship basis and is historical. The revision this
-crate compiles against is `953ee825e5060335b4c79682f5f41a78c5a1bfae`, the head
-of tl-syntax `main` after that repository merged its own shared-assurance
+crate compiles against is `2e6bd6a297a75bb4eed9ea96d5083611283a4214`, the reviewed
+semantic/contextual branch after that repository merged its own shared-assurance
 migration. The two differ only by a bounded wire decoder, a new document
 node-limit error variant, `#[non_exhaustive]` markers on four error types, and
 the removal of the `Node` `Deserialize` derive. No operator, interval, span, or

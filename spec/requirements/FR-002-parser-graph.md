@@ -37,4 +37,4 @@ ordered tl-syntax formula document and shall expose no second public AST.
 
 ## Dependencies
 
-Depends on FR-001 and exact tl-syntax revision `953ee825e5060335b4c79682f5f41a78c5a1bfae`.
+Depends on FR-001 and exact tl-syntax revision `2e6bd6a297a75bb4eed9ea96d5083611283a4214`.

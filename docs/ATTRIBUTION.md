@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 `tl-syntax` merged its own shared-assurance migration as
-`953ee825e5060335b4c79682f5f41a78c5a1bfae`, and `Cargo.toml`, `Cargo.lock`,
+`2e6bd6a297a75bb4eed9ea96d5083611283a4214`, and `Cargo.toml`, `Cargo.lock`,
 `fuzz/Cargo.lock` and [`TL_SYNTAX_REVISION`] now name that revision. Those files
 are where the pin is enforced: cargo resolves the dependency by exact revision
 and refuses a graph that disagrees. This document records the boundary and does
