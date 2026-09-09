@@ -25,8 +25,8 @@
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
-    "compiled_revision": "2e6bd6a297a75bb4eed9ea96d5083611283a4214",
-    "why": "The old pin named a revision reachable only from tl-syntax's feat/tl-syntax-v0.1 branch, never from main, and deny.toml's git-source exception was written to expire when that upstream change merged. It has now merged, as tl-syntax PR #10 squashed to 953ee825 on main, so the compiled pin moves onto main and the exception's expiry no longer applies. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both as separate facts. Tracked as agent-ix/tl-syntax#8."
+    "compiled_revision": "26b801d4a68ebfe720062cfdb3c66b070ab60e92",
+    "why": "The compiled pin follows the current reviewed tl-syntax main revision carrying the shared context contract, qualification controls, property/fuzz boundary, and span-free semantic identity. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both as separate facts."
   },
   "known_drift": [
     "engineering-assurance v0.2.0 packages compatibility-matrix.json with accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate. Both landed on main after the tag and no v0.2.1 was cut. Filed as agent-ix/engineering-assurance#20. scripts/check_shared_pins.py reports the acceptance state the installed package records and gates only on the local toolchain, so an absent field is never read as an approval in either direction.",

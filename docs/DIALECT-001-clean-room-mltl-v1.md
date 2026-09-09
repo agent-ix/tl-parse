@@ -20,14 +20,10 @@ license texts consulted by SHA-256 and records the negative clean-room
 declaration as a reviewable artifact.
 
 The revision above is the authorship basis and is historical. The revision this
-crate compiles against is `2e6bd6a297a75bb4eed9ea96d5083611283a4214`, the reviewed
-semantic/contextual branch after that repository merged its own shared-assurance
-migration. The two differ only by a bounded wire decoder, a new document
-node-limit error variant, `#[non_exhaustive]` markers on four error types, and
-the removal of the `Node` `Deserialize` derive. No operator, interval, span, or
-`NodeKind` in the vocabulary this grammar was authored from is added, removed,
-or renamed, so the grammar below is unchanged by the repin. `ATTRIBUTION.md`
-carries a SHA-256 table for both revisions.
+crate compiles against is `26b801d4a68ebfe720062cfdb3c66b070ab60e92`, the current
+reviewed `tl-syntax` main revision. Later implementation and assurance changes
+do not move the historical authorship basis: no operator, interval, span, or
+precedence rule was copied or re-derived from the compiled revision.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
 a SHA-256 digest over the normative production and precedence record so drift

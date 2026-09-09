@@ -98,8 +98,8 @@ The constraint re-applies when this repository moves toward stable releases.
 
 Two different facts, and they no longer coincide.
 
-The crate **compiles against** `953ee825e5060335b4c79682f5f41a78c5a1bfae`, the
-head of tl-syntax `main`. The dialect was **authored from**
+The crate **compiles against** `26b801d4a68ebfe720062cfdb3c66b070ab60e92`, the
+current reviewed tl-syntax `main`. The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
 move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and
 `Cargo.lock` enforce the compiled pin; there is no local digest table and no

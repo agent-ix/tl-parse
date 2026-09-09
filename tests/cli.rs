@@ -54,15 +54,15 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "5bb9ca37159d3f33eb159bd6e6aaf3a2665e6e9802769f803e66b963124b9e31"
+        "dd3f55b6424faaba4ca01186e1855b7923f73c298e611e9a91a96de6c19f706e"
     );
     assert_eq!(
         attribution_document_digest(),
-        "7caff0cbcfea0a318bbb2e78f1b137b28f52cffbee09b62dff284b60c2a6400f"
+        "cb69def23d62bc4306e0a74af2cbe925efa060af59e8703e6745a45f64182de2"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
-    // and the compiled revision at 953ee825, which is a different fact. The
+    // and the compiled revision on current tl-syntax main, which is a different fact. The
     // per-file digest tables that used to be asserted here were dropped under
     // issue #15: 740182f1 is on a deleted branch, so half of them could never be
     // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.
