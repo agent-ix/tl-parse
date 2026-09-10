@@ -1,6 +1,6 @@
 {
   "schema_version": "tl-parse.change-assurance-declaration/v1",
-  "purpose": "What this repository states about the change under issue #13, in the shape Quoin's FR-063 record requires. Quoin owns the record schema, its digest, and its retention; this file is the author's statement that gets sealed into one.",
+  "purpose": "What this repository states about the migration under issue #13 and its M0 assurance corrections, in the shape Quoin's FR-063 record requires. Quoin owns the record schema, its digest, and its retention; this file is the author's statement that gets sealed into one.",
   "not_an_envelope": "Quoin's packaged change-assurance-record-v1, proof-attestation-v1, and verification-receipt-v1 schemas are the shapes. This file projects into the record body Quoin requires and derives nothing beyond the digests its own derived_fields names. It is not a local evidence envelope, it retains nothing, and it computes no verdict.",
   "derived_fields": [
     "subject.base_revision and impact_snapshot.revision come from the candidate revision the caller names.",
@@ -22,7 +22,8 @@
     "corpus-manifest": "corpus/v1/manifest.json",
     "dialect": "docs/DIALECT-001-clean-room-mltl-v1.md",
     "attribution": "docs/ATTRIBUTION.md",
-    "assurance-pins": "assurance/pins.json"
+    "assurance-pins": "assurance/pins.json",
+    "hosted-workflow": ".github/workflows/ci.yml"
   },
   "record": {
     "schema_version": 1,
@@ -42,6 +43,7 @@
         "tests",
         "fuzz",
         "assurance",
+        ".github",
         "Makefile"
       ]
     },
@@ -57,7 +59,8 @@
       { "source_id": "corpus-manifest", "kind": "architecture" },
       { "source_id": "dialect", "kind": "architecture" },
       { "source_id": "attribution", "kind": "other" },
-      { "source_id": "assurance-pins", "kind": "other" }
+      { "source_id": "assurance-pins", "kind": "other" },
+      { "source_id": "hosted-workflow", "kind": "other" }
     ],
     "impact_snapshot": {
       "identity": "quire-static-export",
@@ -96,6 +99,16 @@
           "id": "FR-006-AC-7",
           "statement": "No repository-local generic runner, evidence envelope, manifest, identity framework, retention store, audit store, anchor file, or aggregate verdict remains in the execution path.",
           "source_ids": ["FR-006", "NFR-003"]
+        },
+        {
+          "id": "NFR-002-AC-2",
+          "statement": "The attribution record enumerates the source-inspected 953ee825..26b801d4 compiled-pin delta, distinguishes new API families tl-parse consumes from those it does not, and preserves the historical authorship basis.",
+          "source_ids": ["NFR-002", "attribution", "dialect"]
+        },
+        {
+          "id": "NFR-003-AC-5",
+          "statement": "The manual-only hosted workflow installs exactly one executable ix-flow package identity, @agent-ix/ix-flow@0.0.4, with no unscoped or alias-form duplicate.",
+          "source_ids": ["NFR-003", "hosted-workflow", "assurance-pins"]
         }
       ],
       "preservation_constraints": [
@@ -111,13 +124,13 @@
         },
         {
           "id": "PRESERVE-clean-room-provenance",
-          "statement": "The clean-room authorship basis at tl-syntax 740182f1 remains recorded as a separate fact from the compiled revision 953ee825, whose pin is enforced by Cargo.toml and Cargo.lock. The negative declaration is unchanged. The per-file SHA-256 tables and the local re-derivation gate are removed under issue #15: the authorship basis is on a deleted branch and cannot be re-derived by anyone, so its digests recorded an unverifiable claim in a verifiable-looking shape.",
+          "statement": "The clean-room authorship basis at tl-syntax 740182f1 remains recorded as a separate fact from compiled revision 26b801d4, whose pin is enforced by Cargo.toml and Cargo.lock. The attribution record enumerates the source-inspected delta from prior compiled revision 953ee825 and states which added API families tl-parse does and does not consume. The negative declaration is unchanged. The per-file SHA-256 tables and the local re-derivation gate remain removed under issue #15: the authorship basis is on a deleted branch and cannot be re-derived by anyone, so its digests recorded an unverifiable claim in a verifiable-looking shape.",
           "source_ids": ["NFR-002", "attribution", "dialect"]
         },
         {
           "id": "PRESERVE-manual-ci",
-          "statement": "Hosted CI remains workflow_dispatch only and is not dispatched by this change.",
-          "source_ids": ["NFR-003"]
+          "statement": "Hosted CI remains workflow_dispatch only, installs exactly @agent-ix/ix-flow@0.0.4, and is not dispatched by this change.",
+          "source_ids": ["NFR-003", "hosted-workflow"]
         }
       ],
       "proof_obligations": [

@@ -15,14 +15,18 @@ checked-value vocabulary exposed by MIT OR Apache-2.0 dual-licensed
 `agent-ix/tl-syntax` at exact
 revision `740182f13b84858008d6f176f75136737d405c1b`. No parser implementation,
 grammar production, or grammar prose from any third-party MLTL tool was used.
-The separately retained `ATTRIBUTION.md` binds the exact tl-syntax files and
-license texts consulted by SHA-256 and records the negative clean-room
-declaration as a reviewable artifact.
+The separately retained `ATTRIBUTION.md` names the exact tl-syntax files and
+license texts consulted and records the negative clean-room declaration as a
+reviewable artifact. It deliberately carries no per-file SHA-256 table because
+the historical authorship revision is no longer reachable from an upstream ref.
 
 The revision above is the authorship basis and is historical. The revision this
-crate compiles against is `26b801d4a68ebfe720062cfdb3c66b070ab60e92`, the current
-reviewed `tl-syntax` main revision. Later implementation and assurance changes
-do not move the historical authorship basis: no operator, interval, span, or
+crate compiles against is `26b801d4a68ebfe720062cfdb3c66b070ab60e92`, an exact
+commit reachable from the reviewed `tl-syntax` `main` history when the pin was
+admitted, not a moving branch head. `ATTRIBUTION.md` enumerates the
+source-inspected delta from the prior compiled pin and the API families this
+crate does and does not consume. Later implementation and assurance changes do
+not move the historical authorship basis: no operator, interval, span, or
 precedence rule was copied or re-derived from the compiled revision.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes

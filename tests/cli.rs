@@ -54,16 +54,17 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "dd3f55b6424faaba4ca01186e1855b7923f73c298e611e9a91a96de6c19f706e"
+        "9cf586f0b0ed56432ab4e9480cec902a6024d5bfbc44ec720e3ffc78d1bd118c"
     );
     assert_eq!(
         attribution_document_digest(),
-        "cb69def23d62bc4306e0a74af2cbe925efa060af59e8703e6745a45f64182de2"
+        "31fef565fc754648913897c77b7afba6a93bd7f8a6557b9102f01ed12a9734e0"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
-    // and the compiled revision on current tl-syntax main, which is a different fact. The
-    // per-file digest tables that used to be asserted here were dropped under
+    // and the exact compiled revision reachable from reviewed tl-syntax main
+    // when admitted, which is a different fact. The per-file digest tables
+    // that used to be asserted here were dropped under
     // issue #15: 740182f1 is on a deleted branch, so half of them could never be
     // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.
     for required in [
@@ -97,6 +98,43 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(value["semantic_profile"], "mltl.online-prefix/v1");
     assert!(value["document"].is_object());
+}
+
+// Trace: TC-031, NFR-002-AC-2
+#[test]
+fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
+    let root = env!("CARGO_MANIFEST_DIR");
+    let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
+    for required in [
+        "953ee825e5060335b4c79682f5f41a78c5a1bfae..26b801d4a68ebfe720062cfdb3c66b070ab60e92",
+        "caller-context APIs",
+        "signal declarations",
+        "span-free semantic formula identity",
+        "assurance-only changes",
+        "tl-parse directly consumes none of those new API families",
+        "FormulaDocument",
+        "SemanticProfile",
+        "No later grammar",
+        "source was consulted",
+    ] {
+        assert!(
+            attribution.contains(required),
+            "attribution omits compiled-pin delta fact {required:?}"
+        );
+    }
+    assert!(
+        !attribution.contains("current reviewed `main`"),
+        "the exact compiled revision was mislabeled as a moving branch head"
+    );
+
+    let dialect =
+        fs::read_to_string(format!("{root}/docs/DIALECT-001-clean-room-mltl-v1.md")).unwrap();
+    assert!(dialect.contains("not a moving branch head"));
+    assert!(dialect.contains("carries no per-file SHA-256 table"));
+
+    let deny = fs::read_to_string(format!("{root}/deny.toml")).unwrap();
+    assert!(deny.contains("reviewed commit reachable from tl-syntax `main`"));
+    assert!(!deny.contains("head of tl-syntax `main`"));
 }
 
 // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1

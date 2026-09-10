@@ -13,7 +13,7 @@
     "component": "quoin",
     "was": "0.22.5",
     "now": "0.23.1",
-    "why": "The hosted workflow pinned @agent-ix/quoin@0.22.5, which the packaged compatibility matrix names explicitly incompatible: it 'predates the `quoin change-assurance` surface; seal, intake, and receipt commands do not exist'. Every command this migration's chain runs is on that surface, so the old pin could not have worked. ix-flow@0.0.4 was absent from the workflow entirely and is now installed."
+    "why": "The hosted workflow pinned @agent-ix/quoin@0.22.5, which the packaged compatibility matrix names explicitly incompatible: it 'predates the `quoin change-assurance` surface; seal, intake, and receipt commands do not exist'. Every command this migration's chain runs is on that surface, so the old pin could not have worked. @agent-ix/ix-flow@0.0.4 was absent from the workflow entirely and is now installed."
   },
   "consumed_artifacts": [
     {
@@ -26,7 +26,7 @@
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
     "compiled_revision": "26b801d4a68ebfe720062cfdb3c66b070ab60e92",
-    "why": "The compiled pin follows the current reviewed tl-syntax main revision carrying the shared context contract, qualification controls, property/fuzz boundary, and span-free semantic identity. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both as separate facts."
+    "why": "The compiled pin is an exact commit reachable from the reviewed tl-syntax main history when admitted; it is not a moving branch head. The source-inspected delta carries shared context, signal-catalog, qualification, property/fuzz, and span-free semantic-identity work that tl-parse does not directly consume. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both facts and the consumed/unconsumed delta separately."
   },
   "known_drift": [
     "engineering-assurance v0.2.0 packages compatibility-matrix.json with accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate. Both landed on main after the tag and no v0.2.1 was cut. Filed as agent-ix/engineering-assurance#20. scripts/check_shared_pins.py reports the acceptance state the installed package records and gates only on the local toolchain, so an absent field is never read as an approval in either direction.",

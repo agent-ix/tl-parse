@@ -24,8 +24,9 @@ unknown-registry = "deny"
 unknown-git = "deny"
 # tl-syntax is not published to a registry, so it resolves by exact git
 # revision. The pin is 26b801d4a68ebfe720062cfdb3c66b070ab60e92, which is the
-# head of tl-syntax `main` — an ancestor-reachable revision, not a branch head
-# on an open pull request. The earlier form of this exception was scoped to
+# reviewed commit reachable from tl-syntax `main` when this pin was admitted,
+# not a moving branch head or a commit reachable only from an open pull request.
+# The earlier form of this exception was scoped to
 # "until tl-syntax PR #6 merges or 2026-09-07"; that merge has happened (as
 # PR #10, which superseded #6), so the revision moved onto `main` and the
 # expiry no longer applies. AA-001 still blocks source release while tl-syntax
