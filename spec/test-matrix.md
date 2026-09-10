@@ -32,8 +32,8 @@ relationships:
 | Non-Functional Req | Verification Method | Evidence/Test Cases | Status |
 |---|---|---|---|
 | NFR-001 | deterministic and resource-bound tests | TC-011 through TC-017, TC-021 | ✅ covered |
-| NFR-002 | dialect and provenance inspection | TC-020 | ✅ covered |
-| NFR-003 | qualification integrity and fail-closed shared intake | TC-023, TC-026, TC-029 | ✅ covered |
+| NFR-002 | dialect, pin-delta, and provenance inspection | TC-020, TC-031 | 🚧 planned addition |
+| NFR-003 | qualification integrity, fail-closed shared intake, and hosted workflow controls | TC-023, TC-026, TC-029, TC-032 | 🚧 planned addition |
 
 ## Test Case Summary
 
@@ -68,3 +68,5 @@ relationships:
 | TC-028 | Prove no local evidence framework remains and none of its files came back | Integration | P0 | FR-006-AC-7 | ✅ implemented |
 | TC-029 | Refuse duplicate or vacuously empty tracked SpecReview identity populations, including equal plain and quoted YAML spellings | Integration | P0 | NFR-003-AC-4 | ✅ implemented |
 | TC-030 | Preserve grouped child lexical spans and enclosing ancestor extents | Unit | P0 | FR-002-AC-4 | ✅ implemented |
+| TC-031 | Preserve the authorship basis and enumerate the source-inspected compiled-pin delta with consumed and unconsumed upstream API families | Integration | P0 | NFR-002-AC-2 | 🚧 planned |
+| TC-032 | Enforce one comment-safe scoped ix-flow package identity, manual-only hosted trigger, alias rejection, and exact released runtime version | Integration | P0 | NFR-003-AC-5 | 🚧 planned |
