@@ -9,11 +9,11 @@
 //! A missing prerequisite is a failure here, never a skip. A gate that stands
 //! down when its dependency is absent reports the same green as one that ran.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::OnceLock;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use serde_json::Value;
 
@@ -69,6 +69,185 @@ fn head_revision() -> String {
 /// binary, and every reader sees the same run rather than a different one.
 static CHAIN: OnceLock<Value> = OnceLock::new();
 
+/// Serializes the two tests that read or temporarily mutate shared pin inputs.
+/// The guard is deliberately private to this test binary: it protects the
+/// repository fixture, not an assurance runtime concern.
+static SHARED_PIN_INPUTS: Mutex<()> = Mutex::new(());
+
+fn shared_pin_inputs() -> MutexGuard<'static, ()> {
+    SHARED_PIN_INPUTS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+struct TrackedFileRestore {
+    path: PathBuf,
+    original: Vec<u8>,
+    restored: bool,
+}
+
+impl TrackedFileRestore {
+    fn new(path: PathBuf) -> Self {
+        let original = fs::read(&path)
+            .unwrap_or_else(|error| panic!("read tracked input {}: {error}", path.display()));
+        Self {
+            path,
+            original,
+            restored: false,
+        }
+    }
+
+    fn original(&self) -> &[u8] {
+        &self.original
+    }
+
+    fn restore(&mut self) {
+        fs::write(&self.path, &self.original).unwrap_or_else(|error| {
+            panic!(
+                "restore tracked input {} after mutation: {error}",
+                self.path.display()
+            )
+        });
+        self.restored = true;
+    }
+}
+
+impl Drop for TrackedFileRestore {
+    fn drop(&mut self) {
+        if self.restored {
+            return;
+        }
+        if let Err(error) = fs::write(&self.path, &self.original) {
+            if std::thread::panicking() {
+                eprintln!(
+                    "failed to restore tracked input {} while unwinding: {error}",
+                    self.path.display()
+                );
+            } else {
+                panic!(
+                    "restore tracked input {} after mutation: {error}",
+                    self.path.display()
+                );
+            }
+        }
+    }
+}
+
+fn normalized_frontmatter_scalar(value: &str) -> &str {
+    let value = value.trim();
+    if value.len() >= 2 {
+        let first = value.as_bytes()[0];
+        let last = value.as_bytes()[value.len() - 1];
+        if (first == b'\'' && last == b'\'') || (first == b'"' && last == b'"') {
+            return &value[1..value.len() - 1];
+        }
+    }
+    value
+}
+
+fn review_id(contents: &str, path: &str) -> String {
+    let mut lines = contents.lines();
+    assert_eq!(
+        lines.next(),
+        Some("---"),
+        "tracked review {path} has no YAML frontmatter"
+    );
+    let mut id = None;
+    let mut artifact_type = None;
+    for line in lines {
+        if line == "---" {
+            break;
+        }
+        if let Some(value) = line.strip_prefix("id:") {
+            id = Some(normalized_frontmatter_scalar(value).to_owned());
+        }
+        if let Some(value) = line.strip_prefix("type:") {
+            artifact_type = Some(normalized_frontmatter_scalar(value).to_owned());
+        }
+    }
+    assert_eq!(
+        artifact_type.as_deref(),
+        Some("SpecReview"),
+        "tracked review {path} is not a SpecReview artifact"
+    );
+    id.unwrap_or_else(|| panic!("tracked review {path} has no frontmatter id"))
+}
+
+fn duplicate_review_ids(
+    reviews: impl IntoIterator<Item = (String, String)>,
+) -> BTreeMap<String, Vec<String>> {
+    let mut paths_by_id = BTreeMap::<String, Vec<String>>::new();
+    for (path, contents) in reviews {
+        paths_by_id
+            .entry(review_id(&contents, &path))
+            .or_default()
+            .push(path);
+    }
+    assert!(
+        !paths_by_id.is_empty(),
+        "tracked SpecReview census is empty; uniqueness would be vacuous"
+    );
+    paths_by_id
+        .into_iter()
+        .filter(|(_, paths)| paths.len() > 1)
+        .collect()
+}
+
+// Trace: TC-029, NFR-003-AC-4
+#[test]
+fn every_tracked_spec_review_id_is_unique() {
+    let output = Command::new("git")
+        .args(["ls-files", "-z", "spec/reviews"])
+        .current_dir(root())
+        .output()
+        .expect("git ls-files could not enumerate tracked reviews");
+    assert!(
+        output.status.success(),
+        "git ls-files could not enumerate tracked reviews: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let paths = String::from_utf8(output.stdout).expect("tracked review paths are not UTF-8");
+    let reviews = paths
+        .split('\0')
+        .filter(|path| !path.is_empty())
+        .map(|path| {
+            let contents = fs::read_to_string(root().join(path))
+                .unwrap_or_else(|error| panic!("could not read tracked review {path}: {error}"));
+            (path.to_owned(), contents)
+        });
+    let duplicates = duplicate_review_ids(reviews);
+    assert!(
+        duplicates.is_empty(),
+        "duplicate tracked SpecReview ids: {duplicates:?}"
+    );
+}
+
+// Trace: TC-029, NFR-003-AC-4
+#[test]
+fn quoted_review_identity_collides_with_its_plain_yaml_value() {
+    let duplicates = duplicate_review_ids([
+        (
+            "plain.md".to_owned(),
+            "---\nid: SR-091\ntype: SpecReview\n---\n".to_owned(),
+        ),
+        (
+            "quoted.md".to_owned(),
+            "---\nid: \"SR-091\"\ntype: SpecReview\n---\n".to_owned(),
+        ),
+    ]);
+    assert_eq!(
+        duplicates.get("SR-091"),
+        Some(&vec!["plain.md".to_owned(), "quoted.md".to_owned()])
+    );
+}
+
+// Trace: TC-029, NFR-003-AC-4
+#[test]
+#[should_panic(expected = "tracked SpecReview census is empty")]
+fn review_identity_census_refuses_an_empty_set() {
+    let _ = duplicate_review_ids(std::iter::empty::<(String, String)>());
+}
+
 fn chain_report() -> &'static Value {
     CHAIN.get_or_init(|| {
         // The chain runs under the system interpreter: it only shells out to
@@ -91,6 +270,7 @@ fn chain_report() -> &'static Value {
 // Trace: TC-022, FR-006-AC-1
 #[test]
 fn every_shared_pin_is_classified_by_the_packaged_matrix() {
+    let _shared_inputs = shared_pin_inputs();
     let python = assurance_python();
     let report = json_gate(&python, &["scripts/check_shared_pins.py", "--json"]);
 
@@ -356,9 +536,9 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // unbacked and SR-007 says why. So the figures themselves are asserted: an
     // export reporting different totals has to move a number in this file.
     let totals = &parsed["totals"];
-    assert_eq!(totals["total"], 67, "matrix row count changed: {totals}");
+    assert_eq!(totals["total"], 69, "matrix row count changed: {totals}");
     assert_eq!(
-        totals["backed"], 63,
+        totals["backed"], 65,
         "backed-row count changed: {totals}. Four suite rows are unbacked on \
          purpose; if that number moved, update spec/evidence/suites.md and SR-007 \
          deliberately rather than adjusting this assertion."
@@ -662,14 +842,6 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
         scratch_target.join("assurance"),
     )
     .expect("share assurance inputs with the isolated probe");
-    assert!(
-        !fs::symlink_metadata(&scratch_target)
-            .expect("scratch target metadata")
-            .file_type()
-            .is_symlink(),
-        "the dangling-scenario probe must own target/ so its Quoin store is isolated"
-    );
-
     let revision = head_revision();
     let output = Command::new("python3")
         .args([
@@ -692,9 +864,14 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
     );
     let scratch_store = fs::canonicalize(scratch_target.join("assurance-store"))
         .expect("the mutated driver created its isolated Quoin store");
-    let real_store = fs::canonicalize(root().join("target"))
-        .expect("canonical repository target directory")
-        .join("assurance-store");
+    let real_target =
+        fs::canonicalize(root().join("target")).expect("canonical repository target directory");
+    let real_store_candidate = real_target.join("assurance-store");
+    let real_store = match fs::canonicalize(&real_store_candidate) {
+        Ok(path) => path,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => real_store_candidate,
+        Err(error) => panic!("canonical repository assurance store: {error}"),
+    };
     assert!(
         !scratch_store.starts_with(&real_store),
         "the dangling-scenario probe placed its Quoin store in the real store: {scratch_store:?}"
@@ -740,26 +917,56 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
 
 // Trace: TC-022, FR-006-AC-1
 #[test]
+fn mirror_mutation_restores_on_unwind_and_a_poisoned_lock_recovers() {
+    let mirror = root().join("requirements-assurance.txt");
+    let original = fs::read(&mirror).expect("read shared mirror before unwind probe");
+    let unwind = std::panic::catch_unwind(|| {
+        let _shared_inputs = shared_pin_inputs();
+        let _restoration = TrackedFileRestore::new(mirror.clone());
+        fs::write(
+            &mirror,
+            [original.as_slice(), b"\n--registry=https://npm.ix/\n"].concat(),
+        )
+        .expect("write unwind restoration probe");
+        panic!("deliberate unwind after tracked-file mutation");
+    });
+    assert!(unwind.is_err(), "the restoration probe did not unwind");
+
+    let _recovered = shared_pin_inputs();
+    assert_eq!(
+        fs::read(&mirror).expect("read shared mirror after unwind probe"),
+        original,
+        "the RAII guard did not restore requirements-assurance.txt while unwinding"
+    );
+}
+
+// Trace: TC-022, FR-006-AC-1
+#[test]
 fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     // The structural branch of `mirror_references` (pins.json) already has a
     // control. The file-scan branch did not: it was never observed to fire, so
     // it was indistinguishable from a loop over files that never match.
+    let _shared_inputs = shared_pin_inputs();
     let python = assurance_python();
+    let mirror = root().join("requirements-assurance.txt");
+    let mut restoration = TrackedFileRestore::new(mirror.clone());
+    fs::write(
+        &mirror,
+        [restoration.original(), b"\n--registry=https://npm.ix/\n"].concat(),
+    )
+    .expect("write mirror-scan mutation");
     let (code, stdout, stderr) = run(
         &python,
         &[
             "-c",
-            "import json,sys,tempfile,pathlib;sys.path.insert(0,'scripts');\
+            "import json,sys;sys.path.insert(0,'scripts');\
              import check_shared_pins as m;\
-             original=pathlib.Path('requirements-assurance.txt').read_text();\
-             pathlib.Path('requirements-assurance.txt').write_text(\
-             original+'\\n--registry=https://npm.ix/\\n');\
              pins=json.load(open('assurance/pins.json'));\
              found=m.mirror_references(pins);\
-             pathlib.Path('requirements-assurance.txt').write_text(original);\
              print(json.dumps(found))",
         ],
     );
+    restoration.restore();
     assert_eq!(code, 0, "the mirror file-scan probe failed: {stderr}");
     let offenders: Vec<String> = serde_json::from_str(stdout.trim()).unwrap();
     assert!(
@@ -771,9 +978,9 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     );
 
     // And the file must be restored, or this test has dirtied the tree.
-    let restored = fs::read_to_string(root().join("requirements-assurance.txt")).unwrap();
-    assert!(
-        !restored.contains("npm.ix/"),
-        "the probe left a mirror reference in requirements-assurance.txt"
+    assert_eq!(
+        fs::read(&mirror).expect("re-read restored shared mirror"),
+        restoration.original(),
+        "the probe left requirements-assurance.txt changed"
     );
 }

@@ -53,8 +53,27 @@ declared resource limits.
 
 FR-001 owns the dialect and lexer, FR-002 parsing and graph construction,
 FR-003 diagnostics and fail-closed limits, FR-004 canonical formatting and
-round trips, and FR-005 corpora, fuzzing, CLI, and evidence interchange.
-NFR-001 constrains determinism/resources and NFR-002 provenance and authority.
+round trips, FR-005 corpora, fuzzing, CLI, and evidence interchange, and FR-006
+the shared-assurance intake boundary. NFR-001 constrains
+determinism/resources, NFR-002 provenance and authority, and NFR-003 explicit
+fail-closed qualification controls.
+
+### Responsibility and dependency allocation
+
+| Component | This specification guarantees | Assumption or external responsibility |
+| --- | --- | --- |
+| tl-parse | Bounded dialect parsing, graph construction, diagnostics, canonical formatting, corpus/fuzz behavior, and producer-owned result bytes | It does not evaluate, rewrite, monitor, or infer application signal meaning. |
+| tl-syntax | — | The exact pinned revision supplies validated graph, interval, span, proposition, and semantic-profile contracts. tl-parse does not redefine them. |
+| Quire | tl-parse supplies its specification and requirement-tagged source tree as inputs | Quire reports static specification/coverage facts and does not execute a parser producer or grant release authority. |
+| Quoin | tl-parse supplies producer-written structured results | Quoin seals, retains, audits, and reports the bytes it receives; it neither creates producer results nor decides release sufficiency. |
+| Engineering Assurance | tl-parse reports the observed shared-tool versions to the released compatibility contract | The released compatibility matrix owns classification; this repository does not restate its rules. |
+| ix-flow / release owner | tl-parse preserves an absent decision as an incomplete receipt | Only the human release owner may record the release decision; no automated pass implies it. |
+
+NFR-003 records the remaining assumption that Make's own execution controls are
+not qualified by a shared control. That known risk remains `tl-parse#11` and a
+human release-decision input; the producer-byte boundary covers only results
+that were actually produced and does not turn bypassed non-producer gates into
+passes.
 
 ## References
 

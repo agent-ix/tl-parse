@@ -21,14 +21,16 @@ the fixture did not prove that its environment could complete an unmutated run.
 
 | ID | Severity | Summary | Refs | Escape Cause |
 |---|---|---|---|---|
-| FND-1201 | medium | FIXED. The scratch owns an ordinary `target/`, shares only the already-produced `target/assurance` inputs, canonicalizes both stores and requires them to differ. | NFR-003-AC-3, TC-026 | implementation-bug-despite-evidence |
+| FND-1201 | medium | FIXED. The scratch owns an ordinary `target/`, shares only the already-produced `target/assurance` inputs, canonicalizes its created store, and compares it outside the repository store resolved from `target/`. The repository `assurance-store` leaf is canonicalized when present and otherwise compared as the unresolved child, so its absence is not a prerequisite. | NFR-003-AC-3, TC-026 | implementation-bug-despite-evidence |
 | FND-1202 | low | FIXED. The deliberately mutated driver must refuse the dangling scenario, while the original driver must succeed in the same scratch. | NFR-003-AC-3, TC-026 | correct-requirement-no-evidence |
 | FND-1203 | low | FIXED. Symlink creation is fail-closed, and cleanup explicitly unlinks every shared input before removing only the owned scratch directories. | NFR-003-AC-3, TC-026 | implementation-bug-despite-evidence |
 
 ## Disposition
 
 All three findings are fixed under issue #17. An existence check before
-creating `target/` is the first reactor if the root-entry skip set regresses.
+creating `target/` is the first reactor if the root-entry skip set regresses;
+the post-creation non-symlink assertion was removed because it could not
+falsify that earlier ownership check.
 The deliberate mutation must exit 2 naming the dangling scenario, then the
 original driver must exit 0 in the same scratch.
 
