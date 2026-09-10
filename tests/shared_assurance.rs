@@ -55,6 +55,7 @@ fn yaml_without_comments(source: &str) -> String {
         let mut single_quoted = false;
         let mut double_quoted = false;
         let mut escaped = false;
+        let mut separated = true;
         for character in line.chars() {
             if escaped {
                 uncommented.push(character);
@@ -74,34 +75,221 @@ fn yaml_without_comments(source: &str) -> String {
                     double_quoted = !double_quoted;
                     uncommented.push(character);
                 }
-                '#' if !single_quoted && !double_quoted => break,
+                '#' if !single_quoted && !double_quoted && separated => break,
                 _ => uncommented.push(character),
             }
+            separated = character.is_ascii_whitespace();
         }
         uncommented.push('\n');
     }
     uncommented
 }
 
-fn workflow_ix_flow_packages(source: &str) -> Vec<String> {
-    yaml_without_comments(source)
-        .split_ascii_whitespace()
-        .filter_map(|token| {
-            let token = token.trim_matches(|character: char| {
-                matches!(
-                    character,
-                    '\'' | '"' | '\\' | '|' | ';' | ',' | '(' | ')' | '[' | ']'
-                )
-            });
-            let is_package_identity = token == "ix-flow"
-                || token.starts_with("ix-flow@")
-                || token == "@agent-ix/ix-flow"
-                || token.starts_with("@agent-ix/ix-flow@")
-                || token.contains("@npm:ix-flow")
-                || token.contains("@npm:@agent-ix/ix-flow");
-            is_package_identity.then(|| token.to_owned())
+fn yaml_run_value(line: &str) -> Option<&str> {
+    let trimmed = line.trim_start();
+    let entry = trimmed.strip_prefix("- ").unwrap_or(trimmed).trim_start();
+    ["run:", "'run':", "\"run\":"]
+        .into_iter()
+        .find_map(|prefix| {
+            entry.strip_prefix(prefix).filter(|_| {
+                entry.len() == prefix.len()
+                    || entry[prefix.len()..].starts_with(char::is_whitespace)
+            })
         })
-        .collect()
+}
+
+fn workflow_run_scripts(source: &str) -> Result<Vec<String>, Vec<String>> {
+    let lines: Vec<&str> = source.lines().collect();
+    let mut scripts = Vec::new();
+    let mut errors = Vec::new();
+    let mut index = 0;
+    while index < lines.len() {
+        let line = lines[index];
+        let indentation = line.len() - line.trim_start().len();
+        let Some(run_value) = yaml_run_value(line) else {
+            index += 1;
+            continue;
+        };
+        let storage = yaml_without_comments(run_value);
+        let run_value = storage.trim();
+        if matches!(run_value, "|" | "|-" | "|+") {
+            let start = index + 1;
+            let mut end = start;
+            while end < lines.len()
+                && (lines[end].trim().is_empty()
+                    || lines[end].len() - lines[end].trim_start().len() > indentation)
+            {
+                end += 1;
+            }
+            let content_indent = lines[start..end]
+                .iter()
+                .filter(|candidate| !candidate.trim().is_empty())
+                .map(|candidate| candidate.len() - candidate.trim_start().len())
+                .min()
+                .unwrap_or(indentation + 2);
+            let mut script = String::new();
+            for candidate in &lines[start..end] {
+                if candidate.trim().is_empty() {
+                    script.push('\n');
+                } else if candidate.len() >= content_indent {
+                    script.push_str(&candidate[content_indent..]);
+                    script.push('\n');
+                } else {
+                    errors.push(format!(
+                        "run script line has unsupported indentation: {candidate:?}"
+                    ));
+                }
+            }
+            scripts.push(script);
+            index = end;
+            continue;
+        }
+        if run_value.is_empty() || run_value.starts_with('|') || run_value.starts_with('>') {
+            errors.push(format!(
+                "run key has unsupported script value {run_value:?}"
+            ));
+        } else {
+            let decoded = if run_value.starts_with('\'') && run_value.ends_with('\'') {
+                run_value[1..run_value.len() - 1].replace("''", "'")
+            } else if run_value.starts_with('"') && run_value.ends_with('"') {
+                run_value[1..run_value.len() - 1].to_owned()
+            } else {
+                run_value.to_owned()
+            };
+            scripts.push(decoded);
+        }
+        index += 1;
+    }
+    if errors.is_empty() {
+        Ok(scripts)
+    } else {
+        Err(errors)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum ShellToken {
+    Word(String),
+    Boundary,
+}
+
+fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
+    let mut tokens = Vec::new();
+    let mut word = String::new();
+    let mut quote = None;
+    let mut escaped = false;
+    let mut characters = script.chars().peekable();
+    let flush = |tokens: &mut Vec<ShellToken>, word: &mut String| {
+        if !word.is_empty() {
+            tokens.push(ShellToken::Word(std::mem::take(word)));
+        }
+    };
+    while let Some(character) = characters.next() {
+        if escaped {
+            if character != '\n' {
+                word.push(character);
+            }
+            escaped = false;
+            continue;
+        }
+        if quote == Some('\'') {
+            if character == '\'' {
+                quote = None;
+            } else {
+                word.push(character);
+            }
+            continue;
+        }
+        if quote == Some('"') {
+            match character {
+                '"' => quote = None,
+                '\\' => escaped = true,
+                _ => word.push(character),
+            }
+            continue;
+        }
+        match character {
+            '\'' | '"' => quote = Some(character),
+            '\\' => escaped = true,
+            ' ' | '\t' | '\r' => flush(&mut tokens, &mut word),
+            '#' if word.is_empty() => {
+                for comment_character in characters.by_ref() {
+                    if comment_character == '\n' {
+                        if !matches!(tokens.last(), Some(ShellToken::Boundary)) {
+                            tokens.push(ShellToken::Boundary);
+                        }
+                        break;
+                    }
+                }
+            }
+            '\n' | ';' | '|' | '&' => {
+                flush(&mut tokens, &mut word);
+                if !matches!(tokens.last(), Some(ShellToken::Boundary)) {
+                    tokens.push(ShellToken::Boundary);
+                }
+                if matches!(character, '|' | '&') && characters.peek() == Some(&character) {
+                    characters.next();
+                }
+            }
+            _ => word.push(character),
+        }
+    }
+    if escaped || quote.is_some() {
+        return Err(format!(
+            "shell script has an unterminated token near {word:?}"
+        ));
+    }
+    flush(&mut tokens, &mut word);
+    Ok(tokens)
+}
+
+fn workflow_ix_flow_packages(source: &str) -> (Vec<String>, Vec<String>) {
+    let scripts = match workflow_run_scripts(source) {
+        Ok(scripts) => scripts,
+        Err(errors) => return (Vec::new(), errors),
+    };
+    let mut packages = Vec::new();
+    let mut errors = Vec::new();
+    for script in scripts {
+        let tokens = match shell_tokens(&script) {
+            Ok(tokens) => tokens,
+            Err(error) => {
+                errors.push(error);
+                continue;
+            }
+        };
+        for command in tokens.split(|token| *token == ShellToken::Boundary) {
+            let words: Vec<&str> = command
+                .iter()
+                .filter_map(|token| match token {
+                    ShellToken::Word(word) => Some(word.as_str()),
+                    ShellToken::Boundary => None,
+                })
+                .collect();
+            for (npm_index, npm) in words.iter().enumerate() {
+                if *npm != "npm" {
+                    continue;
+                }
+                let Some((install_offset, _)) = words[npm_index + 1..]
+                    .iter()
+                    .enumerate()
+                    .find(|(_, word)| matches!(**word, "install" | "i" | "add"))
+                else {
+                    continue;
+                };
+                let install_index = npm_index + 1 + install_offset;
+                for argument in &words[install_index + 1..] {
+                    if *argument == "--" || argument.starts_with('-') {
+                        continue;
+                    }
+                    if argument.to_ascii_lowercase().contains("ix-flow") {
+                        packages.push((*argument).to_owned());
+                    }
+                }
+            }
+        }
+    }
+    (packages, errors)
 }
 
 fn workflow_trigger_names(source: &str) -> Vec<String> {
@@ -140,8 +328,7 @@ fn hosted_workflow_control_errors(source: &str) -> Vec<String> {
     const EXPECTED_PACKAGE: &str = "@agent-ix/ix-flow@0.0.4";
     const EXPECTED_TRIGGER: &str = "workflow_dispatch";
 
-    let mut errors = Vec::new();
-    let packages = workflow_ix_flow_packages(source);
+    let (packages, mut errors) = workflow_ix_flow_packages(source);
     if packages != [EXPECTED_PACKAGE] {
         errors.push(format!(
             "executable ix-flow packages must be exactly [{EXPECTED_PACKAGE:?}], observed {packages:?}"
@@ -1111,6 +1298,45 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
     assert!(
         hosted_workflow_control_errors(&comment_only).is_empty(),
         "a comment-only package spelling became executable"
+    );
+
+    let metadata_only = workflow.replacen(
+        "name: Install specification tools and modules",
+        "name: npm add github:agent-ix/ix-flow is inert metadata",
+        1,
+    );
+    assert!(
+        hosted_workflow_control_errors(&metadata_only).is_empty(),
+        "an inert step name became an executable package specification"
+    );
+
+    let quoted_run_key = workflow.replacen("        run: |", "        'run': |", 1);
+    assert!(
+        hosted_workflow_control_errors(&quoted_run_key).is_empty(),
+        "a quoted YAML run key hid its executable script"
+    );
+
+    let word_internal_hash = workflow.replacen(
+        "npm install --global",
+        "echo marker#not-a-comment; npm add --global github:agent-ix/ix-flow#v9.9.9; npm install --global",
+        1,
+    );
+    let hash_errors = hosted_workflow_control_errors(&word_internal_hash);
+    assert!(
+        hash_errors
+            .iter()
+            .any(|error| error.contains("github:agent-ix/ix-flow#v9.9.9")),
+        "a word-internal shell hash hid an alternate npm package: {hash_errors:?}"
+    );
+
+    let shell_comment = workflow.replacen(
+        "npm install --global",
+        "# npm add --global github:agent-ix/ix-flow#comment-only\n          npm install --global",
+        1,
+    );
+    assert!(
+        hosted_workflow_control_errors(&shell_comment).is_empty(),
+        "a shell comment inside a literal run block became executable"
     );
 
     let unscoped = workflow.replacen("@agent-ix/ix-flow@0.0.4", "ix-flow@0.0.4", 1);

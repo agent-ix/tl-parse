@@ -73,13 +73,16 @@ check at a time and require the corresponding gate to go red.
 The review-identity census reads every version-control-tracked SpecReview
 frontmatter, normalizes matching YAML quotes, refuses an empty population, and
 reports every identity with more than one owning path.
-The hosted-workflow census strips YAML comments before tokenizing executable
-content, counts package tokens across install-command and npm-alias spellings,
-requires exactly one scoped ix-flow package at the pinned version, rejects every
-unscoped or duplicate identity, verifies the installed executable's version,
-and requires `workflow_dispatch` to be the sole trigger. Independent review of
-the workflow file is the second control against coordinated scanner-and-expected
-side edits.
+The hosted-workflow census first isolates scalar YAML `run` values, including
+quoted `run` keys and literal blocks, and then tokenizes their shell commands.
+YAML metadata never enters the executable population. Inside a run script, `#`
+starts a shell comment only at a word boundary; a word-internal hash remains
+part of its argument. The census inspects package arguments consumed by npm
+`install`, `i`, or `add`, requires exactly one scoped ix-flow package at the
+pinned version, rejects every alternate or duplicate identity, verifies the
+installed executable's version, and requires `workflow_dispatch` to be the sole
+trigger. Independent review of the workflow file is the second control against
+coordinated scanner-and-expected-side edits.
 
 ## Acceptance Criteria
 
@@ -89,7 +92,7 @@ side edits.
 | NFR-003-AC-2 | Neither Quire nor Quoin executes a producer, demonstrated by stubbing every producer and requiring no invocation, together with a control that stubs Quoin and requires the chain to fail. | Test (TC-023) |
 | NFR-003-AC-3 | The twelve verification outcomes stay distinguishable, each demonstrated by a case that produced it and matched, with every negative paired with a positive control and a control naming a non-existent scenario refused. The dangling-control fixture owns its Quoin store, shares only produced inputs, resolves the repository store without requiring that leaf to exist, and proves the unmutated chain succeeds in the same scratch. | Test (TC-026) |
 | NFR-003-AC-4 | Every version-control-tracked SpecReview artifact has one unique normalized frontmatter identity; matching plain and quoted YAML spellings collide, and an empty tracked review population is refused rather than reported as unique. | Test (TC-029) |
-| NFR-003-AC-5 | After YAML comments are removed, the hosted workflow contains exactly one executable ix-flow package identity, `@agent-ix/ix-flow@0.0.4`, contains no unscoped or npm-alias-form duplicate, retains `workflow_dispatch` as its only trigger, and resolves `ix-flow --version` to exactly `0.0.4` under the released local toolchain. | Test (TC-032) |
+| NFR-003-AC-5 | Across scalar YAML `run` scripts, including quoted keys and literal blocks, the package arguments consumed by npm `install`, `i`, or `add` contain exactly one ix-flow identity, `@agent-ix/ix-flow@0.0.4`, and no unscoped, npm-alias, git/GitHub, URL, file, workspace/link, or duplicate alternate; YAML metadata and YAML/shell comments do not enter that population, a word-internal shell `#` remains executable argument content, `workflow_dispatch` is the only trigger, and `ix-flow --version` resolves to exactly `0.0.4` under the released local toolchain. | Test (TC-032) |
 
 ## Qualification Boundary
 

@@ -51,6 +51,8 @@ the deliberately non-source-symbol suites documented in
 | FND-3202 | medium | Resolved: provenance prose no longer calls the fixed compiled revision the current branch head; it identifies an exact commit reachable from reviewed main history when admitted. | NFR-002-AC-2, TC-031, README.md, deny.toml, docs/DIALECT-001-clean-room-mltl-v1.md, assurance/pins.json |
 | FND-3203 | medium | Resolved: the manual-only hosted workflow installs exactly `@agent-ix/ix-flow@0.0.4`; TC-032 rejects unscoped, alias, unversioned duplicate, automatic-trigger, and wrong-runtime mutations while ignoring comment-only spellings. | NFR-003-AC-5, TC-032, .github/workflows/ci.yml, tests/shared_assurance.rs |
 | FND-3204 | low | Carried forward: the active traceability declaration expects `Status`, while the validated TestMatrix archetype requires `Coverage Status`; changing the local header makes strict structural validation fail. The program-wide module mismatch remains tracked by quire-contract-ir#21 and is not safely repairable in this repository. | spec/test-matrix.md, TM-001, agent-ix/quire-contract-ir#21, SR-007 FND-703 |
+| FND-3205 | medium | **FIXED after independent review of `362d997`:** whole-workflow token scanning missed executable alternate package specifications after a word-internal shell `#`, including GitHub npm specs. The scanner now isolates YAML run scalars before applying shell comment rules and covers npm `add` plus git/GitHub identity-bearing arguments. | NFR-003-AC-5, TC-032, tests/shared_assurance.rs, tl-parse#28 review |
+| FND-3206 | low | **FIXED after independent review of `362d997`:** whole-workflow scanning counted inert `name:` metadata. TC-032 now proves metadata is outside the executable population and that quoted YAML `run` keys remain in scope. | NFR-003-AC-5, TC-032, tests/shared_assurance.rs, tl-parse#28 review |
 
 ## Review Evidence
 
@@ -65,3 +67,6 @@ the deliberately non-source-symbol suites documented in
   boundary.
 - TC-032 passed under the pinned ix-flow 0.0.4 executable; the ambient 0.2.3
   executable was rejected as intended.
+- Corrective TC-032 probes preserve word-internal shell hashes, ignore actual
+  shell comments and step metadata, recognize quoted YAML `run` keys, and make
+  an npm-add GitHub alternate specification turn the gate red.

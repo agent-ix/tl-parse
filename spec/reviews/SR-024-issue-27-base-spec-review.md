@@ -17,4 +17,5 @@ rows are intentionally unbacked until implementation begins after acceptance.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-2701 | low | No issue found: IDs are collision-free, criteria and test rows cross-reference exactly, and the two planned bindings are the expected pre-implementation gap. | NFR-002-AC-2, NFR-003-AC-5, TC-031, TC-032 |
+| FND-2701 | low | IDs remain collision-free, and criteria and test rows cross-reference exactly. | NFR-002-AC-2, NFR-003-AC-5, TC-031, TC-032 |
+| FND-2702 | medium | **FIXED after exact-head review of `362d997`:** NFR-003-AC-5 did not allocate YAML run selection, shell comment boundaries, npm `add`, or identity-bearing alternate specs precisely enough. The criterion and TC-032 now name those outcomes and the implementation supplies discriminating controls. | NFR-003-AC-5, TC-032, tl-parse#28 review |
