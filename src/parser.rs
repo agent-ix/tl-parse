@@ -69,7 +69,7 @@ pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> Par
 
     if !parser.had_error && !parser.stopped {
         if let Some(root) = root {
-            match FormulaDocument::new(profile, root, std::mem::take(&mut parser.nodes)) {
+            match FormulaDocument::new(profile, root.node, std::mem::take(&mut parser.nodes)) {
                 Ok(document) => report.document = Some(document),
                 Err(error) => {
                     let eof = parser.current();
@@ -146,8 +146,15 @@ struct Parser<'a> {
     stopped: bool,
 }
 
+#[derive(Clone, Copy)]
+struct Parsed {
+    node: NodeId,
+    extent_start: usize,
+    extent_end: usize,
+}
+
 impl Parser<'_> {
-    fn parse_expression(&mut self, minimum_binding_power: u8, depth: usize) -> Option<NodeId> {
+    fn parse_expression(&mut self, minimum_binding_power: u8, depth: usize) -> Option<Parsed> {
         if !self.enter(depth) {
             return None;
         }
@@ -180,30 +187,40 @@ impl Parser<'_> {
             }
             let right = self.parse_expression(right_power, depth.saturating_add(1))?;
             let kind = match operator.kind {
-                TokenKind::Equivalent => NodeKind::Equivalent { left, right },
-                TokenKind::Implies => NodeKind::Implies { left, right },
-                TokenKind::Or => NodeKind::Or { left, right },
-                TokenKind::And => NodeKind::And { left, right },
+                TokenKind::Equivalent => NodeKind::Equivalent {
+                    left: left.node,
+                    right: right.node,
+                },
+                TokenKind::Implies => NodeKind::Implies {
+                    left: left.node,
+                    right: right.node,
+                },
+                TokenKind::Or => NodeKind::Or {
+                    left: left.node,
+                    right: right.node,
+                },
+                TokenKind::And => NodeKind::And {
+                    left: left.node,
+                    right: right.node,
+                },
                 TokenKind::Until => NodeKind::Until {
                     interval: interval?,
-                    left,
-                    right,
+                    left: left.node,
+                    right: right.node,
                 },
                 TokenKind::Release => NodeKind::Release {
                     interval: interval?,
-                    left,
-                    right,
+                    left: left.node,
+                    right: right.node,
                 },
                 _ => return None,
             };
-            let start = self.node_start(left);
-            let end = self.node_end(right);
-            left = self.push_node(kind, start, end)?;
+            left = self.push_parsed_node(kind, left.extent_start, right.extent_end)?;
         }
         Some(left)
     }
 
-    fn parse_prefix(&mut self, depth: usize) -> Option<NodeId> {
+    fn parse_prefix(&mut self, depth: usize) -> Option<Parsed> {
         if !self.enter(depth) {
             return None;
         }
@@ -211,15 +228,15 @@ impl Parser<'_> {
         match token.kind {
             TokenKind::False => {
                 self.advance();
-                self.push_node(NodeKind::False, token.start, token.end)
+                self.push_parsed_node(NodeKind::False, token.start, token.end)
             }
             TokenKind::True => {
                 self.advance();
-                self.push_node(NodeKind::True, token.start, token.end)
+                self.push_parsed_node(NodeKind::True, token.start, token.end)
             }
             TokenKind::Proposition(proposition) => {
                 self.advance();
-                self.push_node(
+                self.push_parsed_node(
                     NodeKind::Proposition {
                         proposition: PropositionId(proposition),
                     },
@@ -230,10 +247,12 @@ impl Parser<'_> {
             TokenKind::Not => {
                 self.advance();
                 let operand = self.parse_prefix(depth.saturating_add(1))?;
-                self.push_node(
-                    NodeKind::Not { operand },
+                self.push_parsed_node(
+                    NodeKind::Not {
+                        operand: operand.node,
+                    },
                     token.start,
-                    self.node_end(operand),
+                    operand.extent_end,
                 )
             }
             TokenKind::Future | TokenKind::Globally => {
@@ -241,21 +260,25 @@ impl Parser<'_> {
                 let interval = self.parse_interval()?;
                 let operand = self.parse_prefix(depth.saturating_add(1))?;
                 let kind = match token.kind {
-                    TokenKind::Future => NodeKind::Future { interval, operand },
-                    TokenKind::Globally => NodeKind::Globally { interval, operand },
+                    TokenKind::Future => NodeKind::Future {
+                        interval,
+                        operand: operand.node,
+                    },
+                    TokenKind::Globally => NodeKind::Globally {
+                        interval,
+                        operand: operand.node,
+                    },
                     _ => return None,
                 };
-                self.push_node(kind, token.start, self.node_end(operand))
+                self.push_parsed_node(kind, token.start, operand.extent_end)
             }
             TokenKind::LeftParenthesis => {
                 self.advance();
                 let inner = self.parse_expression(1, depth.saturating_add(1))?;
                 let closing = self.current();
-                if closing.kind == TokenKind::RightParenthesis {
+                let extent_end = if closing.kind == TokenKind::RightParenthesis {
                     self.advance();
-                    if let Some(node) = self.nodes.get_mut(inner.0 as usize) {
-                        node.span = Some(checked_span(token.start, closing.end));
-                    }
+                    closing.end
                 } else {
                     self.push_diagnostic(
                         DiagnosticCode::MissingToken,
@@ -267,8 +290,13 @@ impl Parser<'_> {
                             closing.found(self.source)
                         ),
                     );
-                }
-                Some(inner)
+                    inner.extent_end
+                };
+                Some(Parsed {
+                    node: inner.node,
+                    extent_start: token.start,
+                    extent_end,
+                })
             }
             TokenKind::Invalid => {
                 self.advance();
@@ -425,6 +453,15 @@ impl Parser<'_> {
         Some(id)
     }
 
+    fn push_parsed_node(&mut self, kind: NodeKind, start: usize, end: usize) -> Option<Parsed> {
+        let node = self.push_node(kind, start, end)?;
+        Some(Parsed {
+            node,
+            extent_start: start,
+            extent_end: end,
+        })
+    }
+
     fn enter(&mut self, depth: usize) -> bool {
         self.max_depth = self.max_depth.max(depth);
         if depth > self.limits.max_depth {
@@ -474,18 +511,6 @@ impl Parser<'_> {
         if self.charge_work() && self.cursor + 1 < self.tokens.len() {
             self.cursor += 1;
         }
-    }
-
-    fn node_start(&self, id: NodeId) -> usize {
-        self.nodes[id.0 as usize]
-            .span
-            .map_or(0, |span| span.start() as usize)
-    }
-
-    fn node_end(&self, id: NodeId) -> usize {
-        self.nodes[id.0 as usize]
-            .span
-            .map_or(0, |span| span.end() as usize)
     }
 
     fn push_diagnostic(

@@ -536,9 +536,12 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // unbacked and SR-007 says why. So the figures themselves are asserted: an
     // export reporting different totals has to move a number in this file.
     let totals = &parsed["totals"];
-    assert_eq!(totals["total"], 69, "matrix row count changed: {totals}");
+    // 67 baseline rows + NFR-003-AC-4 + review-identity TC-029 +
+    // FR-002-AC-4 + grouping-span TC-030 = 71 total. The same four suite
+    // registry rows remain deliberately unbacked, so 67 are backed.
+    assert_eq!(totals["total"], 71, "matrix row count changed: {totals}");
     assert_eq!(
-        totals["backed"], 65,
+        totals["backed"], 67,
         "backed-row count changed: {totals}. Four suite rows are unbacked on \
          purpose; if that number moved, update spec/evidence/suites.md and SR-007 \
          deliberately rather than adjusting this assertion."

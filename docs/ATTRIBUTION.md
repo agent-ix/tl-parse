@@ -26,30 +26,21 @@ The authorship basis above is historical and does not move: those are the bytes
 that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
-`tl-syntax` merged its own shared-assurance migration as
-`953ee825e5060335b4c79682f5f41a78c5a1bfae`, and `Cargo.toml`, `Cargo.lock`,
+`tl-syntax` current reviewed `main` is
+`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, and `Cargo.toml`, `Cargo.lock`,
 `fuzz/Cargo.lock` and [`TL_SYNTAX_REVISION`] now name that revision. Those files
 are where the pin is enforced: cargo resolves the dependency by exact revision
 and refuses a graph that disagrees. This document records the boundary and does
 not restate a checksum of it.
 
-The two source files did change between the two revisions, and the clean-room
-claim survives it because of *what* changed rather than because the change was
-small. The delta over `src/` is a bounded wire decoder
-(`MAX_FORMULA_DOCUMENT_NODES`), a `DocumentNodeLimitExceeded` variant,
-`FormulaDocument::from_formula` returning `Result`, `#[non_exhaustive]` on four
-error types, removal of the `Node` `Deserialize` derive, and a duplicate-name
-check moved to a `BTreeMap`. No `NodeKind` variant, interval semantic, span
-semantic, or operator spelling is added, removed, or renamed. The vocabulary
-this dialect was authored from is therefore the same vocabulary, and the
+The clean-room claim survives later implementation and assurance changes
+because the authorship basis remains the exact earlier source corpus. The
+current compiled revision adds shared context, qualification, property/fuzz,
+and semantic-identity behavior without becoming a new grammar source. The
 authored grammar in `DIALECT-001-clean-room-mltl-v1.md` is unaffected.
 
 Both licence files are byte-identical across the two revisions, so the licence
 boundary is unchanged.
-
-`tl-parse` uses none of the changed API surface: it never calls
-`from_formula`, never deserializes a `Node`, and matches on none of the four
-error types made `non_exhaustive`.
 
 ## Why there is no digest table
 
