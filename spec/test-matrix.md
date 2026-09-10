@@ -14,7 +14,7 @@ relationships:
 | Functional Req | Acceptance Criteria | Test Cases | Coverage Status |
 |---|---|---|---|
 | FR-001 | FR-001-AC-1 through FR-001-AC-3 | TC-001 through TC-004, TC-020 | ✅ covered |
-| FR-002 | FR-002-AC-1 through FR-002-AC-4 | TC-005 through TC-008, TC-029 | ✅ covered |
+| FR-002 | FR-002-AC-1 through FR-002-AC-4 | TC-005 through TC-008, TC-030 | ✅ covered |
 | FR-003 | FR-003-AC-1 through FR-003-AC-3 | TC-009 through TC-013 | ✅ covered |
 | FR-004 | FR-004-AC-1 through FR-004-AC-3 | TC-014 through TC-017 | ✅ covered |
 | FR-005 | FR-005-AC-1 through FR-005-AC-3 | TC-018 through TC-021 | ✅ covered |

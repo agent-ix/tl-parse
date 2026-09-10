@@ -149,14 +149,27 @@ fn graph_is_topological_and_nodes_retain_full_source_spans() {
     let root_span = root.span.expect("root span");
     assert_eq!(
         (root_span.start(), root_span.end()),
-        (0, 15),
-        "the root span covers syntax nodes, not grouping delimiters"
+        (0, 16),
+        "the enclosing Future span must include the complete grouped operand"
+    );
+    let and_span = document
+        .nodes()
+        .iter()
+        .find_map(|node| match node.kind {
+            NodeKind::And { .. } => node.span,
+            _ => None,
+        })
+        .expect("grouped And span");
+    assert_eq!(
+        (and_span.start(), and_span.end()),
+        (7, 15),
+        "the grouped And node keeps its delimiter-free lexical span"
     );
 }
 
-// Trace: TC-029, FR-002-AC-4
+// Trace: TC-030, FR-002-AC-4
 #[test]
-fn grouping_preserves_the_inner_node_diagnostic_span() {
+fn grouping_preserves_inner_lexical_spans_and_ancestor_extents() {
     let report = parse_closed("(p1)&p2");
     assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
     let document = report.document.expect("valid grouped formula");
@@ -165,6 +178,26 @@ fn grouping_preserves_the_inner_node_diagnostic_span() {
         (proposition.start(), proposition.end()),
         (1, 3),
         "a diagnostic for p1 must not underline its grouping delimiters"
+    );
+    let root = document.nodes()[document.root().0 as usize]
+        .span
+        .expect("And root span");
+    assert_eq!(
+        (root.start(), root.end()),
+        (0, 7),
+        "an ancestor span must include both delimiters around its left operand"
+    );
+
+    let nested = parse_closed("(p1|p2)&p3")
+        .document
+        .expect("nested grouped formula parses");
+    let nested_root = nested.nodes()[nested.root().0 as usize]
+        .span
+        .expect("nested And root span");
+    assert_eq!(
+        (nested_root.start(), nested_root.end()),
+        (0, 10),
+        "a binary ancestor must retain the balanced grouped extent"
     );
 }
 

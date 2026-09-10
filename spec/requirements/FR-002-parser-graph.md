@@ -24,7 +24,8 @@ ordered tl-syntax formula document and shall expose no second public AST.
 - A document is returned only after exact tl-syntax structural validation and
   only when no lexical, syntactic, or resource diagnostic occurred.
 - Parentheses shall group an expression without replacing the grouped node's
-  own lexical source span.
+  own lexical source span, while every enclosing operator span shall include
+  the complete grouped operand extent, including both delimiters.
 
 ## Acceptance Criteria
 
@@ -33,7 +34,7 @@ ordered tl-syntax formula document and shall expose no second public AST.
 | FR-002-AC-1 | Primitive, nested, precedence-sensitive, and complete-vocabulary inputs produce the specified topologically ordered node kinds and spans. | Test (TC-005, TC-006) |
 | FR-002-AC-2 | Every successful result validates through the exact pinned tl-syntax revision and preserves the requested semantic profile. | Test (TC-007) |
 | FR-002-AC-3 | Missing operands, delimiters, or trailing tokens retain recovery diagnostics and never expose a partial document. | Test (TC-008) |
-| FR-002-AC-4 | Grouping parentheses preserve a node's lexical source span instead of replacing it with the grouped extent. | Test (TC-029) |
+| FR-002-AC-4 | Grouping parentheses preserve the grouped node's delimiter-free lexical source span, and every enclosing unary or binary operator span includes the complete balanced grouping extent. | Test (TC-030) |
 
 ## Dependencies
 
