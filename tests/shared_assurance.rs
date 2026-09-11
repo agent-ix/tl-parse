@@ -123,19 +123,15 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
             *word_started = false;
         }
     };
+    // GitHub evaluates workflow expressions before the generated script
+    // reaches the shell. Shell comments, quotes, and backslash escaping
+    // therefore cannot make `${{ ... }}` literal at this boundary.
+    if script.contains("${{") {
+        return Err(format!(
+            "non-literal workflow expression is unsupported: {script:?}"
+        ));
+    }
     while let Some(character) = characters.next() {
-        // GitHub evaluates workflow expressions before the generated script
-        // reaches the shell. Shell quotes and backslash escaping therefore do
-        // not make `${{ ... }}` literal at this boundary.
-        if character == '$' && characters.peek() == Some(&'{') {
-            let mut lookahead = characters.clone();
-            lookahead.next();
-            if lookahead.peek() == Some(&'{') {
-                return Err(format!(
-                    "non-literal workflow expression is unsupported: {script:?}"
-                ));
-            }
-        }
         if escaped {
             word_started = true;
             if character != '\n' {
@@ -1563,6 +1559,28 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
             "{label} GitHub workflow expression stayed green: {errors:?}"
         );
     }
+
+    let comment_expression =
+        replace_first_install_invocation(&workflow, "npm install --global; # ${{ inputs.script }}");
+    let comment_errors = hosted_workflow_control_errors(&comment_expression);
+    assert!(
+        comment_errors
+            .iter()
+            .any(|error| error.contains("non-literal workflow expression")),
+        "a GitHub workflow expression in a shell comment stayed green: {comment_errors:?}"
+    );
+
+    let unquoted_variable = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' $IX_FLOW_INSTALL; npm install --global",
+    );
+    let variable_errors = hosted_workflow_control_errors(&unquoted_variable);
+    assert!(
+        variable_errors
+            .iter()
+            .any(|error| error.contains("non-literal shell expansion")),
+        "the unquoted shell-variable guard was not independently exercised: {variable_errors:?}"
+    );
 
     let preceding_shell = replace_first_install_invocation(
         &workflow,
