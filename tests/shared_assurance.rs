@@ -181,6 +181,17 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
                     characters.next();
                 }
             }
+            '(' | '{' if !word_started => {
+                if !matches!(tokens.last(), Some(ShellToken::Boundary)) {
+                    tokens.push(ShellToken::Boundary);
+                }
+            }
+            ')' | '}' => {
+                flush(&mut tokens, &mut word, &mut word_started);
+                if !matches!(tokens.last(), Some(ShellToken::Boundary)) {
+                    tokens.push(ShellToken::Boundary);
+                }
+            }
             _ => {
                 word_started = true;
                 word.push(character);
@@ -209,6 +220,49 @@ fn is_shell_interpreter(word: &str) -> bool {
     matches!(word.rsplit('/').next(), Some("sh" | "bash"))
 }
 
+fn is_npm_executable(word: &str) -> bool {
+    word.rsplit('/').next() == Some("npm")
+}
+
+fn is_shell_assignment(word: &str) -> bool {
+    let Some((name, _)) = word.split_once('=') else {
+        return false;
+    };
+    let mut characters = name.chars();
+    matches!(characters.next(), Some(first) if first == '_' || first.is_ascii_alphabetic())
+        && characters.all(|character| character == '_' || character.is_ascii_alphanumeric())
+}
+
+fn command_executable_index(words: &[&str]) -> Option<usize> {
+    let mut index = 0;
+    while words
+        .get(index)
+        .is_some_and(|word| is_shell_assignment(word))
+    {
+        index += 1;
+    }
+    if words.get(index).copied() == Some("env") {
+        index += 1;
+        while let Some(word) = words.get(index).copied() {
+            if matches!(
+                word,
+                "-u" | "--unset" | "-C" | "--chdir" | "-S" | "--split-string"
+            ) {
+                index += 2;
+            } else if word.starts_with('-') || is_shell_assignment(word) {
+                index += 1;
+            } else {
+                break;
+            }
+        }
+    }
+    words.get(index).map(|_| index)
+}
+
+fn is_shell_command_option(word: &str) -> bool {
+    word.starts_with('-') && !word.starts_with("--") && word[1..].contains('c')
+}
+
 fn scan_ix_flow_packages(
     script: &str,
     depth: usize,
@@ -235,16 +289,17 @@ fn scan_ix_flow_packages(
             })
             .collect();
 
-        for (shell_index, shell) in words.iter().enumerate() {
-            if !is_shell_interpreter(shell) {
-                continue;
-            }
-            let Some(command_option) = words[shell_index + 1..]
+        let Some(executable_index) = command_executable_index(&words) else {
+            continue;
+        };
+        let executable = words[executable_index];
+        if is_shell_interpreter(executable) {
+            let Some(command_option) = words[executable_index + 1..]
                 .iter()
-                .position(|word| word.starts_with('-') && word[1..].contains('c'))
-                .map(|offset| shell_index + 1 + offset)
+                .position(|word| is_shell_command_option(word))
+                .map(|offset| executable_index + 1 + offset)
             else {
-                continue;
+                return;
             };
             let nested = words[command_option + 1..]
                 .iter()
@@ -257,18 +312,15 @@ fn scan_ix_flow_packages(
             }
         }
 
-        for (npm_index, npm) in words.iter().enumerate() {
-            if *npm != "npm" {
-                continue;
-            }
-            let Some((install_offset, _)) = words[npm_index + 1..]
+        if is_npm_executable(executable) {
+            let Some((install_offset, _)) = words[executable_index + 1..]
                 .iter()
                 .enumerate()
                 .find(|(_, word)| is_npm_install_alias(word))
             else {
                 continue;
             };
-            let install_index = npm_index + 1 + install_offset;
+            let install_index = executable_index + 1 + install_offset;
             for argument in &words[install_index + 1..] {
                 if *argument == "--" || argument.starts_with('-') {
                     continue;
@@ -1388,6 +1440,39 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
             .iter()
             .any(|error| error.contains("ix-flow@npm:@agent-ix/ix-flow@9.9.9")),
         "a nested shell invocation hid an alternate npm alias install: {nested_errors:?}"
+    );
+
+    let grouped_path_install = replace_first_install_invocation(
+        &workflow,
+        "( /usr/bin/npm in --global github:agent-ix/ix-flow#grouped ); npm install --global",
+    );
+    let grouped_errors = hosted_workflow_control_errors(&grouped_path_install);
+    assert!(
+        grouped_errors
+            .iter()
+            .any(|error| error.contains("github:agent-ix/ix-flow#grouped")),
+        "a grouped path-qualified npm command hid an alternate install: {grouped_errors:?}"
+    );
+
+    let long_shell_option = replace_first_install_invocation(
+        &workflow,
+        "bash --norc -c 'npm in --global github:agent-ix/ix-flow#nested-long'; npm install --global",
+    );
+    let long_option_errors = hosted_workflow_control_errors(&long_shell_option);
+    assert!(
+        long_option_errors
+            .iter()
+            .any(|error| error.contains("github:agent-ix/ix-flow#nested-long")),
+        "a long shell option obscured the actual -c script: {long_option_errors:?}"
+    );
+
+    let inert_arguments = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' 'npm add github:agent-ix/ix-flow#inert' 'bash -c npm in ix-flow@9.9.9'; npm install --global",
+    );
+    assert!(
+        hosted_workflow_control_errors(&inert_arguments).is_empty(),
+        "npm- or shell-shaped inert command arguments entered the executable population"
     );
 
     let shell_comment = replace_first_install_invocation(
