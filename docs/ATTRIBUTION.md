@@ -26,18 +26,44 @@ The authorship basis above is historical and does not move: those are the bytes
 that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
-`tl-syntax` current reviewed `main` is
-`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, and `Cargo.toml`, `Cargo.lock`,
-`fuzz/Cargo.lock` and [`TL_SYNTAX_REVISION`] now name that revision. Those files
-are where the pin is enforced: cargo resolves the dependency by exact revision
-and refuses a graph that disagrees. This document records the boundary and does
-not restate a checksum of it.
+The compiled revision is
+`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, a commit that was reachable from
+the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
+moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
+[`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
+is enforced: cargo resolves the dependency by exact revision and refuses a
+graph that disagrees. This document records the boundary and does not restate a
+checksum of it.
 
-The clean-room claim survives later implementation and assurance changes
-because the authorship basis remains the exact earlier source corpus. The
-current compiled revision adds shared context, qualification, property/fuzz,
-and semantic-identity behavior without becoming a new grammar source. The
-authored grammar in `DIALECT-001-clean-room-mltl-v1.md` is unaffected.
+## Source-inspected compiled-pin delta
+
+The immediately preceding compiled pin was
+`953ee825e5060335b4c79682f5f41a78c5a1bfae`. Source inspection of the exact
+range
+`953ee825e5060335b4c79682f5f41a78c5a1bfae..26b801d4a68ebfe720062cfdb3c66b070ab60e92`
+found these changes:
+
+- caller-context APIs and their owned wire document (`RequirementContext` and
+  `RequirementContextDocument` families);
+- signal declarations, scalar domains, proposition bindings, validated signal
+  catalogs, bound-formula views, and their owned wire document;
+- span-free semantic formula identity through `SemanticFormulaDocument`,
+  `FormulaDocument::semantic_view`, and the new `Hash` implementation on
+  `FormulaDocument`; and
+- assurance-only changes: removal of the legacy evidence archive, tracked
+  source-census and qualification controls, property/fuzz targets, and their
+  specification and review records.
+
+tl-parse directly consumes none of those new API families. It continues to use
+the pre-existing `Formula`, `FormulaDocument`, `Interval`, `Node`, `NodeId`,
+`NodeKind`, `PropositionId`, `SemanticProfile`, and `SourceSpan` graph,
+interval, span, proposition, and semantic-profile contracts. No later grammar
+source was consulted: `src/syntax.rs` introduced no operator or grammar change
+in this range, and the independently authored grammar in
+`DIALECT-001-clean-room-mltl-v1.md` is unaffected.
+
+The clean-room claim therefore survives these implementation and assurance
+changes because the authorship basis remains the exact earlier source corpus.
 
 Both licence files are byte-identical across the two revisions, so the licence
 boundary is unchanged.

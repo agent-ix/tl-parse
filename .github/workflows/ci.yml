@@ -64,7 +64,7 @@ jobs:
       # surface. ix-flow was absent entirely and is now installed.
       - name: Install specification tools and modules
         run: |
-          npm install --global '@agent-ix/quire-cli@0.31.0' '@agent-ix/quoin@0.23.1' 'ix-flow@0.0.4'
+          npm install --global '@agent-ix/quire-cli@0.31.0' '@agent-ix/quoin@0.23.1' '@agent-ix/ix-flow@0.0.4'
           quoin module ensure-defaults
 
       # The shared-assurance lane is its own interpreter, built by

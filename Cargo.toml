@@ -24,6 +24,7 @@ tl-syntax = { git = "https://github.com/agent-ix/tl-syntax.git", rev = "26b801d4
 
 [dev-dependencies]
 proptest = "=1.5.0"
+serde_yaml_ng = "0.10"
 tempfile = "=3.10.1"
 
 [profile.release]

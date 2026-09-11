@@ -8,9 +8,10 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, the current reviewed `main`
-revision carrying the contextual and semantic contracts. The dialect was
-authored from the earlier revision `740182f1`, which is
+`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, an exact commit reachable from the
+reviewed `main` history when admitted, not a moving branch head. That revision
+carries the contextual and semantic contracts. The dialect was authored from
+the earlier revision `740182f1`, which is
 a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
 `Cargo.lock` is what enforces the compiled one. The dependency still resolves by
 exact git revision because
