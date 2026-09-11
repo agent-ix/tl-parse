@@ -718,6 +718,36 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
         !offenders.is_empty(),
         "a mirror registry reference was not detected; the check matches nothing"
     );
+
+    // The active pin records must also be seen to reject a revision declared
+    // superseded. Giving the checker its own compiled revision as a temporary
+    // superseded value makes every current record a controlled counterexample;
+    // deleting the sweep would make this probe red.
+    let (code, stdout, stderr) = run(
+        &python,
+        &[
+            "-c",
+            "import json,sys;sys.path.insert(0,'scripts');\
+             import check_shared_pins as m;\
+             pins=json.load(open('assurance/pins.json'));\
+             revision=pins['upstream_dependency']['compiled_revision'];\
+             pins['upstream_dependency']['superseded_compiled_revisions']=[revision];\
+             print(json.dumps(m.upstream_pin_mismatches(pins)))",
+        ],
+    );
+    assert_eq!(code, 0, "the superseded-pin probe failed: {stderr}");
+    let problems: Vec<String> = serde_json::from_str(stdout.trim()).unwrap();
+    for name in [
+        "README.md",
+        "CLAUDE.md",
+        "deny.toml",
+        "spec/assurance/AA-001.md",
+    ] {
+        assert!(
+            problems.iter().any(|problem| problem.starts_with(name)),
+            "the superseded-pin sweep did not inspect {name}: {problems:?}"
+        );
+    }
 }
 
 // Trace: TC-023, FR-006-AC-2, NFR-003-AC-1, SUITE-006, SUITE-007, SUITE-009
@@ -908,8 +938,8 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     let parsed: Value = serde_json::from_slice(&bytes).expect("the Quire export is JSON");
     let text = String::from_utf8_lossy(&bytes);
     for requirement in [
-        "FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "NFR-001", "NFR-002",
-        "NFR-003", "StR-001", "StR-002",
+        "FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "NFR-001", "NFR-002",
+        "NFR-003", "StR-001", "StR-002", "StR-003",
     ] {
         assert!(
             text.contains(requirement),
@@ -928,13 +958,12 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // unbacked and SR-007 says why. So the figures themselves are asserted: an
     // export reporting different totals has to move a number in this file.
     let totals = &parsed["totals"];
-    // 67 baseline rows + NFR-003-AC-4 + review-identity TC-029 +
-    // FR-002-AC-4 + grouping-span TC-030 + NFR-002-AC-2 + TC-031 +
-    // NFR-003-AC-5 + TC-032 = 75 total. The same four suite registry rows
-    // remain deliberately unbacked, so 71 are backed.
-    assert_eq!(totals["total"], 75, "matrix row count changed: {totals}");
+    // 75 mainline rows plus six context test rows and eight context criteria
+    // total 89. The same four suite registry rows remain deliberately
+    // unbacked, so 85 are backed.
+    assert_eq!(totals["total"], 89, "matrix row count changed: {totals}");
     assert_eq!(
-        totals["backed"], 71,
+        totals["backed"], 85,
         "backed-row count changed: {totals}. Four suite rows are unbacked on \
          purpose; if that number moved, update spec/evidence/suites.md and SR-007 \
          deliberately rather than adjusting this assertion."

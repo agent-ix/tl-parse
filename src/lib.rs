@@ -5,11 +5,16 @@
 //! [`DIALECT_REVISION`]. Successful parsing returns the exact pinned
 //! [`tl_syntax::FormulaDocument`] model; tl-parse owns no second temporal AST.
 
+mod context;
 mod diagnostic;
 mod format;
 mod lexer;
 mod parser;
 
+pub use context::{
+    parse_with_context, BoundProposition, ContextualParseError, ContextualParseReport,
+    ContextualParseSchemaVersion,
+};
 pub use diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
     FormatLimits, FormatReport, FormatStats, ParseLimits, ParseReport, ParseStats, RecoveryAction,

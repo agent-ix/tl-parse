@@ -40,6 +40,8 @@ does not introduce a second AST or temporal semantics.
 - Copying grammar text from third-party implementations or publications.
 - Unicode proposition names, application name resolution, or unbounded input.
 - Automatic qualification, certification, publication, or release approval.
+- Signal inference, FRETish input, local contract-IR types, or a local evidence
+  execution framework.
 
 ## System Overview
 
@@ -53,16 +55,17 @@ declared resource limits.
 
 FR-001 owns the dialect and lexer, FR-002 parsing and graph construction,
 FR-003 diagnostics and fail-closed limits, FR-004 canonical formatting and
-round trips, FR-005 corpora, fuzzing, CLI, and evidence interchange, and FR-006
-the shared-assurance intake boundary. NFR-001 constrains
-determinism/resources, NFR-002 provenance and authority, and NFR-003 explicit
-fail-closed qualification controls.
+round trips, FR-005 corpora, fuzzing, CLI, and evidence interchange, FR-006
+the shared-assurance intake boundary, and FR-007 additive shared-catalog/context
+binding reports for parsed formulas without changing the dialect or parser
+graph. NFR-001 constrains determinism/resources, NFR-002 provenance and
+authority, and NFR-003 explicit fail-closed qualification controls.
 
 ### Responsibility and dependency allocation
 
 | Component | This specification guarantees | Assumption or external responsibility |
 | --- | --- | --- |
-| tl-parse | Bounded dialect parsing, graph construction, diagnostics, canonical formatting, corpus/fuzz behavior, and producer-owned result bytes | It does not evaluate, rewrite, monitor, or infer application signal meaning. |
+| tl-parse | Bounded dialect parsing, graph construction, diagnostics, canonical formatting, corpus/fuzz behavior, context-bound reports, and producer-owned result bytes | It does not evaluate, rewrite, monitor, or infer application signal meaning. |
 | tl-syntax | — | The exact pinned revision supplies validated graph, interval, span, proposition, and semantic-profile contracts. tl-parse does not redefine them. |
 | Quire | tl-parse supplies its specification and requirement-tagged source tree as inputs | Quire reports static specification/coverage facts and does not execute a parser producer or grant release authority. |
 | Quoin | tl-parse supplies producer-written structured results | Quoin seals, retains, audits, and reports the bytes it receives; it neither creates producer results nor decides release sufficiency. |

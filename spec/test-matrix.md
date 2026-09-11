@@ -19,6 +19,7 @@ relationships:
 | FR-004 | FR-004-AC-1 through FR-004-AC-3 | TC-014 through TC-017 | ✅ covered |
 | FR-005 | FR-005-AC-1 through FR-005-AC-3 | TC-018 through TC-021 | ✅ covered |
 | FR-006 | FR-006-AC-1 through FR-006-AC-3, FR-006-AC-5 through FR-006-AC-7 | TC-022 through TC-024, TC-026 through TC-028 | ✅ covered |
+| FR-007 | FR-007-AC-1 through FR-007-AC-6 | TC-033 through TC-038 | ✅ covered |
 
 ## Stakeholder Requirement Coverage
 
@@ -26,6 +27,7 @@ relationships:
 |---|---|---|---|
 | StR-001 | FR-001, FR-002, FR-003 | TC-001, TC-005, TC-008, TC-010, TC-020 | ✅ covered |
 | StR-002 | FR-003, FR-004, FR-005, FR-006 | TC-011, TC-016, TC-018, TC-019, TC-021, TC-027 | ✅ covered |
+| StR-003 | FR-007 | TC-033 through TC-037 | ✅ covered |
 
 ## Non-Functional Requirement Coverage
 
@@ -70,3 +72,9 @@ relationships:
 | TC-030 | Preserve grouped child lexical spans and enclosing ancestor extents | Unit | P0 | FR-002-AC-4 | ✅ implemented |
 | TC-031 | Preserve the authorship basis and enumerate the source-inspected compiled-pin delta with consumed and unconsumed upstream API families | Integration | P0 | NFR-002-AC-2 | ✅ implemented |
 | TC-032 | Select semantic job-step run scalars and enforce one comment-safe scoped ix-flow package across command-position bare/path-qualified npm after assignments, shell groups, the complete documented npm-install alias family, and literal nested shell commands; fail closed on unquoted redirection and executable expansion scripts, reject alternate identities while ignoring inert command arguments and non-`-c` shell invocations without suppressing later commands, and observe the semantic manual-trigger set and exact runtime version | Integration | P0 | NFR-003-AC-5 | ✅ implemented |
+| TC-033 | Report ordered free propositions with parser spans and shared documents | Unit | P0 | FR-007-AC-1, StR-003-VC-1 | ✅ implemented |
+| TC-034 | Refuse an unresolved proposition with its parser byte span | Unit | P0 | FR-007-AC-2, StR-003-VC-2 | ✅ implemented |
+| TC-035 | Preserve shared requirement context distinct from parser spans | Unit | P0 | FR-007-AC-3, StR-003-VC-1 | ✅ implemented |
+| TC-036 | Bind every declared document identity deterministically, detect document mutations, and equate source spellings that parse to the same document | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | ✅ implemented |
+| TC-037 | Preserve context-free compatibility and strictly version binding wires | Integration | P0 | FR-007-AC-5, StR-003-VC-2 | ✅ implemented |
+| TC-038 | Retain public dependency and evidence-tool boundaries | Integration | P1 | FR-007-AC-6 | ✅ implemented |

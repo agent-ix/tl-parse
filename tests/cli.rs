@@ -58,7 +58,7 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         attribution_document_digest(),
-        "31fef565fc754648913897c77b7afba6a93bd7f8a6557b9102f01ed12a9734e0"
+        "92dda28dde376e3bec3ba5a3b066e9e453bbd539bc05ad582a1212bb59a774b5"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
@@ -111,7 +111,8 @@ fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
         "signal declarations",
         "span-free semantic formula identity",
         "assurance-only changes",
-        "tl-parse directly consumes none of those new API families",
+        "tl-parse consumes the shared",
+        "it does not consume the span-free semantic-formula",
         "FormulaDocument",
         "SemanticProfile",
         "No later grammar",
