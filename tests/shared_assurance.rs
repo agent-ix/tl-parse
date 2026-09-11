@@ -172,6 +172,10 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
                     }
                 }
             }
+            '&' if word.ends_with('>') || word.ends_with('<') => {
+                word_started = true;
+                word.push(character);
+            }
             '\n' | ';' | '|' | '&' => {
                 flush(&mut tokens, &mut word, &mut word_started);
                 if !matches!(tokens.last(), Some(ShellToken::Boundary)) {
@@ -1469,13 +1473,14 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
 
     let redirected_path_install = replace_first_install_invocation(
         &workflow,
-        ">/tmp/reviewer-log /usr/bin/npm add --global github:agent-ix/ix-flow#redirected-attached; > /tmp/reviewer-log-2 /usr/bin/npm in --global github:agent-ix/ix-flow#redirected-separate; npm install --global",
+        ">/tmp/reviewer-log /usr/bin/npm add --global github:agent-ix/ix-flow#redirected-attached; > /tmp/reviewer-log-2 /usr/bin/npm in --global github:agent-ix/ix-flow#redirected-separate; 2>&1 /usr/bin/npm inst --global github:agent-ix/ix-flow#redirected-fd; npm install --global",
     );
     let redirected_errors = hosted_workflow_control_errors(&redirected_path_install);
     assert!(
         redirected_errors.iter().any(|error| error
             .contains("github:agent-ix/ix-flow#redirected-attached")
-            && error.contains("github:agent-ix/ix-flow#redirected-separate")),
+            && error.contains("github:agent-ix/ix-flow#redirected-separate")
+            && error.contains("github:agent-ix/ix-flow#redirected-fd")),
         "a leading shell redirection hid a path-qualified npm command: {redirected_errors:?}"
     );
 
