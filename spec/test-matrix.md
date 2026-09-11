@@ -69,4 +69,4 @@ relationships:
 | TC-029 | Refuse duplicate or vacuously empty tracked SpecReview identity populations, including equal plain and quoted YAML spellings | Integration | P0 | NFR-003-AC-4 | ✅ implemented |
 | TC-030 | Preserve grouped child lexical spans and enclosing ancestor extents | Unit | P0 | FR-002-AC-4 | ✅ implemented |
 | TC-031 | Preserve the authorship basis and enumerate the source-inspected compiled-pin delta with consumed and unconsumed upstream API families | Integration | P0 | NFR-002-AC-2 | ✅ implemented |
-| TC-032 | Isolate YAML run scripts and enforce one comment-safe scoped ix-flow package across npm install/i/add, rejecting alternate identities while ignoring metadata and observing the manual trigger and exact runtime version | Integration | P0 | NFR-003-AC-5 | ✅ implemented |
+| TC-032 | Select semantic job-step run scalars and enforce one comment-safe scoped ix-flow package across the complete documented npm-install alias family and literal nested shell commands; reject alternate identities while ignoring metadata and observing the semantic manual-trigger set and exact runtime version | Integration | P0 | NFR-003-AC-5 | ✅ implemented |
