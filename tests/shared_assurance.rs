@@ -123,6 +123,14 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
             *word_started = false;
         }
     };
+    // GitHub evaluates workflow expressions before the generated script
+    // reaches the shell. Shell comments, quotes, and backslash escaping
+    // therefore cannot make `${{ ... }}` literal at this boundary.
+    if script.contains("${{") {
+        return Err(format!(
+            "non-literal workflow expression is unsupported: {script:?}"
+        ));
+    }
     while let Some(character) = characters.next() {
         if escaped {
             word_started = true;
@@ -145,6 +153,11 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
             match character {
                 '"' => quote = None,
                 '\\' => escaped = true,
+                '$' | '`' => {
+                    return Err(format!(
+                        "non-literal shell expansion is unsupported: {script:?}"
+                    ));
+                }
                 _ => {
                     word_started = true;
                     word.push(character);
@@ -161,6 +174,11 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
                 word_started = true;
                 escaped = true;
             }
+            '$' | '`' => {
+                return Err(format!(
+                    "non-literal shell expansion is unsupported: {script:?}"
+                ));
+            }
             ' ' | '\t' | '\r' => flush(&mut tokens, &mut word, &mut word_started),
             '#' if !word_started => {
                 for comment_character in characters.by_ref() {
@@ -171,6 +189,11 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
                         break;
                     }
                 }
+            }
+            '<' | '>' => {
+                return Err(format!(
+                    "non-literal shell redirection is unsupported: {script:?}"
+                ));
             }
             '\n' | ';' | '|' | '&' => {
                 flush(&mut tokens, &mut word, &mut word_started);
@@ -233,21 +256,11 @@ fn is_shell_assignment(word: &str) -> bool {
         && characters.all(|character| character == '_' || character.is_ascii_alphanumeric())
 }
 
-fn shell_redirection_word_span(word: &str) -> Option<usize> {
-    let remainder = word.trim_start_matches(|character: char| character.is_ascii_digit());
-    let operator = ["<<<", "<<-", ">>", "<<", "<>", "<&", ">&", ">|", ">", "<"]
-        .into_iter()
-        .find(|operator| remainder.starts_with(*operator))?;
-    Some(usize::from(remainder.len() == operator.len()) + 1)
-}
-
 fn command_executable_index(words: &[&str]) -> Option<usize> {
     let mut index = 0;
     while let Some(word) = words.get(index).copied() {
         if is_shell_assignment(word) {
             index += 1;
-        } else if let Some(span) = shell_redirection_word_span(word) {
-            index += span;
         } else {
             break;
         }
@@ -262,8 +275,6 @@ fn command_executable_index(words: &[&str]) -> Option<usize> {
                 index += 2;
             } else if word.starts_with('-') || is_shell_assignment(word) {
                 index += 1;
-            } else if let Some(span) = shell_redirection_word_span(word) {
-                index += span;
             } else {
                 break;
             }
@@ -1469,14 +1480,106 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
 
     let redirected_path_install = replace_first_install_invocation(
         &workflow,
-        ">/tmp/reviewer-log /usr/bin/npm add --global github:agent-ix/ix-flow#redirected-attached; > /tmp/reviewer-log-2 /usr/bin/npm in --global github:agent-ix/ix-flow#redirected-separate; npm install --global",
+        ">/tmp/reviewer-log /usr/bin/npm add --global github:agent-ix/ix-flow#redirected-attached; > /tmp/reviewer-log-2 /usr/bin/npm in --global github:agent-ix/ix-flow#redirected-separate; 2>&1 /usr/bin/npm inst --global github:agent-ix/ix-flow#redirected-fd; 2>&1> /dev/null /usr/bin/npm insta --global github:agent-ix/ix-flow#redirected-chained; npm install --global",
     );
     let redirected_errors = hosted_workflow_control_errors(&redirected_path_install);
     assert!(
-        redirected_errors.iter().any(|error| error
-            .contains("github:agent-ix/ix-flow#redirected-attached")
-            && error.contains("github:agent-ix/ix-flow#redirected-separate")),
-        "a leading shell redirection hid a path-qualified npm command: {redirected_errors:?}"
+        redirected_errors
+            .iter()
+            .any(|error| error.contains("non-literal shell redirection")
+                && error.contains("github:agent-ix/ix-flow#redirected-attached")
+                && error.contains("github:agent-ix/ix-flow#redirected-separate")
+                && error.contains("github:agent-ix/ix-flow#redirected-fd")
+                && error.contains("github:agent-ix/ix-flow#redirected-chained")),
+        "an unquoted shell redirection was partially scanned: {redirected_errors:?}"
+    );
+
+    let command_substitution = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' \"$(2>&1> /dev/null /usr/bin/npm add --global github:agent-ix/ix-flow#substitution)\"; npm install --global",
+    );
+    let substitution_errors = hosted_workflow_control_errors(&command_substitution);
+    assert!(
+        substitution_errors.iter().any(|error| error
+            .contains("non-literal shell expansion")
+            && error.contains("github:agent-ix/ix-flow#substitution")),
+        "a double-quoted command substitution hid an executable npm command: {substitution_errors:?}"
+    );
+
+    let backtick_substitution = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' `/usr/bin/npm add --global github:agent-ix/ix-flow#backtick`; npm install --global",
+    );
+    let backtick_errors = hosted_workflow_control_errors(&backtick_substitution);
+    assert!(
+        backtick_errors
+            .iter()
+            .any(|error| error.contains("non-literal shell expansion")
+                && error.contains("github:agent-ix/ix-flow#backtick")),
+        "a backtick command substitution hid an executable npm command: {backtick_errors:?}"
+    );
+
+    let inert_substitution_spellings = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' '$(npm add github:agent-ix/ix-flow#single-quoted)' '`npm add github:agent-ix/ix-flow#single-backtick`' \"\\$(npm add github:agent-ix/ix-flow#escaped-dollar)\" \"\\`npm add github:agent-ix/ix-flow#escaped-backtick\\`\"; npm install --global",
+    );
+    assert!(
+        hosted_workflow_control_errors(&inert_substitution_spellings).is_empty(),
+        "quoted or escaped substitution spellings became executable"
+    );
+
+    let workflow_expression = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' '${{ inputs.script }}'; npm install --global",
+    );
+    let expression_errors = hosted_workflow_control_errors(&workflow_expression);
+    assert!(
+        expression_errors
+            .iter()
+            .any(|error| error.contains("non-literal workflow expression")),
+        "single shell quotes hid a GitHub workflow expression: {expression_errors:?}"
+    );
+
+    for (label, replacement) in [
+        (
+            "shell-escaped",
+            "printf '%s\\n' \\${{ inputs.script }}; npm install --global",
+        ),
+        (
+            "double-quoted shell-escaped",
+            "printf '%s\\n' \"\\${{ inputs.script }}\"; npm install --global",
+        ),
+    ] {
+        let escaped_expression = replace_first_install_invocation(&workflow, replacement);
+        let errors = hosted_workflow_control_errors(&escaped_expression);
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("non-literal workflow expression")),
+            "{label} GitHub workflow expression stayed green: {errors:?}"
+        );
+    }
+
+    let comment_expression =
+        replace_first_install_invocation(&workflow, "npm install --global; # ${{ inputs.script }}");
+    let comment_errors = hosted_workflow_control_errors(&comment_expression);
+    assert!(
+        comment_errors
+            .iter()
+            .any(|error| error.contains("non-literal workflow expression")),
+        "a GitHub workflow expression in a shell comment stayed green: {comment_errors:?}"
+    );
+
+    let unquoted_variable = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' $IX_FLOW_INSTALL; npm install --global",
+    );
+    let variable_errors = hosted_workflow_control_errors(&unquoted_variable);
+    assert!(
+        variable_errors
+            .iter()
+            .any(|error| error.contains("non-literal shell expansion")),
+        "the unquoted shell-variable guard was not independently exercised: {variable_errors:?}"
     );
 
     let preceding_shell = replace_first_install_invocation(
