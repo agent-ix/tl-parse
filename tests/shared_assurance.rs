@@ -722,7 +722,7 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
     // The active pin records must also be seen to reject a revision declared
     // superseded. Giving the checker its own compiled revision as a temporary
     // superseded value makes every current record a controlled counterexample;
-    // deleting the sweep would leave this probe green.
+    // deleting the sweep would make this probe red.
     let (code, stdout, stderr) = run(
         &python,
         &[
@@ -737,7 +737,12 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
     );
     assert_eq!(code, 0, "the superseded-pin probe failed: {stderr}");
     let problems: Vec<String> = serde_json::from_str(stdout.trim()).unwrap();
-    for name in ["README.md", "CLAUDE.md", "deny.toml"] {
+    for name in [
+        "README.md",
+        "CLAUDE.md",
+        "deny.toml",
+        "spec/assurance/AA-001.md",
+    ] {
         assert!(
             problems.iter().any(|problem| problem.starts_with(name)),
             "the superseded-pin sweep did not inspect {name}: {problems:?}"

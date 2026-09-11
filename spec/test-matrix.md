@@ -75,6 +75,6 @@ relationships:
 | TC-033 | Report ordered free propositions with parser spans and shared documents | Unit | P0 | FR-007-AC-1, StR-003-VC-1 | ✅ implemented |
 | TC-034 | Refuse an unresolved proposition with its parser byte span | Unit | P0 | FR-007-AC-2, StR-003-VC-2 | ✅ implemented |
 | TC-035 | Preserve shared requirement context distinct from parser spans | Unit | P0 | FR-007-AC-3, StR-003-VC-1 | ✅ implemented |
-| TC-036 | Bind every input identity deterministically and detect mutations | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | ✅ implemented |
+| TC-036 | Bind every declared document identity deterministically, detect document mutations, and equate source spellings that parse to the same document | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | ✅ implemented |
 | TC-037 | Preserve context-free compatibility and strictly version binding wires | Integration | P0 | FR-007-AC-5, StR-003-VC-2 | ✅ implemented |
 | TC-038 | Retain public dependency and evidence-tool boundaries | Integration | P1 | FR-007-AC-6 | ✅ implemented |

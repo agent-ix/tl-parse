@@ -119,12 +119,22 @@ fn binding_identities_are_deterministic_and_change_with_declared_inputs() {
     let repeated = bind("p1", Some(&first_context));
     let changed_context = bind("p1", Some(&context("brake.applied")));
     let changed_formula = bind("p2", Some(&first_context));
-    let changed_source = bind(" p1", Some(&first_context));
+    let changed_formula_span = bind(" p1", Some(&first_context));
+    let equivalent_source_spelling = bind("\tp1", Some(&first_context));
 
     assert_eq!(first, repeated);
     assert_ne!(first.request_sha256, changed_context.request_sha256);
     assert_ne!(first.request_sha256, changed_formula.request_sha256);
-    assert_ne!(first.request_sha256, changed_source.request_sha256);
+    assert_ne!(first.request_sha256, changed_formula_span.request_sha256);
+    assert_eq!(
+        changed_formula_span.formula_document,
+        equivalent_source_spelling.formula_document
+    );
+    assert_eq!(
+        changed_formula_span.request_sha256,
+        equivalent_source_spelling.request_sha256,
+        "source bytes are not a declared binding input when they parse to the same formula document"
+    );
     assert_eq!(
         first.signal_catalog_sha256,
         changed_formula.signal_catalog_sha256

@@ -153,6 +153,7 @@ def upstream_pin_mismatches(pins: dict[str, Any]) -> list[str]:
         "Cargo.lock": f"#{declared}",
         "fuzz/Cargo.lock": f"#{declared}",
         "src/lib.rs": f'TL_SYNTAX_REVISION: &str = "{declared}"',
+        "spec/assurance/AA-001.md": declared,
     }
     for name, needle in checks.items():
         path = ROOT / name
@@ -161,7 +162,7 @@ def upstream_pin_mismatches(pins: dict[str, Any]) -> list[str]:
             continue
         if needle not in path.read_text(encoding="utf-8"):
             problems.append(f"{name}: does not name the compiled revision {declared}")
-    current_records = ("README.md", "CLAUDE.md", "deny.toml")
+    current_records = ("README.md", "CLAUDE.md", "deny.toml", "spec/assurance/AA-001.md")
     for superseded in pins["upstream_dependency"].get("superseded_compiled_revisions", []):
         for name in current_records:
             path = ROOT / name
