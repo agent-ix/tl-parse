@@ -50,12 +50,12 @@ AST, or run tools/evidence collection.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-007-AC-1 | A valid formula and catalog produce a deterministic native report containing every free proposition once in first parser-node order, with its parser source span and the exact shared catalog/context values. | Test (TC-029) |
-| FR-007-AC-2 | A catalog missing any referenced proposition produces typed non-success with that proposition and parser byte span; no successful bound report is returned. | Test (TC-030) |
-| FR-007-AC-3 | A provided requirement context is retained verbatim, including its identity and clause/anchor/span fields, without confusing those fields with source diagnostic spans. | Test (TC-031) |
-| FR-007-AC-4 | Repeated parse-and-bind operations and catalog/context/source mutations are deterministic, and each declared input identity is bound into the report. | Test (TC-032) |
-| FR-007-AC-5 | Context-free APIs and v1 wire schemas remain structurally compatible. Their bytes may move only when a declared dependency identity moves. The new binding report has an explicit strict versioned wire boundary. | Test (TC-033) |
-| FR-007-AC-6 | The public surface adds no runtime dependency on Quire, Quoin, Engineering Assurance, or any local evidence runner, and keeps license/publish boundary verification passing. | Test (TC-034) |
+| FR-007-AC-1 | A valid formula and catalog produce a deterministic native report containing every free proposition once in first parser-node order, with its parser source span and the exact shared catalog/context values. | Test (TC-033) |
+| FR-007-AC-2 | A catalog missing any referenced proposition produces typed non-success with that proposition and parser byte span; no successful bound report is returned. | Test (TC-034) |
+| FR-007-AC-3 | A provided requirement context is retained verbatim, including its identity and clause/anchor/span fields, without confusing those fields with source diagnostic spans. | Test (TC-035) |
+| FR-007-AC-4 | Repeated parse-and-bind operations and catalog/context/source mutations are deterministic, and each declared input identity is bound into the report. | Test (TC-036) |
+| FR-007-AC-5 | Context-free APIs and v1 wire schemas remain structurally compatible. Their bytes may move only when a declared dependency identity moves. The new binding report has an explicit strict versioned wire boundary. | Test (TC-037) |
+| FR-007-AC-6 | The public surface adds no runtime dependency on Quire, Quoin, Engineering Assurance, or any local evidence runner, and keeps license/publish boundary verification passing. | Test (TC-038) |
 
 ## Dependencies
 

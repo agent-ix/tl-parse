@@ -1,5 +1,5 @@
 ---
-id: SR-020
+id: SR-039
 title: "EARS conformance review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: ears-conformance

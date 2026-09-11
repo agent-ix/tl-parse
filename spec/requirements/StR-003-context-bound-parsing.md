@@ -22,8 +22,8 @@ types that downstream rewrite and evaluation consume.
 
 | ID | Criteria | Validation |
 |---|---|---|
-| StR-003-VC-1 | The native result preserves the shared documents and independently locates each free proposition in parser source bytes. | Test (TC-029, TC-031) |
-| StR-003-VC-2 | Missing or changed bindings cannot silently succeed, while existing context-free parsing retains its compatibility boundary. | Test (TC-030, TC-032, TC-033) |
+| StR-003-VC-1 | The native result preserves the shared documents and independently locates each free proposition in parser source bytes. | Test (TC-033, TC-035) |
+| StR-003-VC-2 | Missing or changed bindings cannot silently succeed, while existing context-free parsing retains its compatibility boundary. | Test (TC-034, TC-036, TC-037) |
 
 ## Stakeholders
 

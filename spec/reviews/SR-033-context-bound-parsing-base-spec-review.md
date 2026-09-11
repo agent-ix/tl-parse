@@ -1,5 +1,5 @@
 ---
-id: SR-013
+id: SR-033
 title: "Base review of the complete tl-parse specification corpus"
 type: SpecReview
 analysis: base
@@ -18,4 +18,4 @@ implemented status of the context-binding cases.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-1301 | medium | The FR-007 and StR-003 aggregate rows say the context-binding cases are planned, while TC-029 through TC-034 each say implemented; the matrix must state one current coverage status. | FR-007, StR-003, TC-029, TC-030, TC-031, TC-032, TC-033, TC-034 |
+| FND-1301 | medium | The FR-007 and StR-003 aggregate rows say the context-binding cases are planned, while TC-033 through TC-038 each say implemented; the matrix must state one current coverage status. | FR-007, StR-003, TC-033, TC-034, TC-035, TC-036, TC-037, TC-038 |

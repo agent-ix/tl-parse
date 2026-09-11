@@ -20,5 +20,5 @@ Implement FR-007 as an additive parser result that consumes only the shared
    spans, or unresolved proposition bindings.
 4. Bind catalog and domain-separated request identities with deterministic
    SHA-256 records; do not add a local schema or assurance runtime dependency.
-5. Close TC-029 through TC-034, including strict v2 wire decoding with an
+5. Close TC-033 through TC-038, including strict v2 wire decoding with an
    explicit nullable context field, and run normal local Rust gates.

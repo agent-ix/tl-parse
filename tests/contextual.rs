@@ -46,7 +46,7 @@ fn bind(source: &str, context: Option<&RequirementContextDocument>) -> Contextua
     .unwrap()
 }
 
-// Trace: TC-029, FR-007-AC-1, StR-003-VC-1
+// Trace: TC-033, FR-007-AC-1, StR-003-VC-1
 #[test]
 fn binds_each_free_proposition_once_in_first_parser_node_order() {
     let caller_context = context("system.brake");
@@ -71,7 +71,7 @@ fn binds_each_free_proposition_once_in_first_parser_node_order() {
     assert_eq!(report.requirement_context, Some(caller_context));
 }
 
-// Trace: TC-030, FR-007-AC-2, StR-003-VC-2
+// Trace: TC-034, FR-007-AC-2, StR-003-VC-2
 #[test]
 fn unresolved_proposition_returns_its_exact_parser_span() {
     let error = parse_with_context(
@@ -99,7 +99,7 @@ fn unresolved_proposition_returns_its_exact_parser_span() {
     );
 }
 
-// Trace: TC-031, FR-007-AC-3, StR-003-VC-1
+// Trace: TC-035, FR-007-AC-3, StR-003-VC-1
 #[test]
 fn retains_shared_requirement_context_without_confusing_its_span() {
     let caller_context = context("power.available");
@@ -111,7 +111,7 @@ fn retains_shared_requirement_context_without_confusing_its_span() {
     );
 }
 
-// Trace: TC-032, FR-007-AC-4, StR-003-VC-2
+// Trace: TC-036, FR-007-AC-4, StR-003-VC-2
 #[test]
 fn binding_identities_are_deterministic_and_change_with_declared_inputs() {
     let first_context = context("brake.available");
@@ -153,7 +153,7 @@ fn binding_identities_are_deterministic_and_change_with_declared_inputs() {
     assert_ne!(first.request_sha256, changed.request_sha256);
 }
 
-// Trace: TC-033, FR-007-AC-5, StR-003-VC-2
+// Trace: TC-037, FR-007-AC-5, StR-003-VC-2
 #[test]
 fn v1_parse_wire_remains_compatible_and_v2_binding_wire_is_closed() {
     let legacy = parse("p1", SemanticProfile::ClosedTraceV1, ParseLimits::default());
@@ -210,7 +210,7 @@ fn v1_parse_wire_remains_compatible_and_v2_binding_wire_is_closed() {
     assert!(serde_json::from_value::<ContextualParseReport>(wrong_binding).is_err());
 }
 
-// Trace: TC-034, FR-007-AC-6
+// Trace: TC-038, FR-007-AC-6
 #[test]
 fn contextual_public_surface_uses_shared_types_not_assurance_runtime_types() {
     let manifest = include_str!("../Cargo.toml").to_ascii_lowercase();
