@@ -136,6 +136,15 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
             if character == '\'' {
                 quote = None;
             } else {
+                if character == '$' && characters.peek() == Some(&'{') {
+                    let mut lookahead = characters.clone();
+                    lookahead.next();
+                    if lookahead.peek() == Some(&'{') {
+                        return Err(format!(
+                            "non-literal workflow expression is unsupported: {script:?}"
+                        ));
+                    }
+                }
                 word_started = true;
                 word.push(character);
             }
@@ -145,6 +154,11 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
             match character {
                 '"' => quote = None,
                 '\\' => escaped = true,
+                '$' | '`' => {
+                    return Err(format!(
+                        "non-literal shell expansion is unsupported: {script:?}"
+                    ));
+                }
                 _ => {
                     word_started = true;
                     word.push(character);
@@ -160,6 +174,11 @@ fn shell_tokens(script: &str) -> Result<Vec<ShellToken>, String> {
             '\\' => {
                 word_started = true;
                 escaped = true;
+            }
+            '$' | '`' => {
+                return Err(format!(
+                    "non-literal shell expansion is unsupported: {script:?}"
+                ));
             }
             ' ' | '\t' | '\r' => flush(&mut tokens, &mut word, &mut word_started),
             '#' if !word_started => {
@@ -1474,6 +1493,52 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
                 && error.contains("github:agent-ix/ix-flow#redirected-fd")
                 && error.contains("github:agent-ix/ix-flow#redirected-chained")),
         "an unquoted shell redirection was partially scanned: {redirected_errors:?}"
+    );
+
+    let command_substitution = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' \"$(2>&1> /dev/null /usr/bin/npm add --global github:agent-ix/ix-flow#substitution)\"; npm install --global",
+    );
+    let substitution_errors = hosted_workflow_control_errors(&command_substitution);
+    assert!(
+        substitution_errors.iter().any(|error| error
+            .contains("non-literal shell expansion")
+            && error.contains("github:agent-ix/ix-flow#substitution")),
+        "a double-quoted command substitution hid an executable npm command: {substitution_errors:?}"
+    );
+
+    let backtick_substitution = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' `/usr/bin/npm add --global github:agent-ix/ix-flow#backtick`; npm install --global",
+    );
+    let backtick_errors = hosted_workflow_control_errors(&backtick_substitution);
+    assert!(
+        backtick_errors
+            .iter()
+            .any(|error| error.contains("non-literal shell expansion")
+                && error.contains("github:agent-ix/ix-flow#backtick")),
+        "a backtick command substitution hid an executable npm command: {backtick_errors:?}"
+    );
+
+    let inert_substitution_spellings = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' '$(npm add github:agent-ix/ix-flow#single-quoted)' '`npm add github:agent-ix/ix-flow#single-backtick`' \"\\$(npm add github:agent-ix/ix-flow#escaped-dollar)\" \"\\`npm add github:agent-ix/ix-flow#escaped-backtick\\`\"; npm install --global",
+    );
+    assert!(
+        hosted_workflow_control_errors(&inert_substitution_spellings).is_empty(),
+        "quoted or escaped substitution spellings became executable"
+    );
+
+    let workflow_expression = replace_first_install_invocation(
+        &workflow,
+        "printf '%s\\n' '${{ inputs.script }}'; npm install --global",
+    );
+    let expression_errors = hosted_workflow_control_errors(&workflow_expression);
+    assert!(
+        expression_errors
+            .iter()
+            .any(|error| error.contains("non-literal workflow expression")),
+        "single shell quotes hid a GitHub workflow expression: {expression_errors:?}"
     );
 
     let preceding_shell = replace_first_install_invocation(
