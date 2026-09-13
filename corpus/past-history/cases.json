@@ -1,0 +1,59 @@
+{
+  "corpus": "tl-syntax.past-history-corpus/v1",
+  "formula_schema": "tl-syntax.formula/v2",
+  "operator_profile": "tl-syntax.past-operators/v1",
+  "semantic_profile": "mltl.origin-complete-history/v1",
+  "dialect": "tl-parse.clean-ascii/v3",
+  "formulas": [
+    {"id":"once-endpoints","source":"O[1,2]p0","required_history":2,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":1,"nodes":[{"kind":"proposition","proposition":0},{"kind":"once","interval":{"start":1,"end":2},"operand":0}]}},
+    {"id":"historically-pre-origin","source":"H[1,3]p0","required_history":3,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":1,"nodes":[{"kind":"proposition","proposition":0},{"kind":"historically","interval":{"start":1,"end":3},"operand":0}]}},
+    {"id":"strong-previous","source":"Yp0","required_history":1,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":1,"nodes":[{"kind":"proposition","proposition":0},{"kind":"strong_previous","operand":0}]}},
+    {"id":"since-lower-bound","source":"p0S[1,2]p1","required_history":2,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":2,"nodes":[{"kind":"proposition","proposition":0},{"kind":"proposition","proposition":1},{"kind":"since","interval":{"start":1,"end":2},"left":0,"right":1}]}},
+    {"id":"triggered-duality","source":"p0T[0,2]p1","required_history":2,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":2,"nodes":[{"kind":"proposition","proposition":0},{"kind":"proposition","proposition":1},{"kind":"triggered","interval":{"start":0,"end":2},"left":0,"right":1}]}},
+    {"id":"boolean-nesting","source":"!(O[0,1]p0&H[0,2]p1)","required_history":2,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":5,"nodes":[{"kind":"proposition","proposition":0},{"kind":"once","interval":{"start":0,"end":1},"operand":0},{"kind":"proposition","proposition":1},{"kind":"historically","interval":{"start":0,"end":2},"operand":2},{"kind":"and","left":1,"right":3},{"kind":"not","operand":4}]}},
+    {"id":"once-one-rewrite","source":"O[1,1]p0","required_history":1,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":1,"nodes":[{"kind":"proposition","proposition":0},{"kind":"once","interval":{"start":1,"end":1},"operand":0}]}},
+    {"id":"triggered-dual-rewrite","source":"!(!p0S[1,2]!p1)","required_history":2,"document":{"schema_version":"tl-syntax.formula/v2","semantic_profile":"mltl.origin-complete-history/v1","root":5,"nodes":[{"kind":"proposition","proposition":0},{"kind":"not","operand":0},{"kind":"proposition","proposition":1},{"kind":"not","operand":2},{"kind":"since","interval":{"start":1,"end":2},"left":1,"right":3},{"kind":"not","operand":4}]}}
+  ],
+  "histories": [
+    {"id":"event-main-r1","history_id":"event-main","revision":1,"origin_position":0,"through_position":3,"clock":{"kind":"event_position"},"observations":[{"position":0,"true_propositions":[0]},{"position":1,"true_propositions":[1]},{"position":2,"true_propositions":[0,1]},{"position":3,"true_propositions":[]}]},
+    {"id":"event-main-r2","history_id":"event-main","revision":2,"origin_position":0,"through_position":3,"clock":{"kind":"event_position"},"observations":[{"position":0,"true_propositions":[0]},{"position":1,"true_propositions":[1]},{"position":2,"true_propositions":[0,1]},{"position":3,"true_propositions":[0]}]},
+    {"id":"fixed-singleton","history_id":"fixed-singleton","revision":1,"origin_position":0,"through_position":0,"clock":{"kind":"fixed_sample","epoch":{"numerator":100,"denominator":1},"period":{"numerator":1,"denominator":4},"unit":"owner_tick"},"observations":[{"position":0,"true_propositions":[0],"sample":{"numerator":100,"denominator":1}}]}
+  ],
+  "evaluations": [
+    {"id":"once-inclusive-endpoints","formula":"once-endpoints","history":"event-main-r1","anchor":3,"verdict":true,"required_history":2,"relation":"original"},
+    {"id":"historically-reaches-origin","formula":"historically-pre-origin","history":"event-main-r1","anchor":2,"verdict":false,"required_history":3,"relation":"original"},
+    {"id":"previous-pre-origin-false","formula":"strong-previous","history":"fixed-singleton","anchor":0,"verdict":false,"required_history":1,"relation":"original"},
+    {"id":"previous-observed","formula":"strong-previous","history":"event-main-r1","anchor":3,"verdict":true,"required_history":1,"relation":"original"},
+    {"id":"since-exact-left-range","formula":"since-lower-bound","history":"event-main-r1","anchor":3,"verdict":true,"required_history":2,"relation":"original"},
+    {"id":"triggered-structural-dual","formula":"triggered-duality","history":"event-main-r1","anchor":3,"verdict":false,"required_history":2,"relation":"original"},
+    {"id":"boolean-nested","formula":"boolean-nesting","history":"event-main-r1","anchor":2,"verdict":true,"required_history":2,"relation":"original"},
+    {"id":"late-data-supersedes","formula":"once-endpoints","history":"event-main-r2","anchor":3,"verdict":true,"required_history":2,"relation":"superseding","predecessor_history":"event-main-r1"},
+    {"id":"late-data-invalidates","formula":"historically-pre-origin","history":"event-main-r2","anchor":3,"verdict":false,"required_history":3,"relation":"invalidating","predecessor_history":"event-main-r1"}
+  ],
+  "rewrites": [
+    {"id":"once-one-to-previous","input":"once-one-rewrite","expected_rule":"past.once.strong-previous","expected_status":"rewritten","expected_source":"Yp0"},
+    {"id":"triggered-boolean-dual","input":"triggered-dual-rewrite","expected_rule":"past.triggered.fold-dual","expected_status":"rewritten","expected_source":"p0T[1,2]p1"},
+    {"id":"past-identity","input":"since-lower-bound","expected_rule":null,"expected_status":"unchanged","expected_source":"p0S[1,2]p1"}
+  ],
+  "refusals": [
+    {"id":"mixed-future-past","axis":"profile","expected":"profile_incompatible_node"},
+    {"id":"history-gap","axis":"history","expected":"gap"},
+    {"id":"history-duplicate","axis":"history","expected":"duplicate_position"},
+    {"id":"history-order","axis":"history","expected":"out_of_order"},
+    {"id":"history-stale-digest","axis":"identity","expected":"stale_digest"},
+    {"id":"anchor-out-of-range","axis":"anchor","expected":"anchor_out_of_range"},
+    {"id":"fixed-sample-rounded","axis":"clock","expected":"sample_mismatch"},
+    {"id":"fixed-sample-absent","axis":"clock","expected":"incomplete_sample"},
+    {"id":"capture-absent","axis":"owner_non_value","expected":"preserved"},
+    {"id":"predicate-partial","axis":"owner_non_value","expected":"preserved"},
+    {"id":"required-history-limit","axis":"resource","expected":"temporal_span_exceeded"},
+    {"id":"step-limit","axis":"resource","expected":"step_limit_exceeded"}
+  ],
+  "target_dispositions": [
+    {"target":"fret","state":"supported","role":"output_only","reason":"canonical_graph_mapping_only"},
+    {"target":"r2u2","state":"unavailable","role":"monitor_target","reason":"exact_past_correspondence_not_reviewed"},
+    {"target":"c2po","state":"unavailable","role":"monitor_target","reason":"exact_past_correspondence_not_reviewed"},
+    {"target":"isabelle_hol","state":"unsupported","role":"oracle","reason":"reviewed_oracle_is_future_only"}
+  ],
+  "mutation_axes": ["operator_direction","offset_subtraction","inclusive_endpoints","since_lower_bound","triggered_duality","semantic_profile","history_gap","anchor","digest","required_history_arithmetic"]
+}

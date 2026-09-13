@@ -104,6 +104,7 @@ check-corpus:
 	$(PYTHON) scripts/check_checksum_manifest.py corpus/v1
 	$(PYTHON) scripts/check_checksum_manifest.py fuzz/corpus/parser
 	$(PYTHON) scripts/check_checksum_manifest.py fuzz/corpus/clean_ascii_v2
+	sha256sum --check corpus/past-history/SHA256SUMS
 
 .PHONY: conformance
 conformance:
