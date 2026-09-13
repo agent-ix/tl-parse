@@ -41,7 +41,7 @@ pub const DERIVED_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.derived-parse-re
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
 
 /// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "e3651cde5524c61cb9623ce39fcc9f0b90b99317";
+pub const TL_SYNTAX_REVISION: &str = "8dc18eec5af227f484170362c9e8894b8531a27d";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";

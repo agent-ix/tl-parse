@@ -27,3 +27,6 @@ description: "Chronological changes to the clean-ascii v2 derived future-operato
     the document.
   - Added tests for the online profile, `->`/`<->` precedence, and dense,
     timestamped, and unbounded intervals.
+- **2026-09-12** - tl-syntax#42 merged as `8dc18ee`, whose tree is identical to
+  `e3651cd`. The compiled pin moved to `8dc18ee`, and `e3651cd` is recorded as
+  superseded.

@@ -23,7 +23,7 @@ version = 2
 unknown-registry = "deny"
 unknown-git = "deny"
 # tl-syntax is not published to a registry, so it resolves by exact git
-# revision. The pin is e3651cde5524c61cb9623ce39fcc9f0b90b99317, which is the
+# revision. The pin is 8dc18eec5af227f484170362c9e8894b8531a27d, which is the
 # reviewed commit reachable from tl-syntax `main` when this pin was admitted,
 # not a moving branch head or a commit reachable only from an open pull request.
 # The earlier form of this exception was scoped to

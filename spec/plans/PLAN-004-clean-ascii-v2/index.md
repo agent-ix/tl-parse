@@ -10,7 +10,7 @@ description: "Contents of the tl-parse clean-ascii v2 derived future-operator pl
 
 | Item | Status | Evidence |
 |---|---|---|
-| tl-syntax lowering pin | in progress | `Cargo.toml`, `TL_SYNTAX_REVISION`, `docs/ATTRIBUTION.md` |
+| tl-syntax lowering pin | complete | `Cargo.toml`, `TL_SYNTAX_REVISION`, `docs/ATTRIBUTION.md` |
 | Dialect and requirement | complete | `docs/DIALECT-002-clean-ascii-v2.md`, FR-008 |
 | Parser lowering and report | complete | `src/lexer.rs`, `src/parser.rs`, `src/derived.rs` |
 | Acceptance matrix | complete | `tests/clean_ascii_v2.rs`, TC-039 through TC-045 |
