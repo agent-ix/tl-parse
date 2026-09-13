@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-ix.github.io/tl-syntax/schema/past-history-corpus-v1.schema.json",
+  "title": "tl-syntax paired past/history corpus v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["corpus","formula_schema","operator_profile","semantic_profile","dialect","formulas","histories","evaluations","rewrites","refusals","target_dispositions","mutation_axes"],
+  "properties": {
+    "corpus": {"const":"tl-syntax.past-history-corpus/v1"},
+    "formula_schema": {"const":"tl-syntax.formula/v2"},
+    "operator_profile": {"const":"tl-syntax.past-operators/v1"},
+    "semantic_profile": {"const":"mltl.origin-complete-history/v1"},
+    "dialect": {"const":"tl-parse.clean-ascii/v3"},
+    "formulas": {"type":"array","minItems":8,"items":{"$ref":"#/$defs/formula"}},
+    "histories": {"type":"array","minItems":3,"items":{"$ref":"#/$defs/history"}},
+    "evaluations": {"type":"array","minItems":9,"items":{"$ref":"#/$defs/evaluation"}},
+    "rewrites": {"type":"array","minItems":3,"items":{"$ref":"#/$defs/rewrite"}},
+    "refusals": {"type":"array","minItems":12,"items":{"$ref":"#/$defs/refusal"}},
+    "target_dispositions": {"type":"array","minItems":4,"maxItems":4,"items":{"$ref":"#/$defs/target"}},
+    "mutation_axes": {"type":"array","minItems":10,"uniqueItems":true,"items":{"type":"string","minLength":1}}
+  },
+  "$defs": {
+    "id": {"type":"string","minLength":1,"maxLength":128},
+    "formula": {
+      "type":"object","additionalProperties":false,
+      "required":["id","source","required_history","document"],
+      "properties":{"id":{"$ref":"#/$defs/id"},"source":{"type":"string","minLength":1},"required_history":{"type":"integer","minimum":0,"maximum":4294967295},"document":{"$ref":"#/$defs/formulaDocument"}}
+    },
+    "nodeId": {"type":"integer","minimum":0,"maximum":4294967295},
+    "interval": {
+      "type":"object","additionalProperties":false,"required":["start","end"],
+      "properties":{"start":{"$ref":"#/$defs/nodeId"},"end":{"$ref":"#/$defs/nodeId"}}
+    },
+    "formulaDocument": {
+      "type":"object","additionalProperties":false,"required":["schema_version","semantic_profile","root","nodes"],
+      "properties":{"schema_version":{"const":"tl-syntax.formula/v2"},"semantic_profile":{"const":"mltl.origin-complete-history/v1"},"root":{"$ref":"#/$defs/nodeId"},"nodes":{"type":"array","minItems":1,"maxItems":100000,"items":{"$ref":"#/$defs/node"}}}
+    },
+    "node": {
+      "oneOf":[
+        {"type":"object","additionalProperties":false,"required":["kind"],"properties":{"kind":{"enum":["false","true"]}}},
+        {"type":"object","additionalProperties":false,"required":["kind","proposition"],"properties":{"kind":{"const":"proposition"},"proposition":{"$ref":"#/$defs/nodeId"}}},
+        {"type":"object","additionalProperties":false,"required":["kind","operand"],"properties":{"kind":{"enum":["not","strong_previous"]},"operand":{"$ref":"#/$defs/nodeId"}}},
+        {"type":"object","additionalProperties":false,"required":["kind","left","right"],"properties":{"kind":{"enum":["and","or","implies","equivalent"]},"left":{"$ref":"#/$defs/nodeId"},"right":{"$ref":"#/$defs/nodeId"}}},
+        {"type":"object","additionalProperties":false,"required":["kind","interval","operand"],"properties":{"kind":{"enum":["once","historically"]},"interval":{"$ref":"#/$defs/interval"},"operand":{"$ref":"#/$defs/nodeId"}}},
+        {"type":"object","additionalProperties":false,"required":["kind","interval","left","right"],"properties":{"kind":{"enum":["since","triggered"]},"interval":{"$ref":"#/$defs/interval"},"left":{"$ref":"#/$defs/nodeId"},"right":{"$ref":"#/$defs/nodeId"}}}
+      ]
+    },
+    "number": {
+      "type":"object","additionalProperties":false,"required":["numerator","denominator"],
+      "properties":{"numerator":{"type":"integer"},"denominator":{"type":"integer","minimum":1}}
+    },
+    "clock": {
+      "oneOf":[
+        {"type":"object","additionalProperties":false,"required":["kind"],"properties":{"kind":{"const":"event_position"}}},
+        {"type":"object","additionalProperties":false,"required":["kind","epoch","period","unit"],"properties":{"kind":{"const":"fixed_sample"},"epoch":{"$ref":"#/$defs/number"},"period":{"$ref":"#/$defs/number"},"unit":{"$ref":"#/$defs/id"}}}
+      ]
+    },
+    "observation": {
+      "type":"object","additionalProperties":false,"required":["position","true_propositions"],
+      "properties":{"position":{"type":"integer","minimum":0},"true_propositions":{"type":"array","uniqueItems":true,"items":{"type":"integer","minimum":0,"maximum":4294967295}},"sample":{"$ref":"#/$defs/number"}}
+    },
+    "history": {
+      "type":"object","additionalProperties":false,"required":["id","history_id","revision","origin_position","through_position","clock","observations"],
+      "properties":{"id":{"$ref":"#/$defs/id"},"history_id":{"$ref":"#/$defs/id"},"revision":{"type":"integer","minimum":1},"origin_position":{"const":0},"through_position":{"type":"integer","minimum":0},"clock":{"$ref":"#/$defs/clock"},"observations":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/observation"}}}
+    },
+    "evaluation": {
+      "type":"object","additionalProperties":false,"required":["id","formula","history","anchor","verdict","required_history","relation"],
+      "properties":{"id":{"$ref":"#/$defs/id"},"formula":{"$ref":"#/$defs/id"},"history":{"$ref":"#/$defs/id"},"anchor":{"type":"integer","minimum":0},"verdict":{"type":"boolean"},"required_history":{"type":"integer","minimum":0},"relation":{"enum":["original","superseding","invalidating"]},"predecessor_history":{"$ref":"#/$defs/id"}}
+    },
+    "rewrite": {
+      "type":"object","additionalProperties":false,"required":["id","input","expected_rule","expected_status","expected_source"],
+      "properties":{"id":{"$ref":"#/$defs/id"},"input":{"$ref":"#/$defs/id"},"expected_rule":{"type":["string","null"]},"expected_status":{"enum":["rewritten","unchanged"]},"expected_source":{"type":"string","minLength":1}}
+    },
+    "refusal": {
+      "type":"object","additionalProperties":false,"required":["id","axis","expected"],
+      "properties":{"id":{"$ref":"#/$defs/id"},"axis":{"enum":["profile","history","identity","anchor","clock","owner_non_value","resource"]},"expected":{"$ref":"#/$defs/id"}}
+    },
+    "target": {
+      "type":"object","additionalProperties":false,"required":["target","state","role","reason"],
+      "properties":{"target":{"enum":["fret","r2u2","c2po","isabelle_hol"]},"state":{"enum":["supported","unsupported","unavailable"]},"role":{"enum":["output_only","monitor_target","oracle"]},"reason":{"$ref":"#/$defs/id"}}
+    }
+  }
+}
