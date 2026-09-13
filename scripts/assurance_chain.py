@@ -1436,6 +1436,62 @@ def adapter_probes(workspace: Path) -> list[dict[str, Any]]:
             "detail": {"target": "parser"},
         }
     )
+    coherent_outcomes = {
+        "accepts-a-coherent-fuzz-failure": {
+            "domain": "fail",
+            "outcome": "fail",
+            "attested": "failed",
+            "process_state": "exited",
+            "exit_code": 9,
+            "elapsed": "within_deadline",
+            "artifacts": [],
+        },
+        "accepts-a-coherent-fuzz-unavailable-result": {
+            "domain": "unavailable",
+            "outcome": "skip",
+            "attested": "unavailable",
+            "process_state": "timed_out",
+            "exit_code": None,
+            "elapsed": "deadline_exceeded",
+            "artifacts": [],
+        },
+        "accepts-a-coherent-fuzz-suspect-result": {
+            "domain": "suspect",
+            "outcome": "fail",
+            "attested": "failed",
+            "process_state": "exited",
+            "exit_code": 0,
+            "elapsed": "within_deadline",
+            "artifacts": [
+                {
+                    "name": "crash-example",
+                    "mediaType": "application/octet-stream",
+                    "byteLength": 1,
+                    "sha256": hashlib.sha256(b"x").hexdigest(),
+                }
+            ],
+        },
+    }
+    for probe, expected in coherent_outcomes.items():
+        variant = json.loads(json.dumps(fuzz_document))
+        variant["entries"][0]["outcome"] = expected["outcome"]
+        variant["entries"][0]["domainOutcome"] = expected["domain"]
+        variant["campaign"]["domainOutcome"] = expected["domain"]
+        variant["campaign"]["process"]["state"] = expected["process_state"]
+        variant["campaign"]["process"]["exitCode"] = expected["exit_code"]
+        variant["campaign"]["elapsedTimeClass"] = expected["elapsed"]
+        variant["campaign"]["artifacts"] = expected["artifacts"]
+        results.append(
+            {
+                "probe": probe,
+                "state": expected["domain"],
+                "matched": _fuzz_result(
+                    variant, "PROOF-parser-fuzz-campaign", fuzz_path
+                )
+                == expected["attested"],
+                "detail": {"domainOutcome": expected["domain"]},
+            }
+        )
     fuzz_mutations = {
         "refuses-a-foreign-fuzz-protocol": ("protocol", "other.fuzz/v1"),
         "refuses-a-cross-target-fuzz-result": ("campaign.target", "clean_ascii_v2"),
