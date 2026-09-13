@@ -8,7 +8,7 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, an exact commit reachable from the
+`e3651cde5524c61cb9623ce39fcc9f0b90b99317`, an exact commit reachable from the
 reviewed `main` history when admitted, not a moving branch head. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is

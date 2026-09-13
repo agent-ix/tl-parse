@@ -572,8 +572,8 @@ def derive_result(proof_id: str, path: Path) -> str:
         if export.get("status_lies"):
             # Quire found a row whose declared status disagrees with its evidence.
             return "failed"
-        # A partially-backed export is not a failure — four suite rows here are
-        # deliberately unbacked and SR-007 says why. The exact figures are pinned
+        # A partially-backed export is not a failure: SR-007 records suite rows
+        # that are deliberately unbacked. The exact figures are pinned
         # by TC-024, so a doctored export changes a number a test asserts rather
         # than only a threshold this driver applies.
         return "passed"

@@ -103,6 +103,7 @@ test: assurance-inputs
 check-corpus:
 	$(PYTHON) scripts/check_checksum_manifest.py corpus/v1
 	$(PYTHON) scripts/check_checksum_manifest.py fuzz/corpus/parser
+	$(PYTHON) scripts/check_checksum_manifest.py fuzz/corpus/clean_ascii_v2
 
 .PHONY: conformance
 conformance:
@@ -119,10 +120,12 @@ test-census:
 .PHONY: fuzz-build
 fuzz-build:
 	rustup run nightly cargo fuzz build parser --target-dir "$${CARGO_TARGET_DIR:-target}/fuzz"
+	rustup run nightly cargo fuzz build clean_ascii_v2 --target-dir "$${CARGO_TARGET_DIR:-target}/fuzz"
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	bash scripts/run_fuzz_smoke.sh
+	bash scripts/run_fuzz_smoke.sh parser
+	bash scripts/run_fuzz_smoke.sh clean_ascii_v2
 
 .PHONY: build
 build:

@@ -23,3 +23,10 @@ path = "fuzz_targets/parser.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "clean_ascii_v2"
+path = "fuzz_targets/clean_ascii_v2.rs"
+test = false
+doc = false
+bench = false

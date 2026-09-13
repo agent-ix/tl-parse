@@ -1,11 +1,13 @@
 use tl_syntax::{
-    FormulaDocument, Interval, Node, NodeId, NodeKind, PropositionId, SemanticProfile, SourceSpan,
+    Formula, FormulaDocument, FutureKind, FutureLoweringRequest, Interval, Node, NodeId, NodeKind,
+    PropositionId, RawBounds, SemanticProfile, SourceSpan, FUTURE_LOWERING_NODE_CHARGE,
+    FUTURE_LOWERING_REQUEST_V1, FUTURE_OPERATORS_V1,
 };
 
 use crate::{
-    lexer::{checked_span, lex, Token, TokenKind},
-    Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, ParseLimits, ParseReport,
-    RecoveryAction,
+    lexer::{checked_span, lex, Dialect, Token, TokenKind},
+    Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, LoweringRecord, ParseLimits,
+    ParseReport, RecoveryAction,
 };
 
 /// Parses one source string under the selected profile and effective limits.
@@ -13,8 +15,23 @@ use crate::{
 /// Caller limits are clamped to process-safe hard maxima. Any diagnostic,
 /// including a resource diagnostic, suppresses the formula document.
 pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> ParseReport {
+    parse_dialect(source, profile, limits, Dialect::V1).report
+}
+
+/// A v1-shaped report plus the lowering records a v2 parse produced.
+pub(crate) struct DialectParse {
+    pub(crate) report: ParseReport,
+    pub(crate) lowerings: Vec<LoweringRecord>,
+}
+
+pub(crate) fn parse_dialect(
+    source: &str,
+    profile: SemanticProfile,
+    limits: ParseLimits,
+    dialect: Dialect,
+) -> DialectParse {
     let limits = limits.clamped();
-    let lexed = lex(source, limits);
+    let lexed = lex(source, limits, dialect);
     let token_count = lexed.tokens.len().saturating_sub(1);
     let lex_stopped = lexed.diagnostics.iter().any(|diagnostic| {
         matches!(
@@ -24,6 +41,7 @@ pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> Par
     });
     let mut parser = Parser {
         source,
+        profile,
         limits,
         tokens: lexed.tokens,
         cursor: 0,
@@ -34,6 +52,7 @@ pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> Par
         work: lexed.work,
         max_depth: 0,
         stopped: lex_stopped,
+        lowerings: Vec::new(),
     };
 
     let root = if parser.stopped {
@@ -91,7 +110,12 @@ pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> Par
     if !report.diagnostics.is_empty() || parser.had_error || parser.stopped {
         report.document = None;
     }
-    report
+    let lowerings = if report.document.is_some() {
+        parser.lowerings
+    } else {
+        Vec::new()
+    };
+    DialectParse { report, lowerings }
 }
 
 // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
@@ -134,6 +158,7 @@ pub fn source_limit_report(
 
 struct Parser<'a> {
     source: &'a str,
+    profile: SemanticProfile,
     limits: ParseLimits,
     tokens: Vec<Token>,
     cursor: usize,
@@ -144,6 +169,7 @@ struct Parser<'a> {
     work: usize,
     max_depth: usize,
     stopped: bool,
+    lowerings: Vec<LoweringRecord>,
 }
 
 #[derive(Clone, Copy)]
@@ -169,23 +195,40 @@ impl Parser<'_> {
                 TokenKind::Implies => (2, 2),
                 TokenKind::Or => (3, 4),
                 TokenKind::And => (4, 5),
-                TokenKind::Until | TokenKind::Release => (5, 6),
+                TokenKind::Until
+                | TokenKind::Release
+                | TokenKind::WeakUntil
+                | TokenKind::StrongRelease => (5, 6),
                 _ => break,
             };
             if left_power < minimum_binding_power {
                 break;
             }
             self.advance();
-            let interval = if matches!(operator.kind, TokenKind::Until | TokenKind::Release) {
-                self.parse_interval()
+            let temporal = matches!(
+                operator.kind,
+                TokenKind::Until
+                    | TokenKind::Release
+                    | TokenKind::WeakUntil
+                    | TokenKind::StrongRelease
+            );
+            let bracketed = if temporal {
+                Some(self.parse_interval()?)
             } else {
                 None
             };
-            if matches!(operator.kind, TokenKind::Until | TokenKind::Release) && interval.is_none()
-            {
-                return None;
-            }
+            let interval = bracketed.map(|(interval, _)| interval);
             let right = self.parse_expression(right_power, depth.saturating_add(1))?;
+            let future_kind = match operator.kind {
+                TokenKind::WeakUntil => Some(FutureKind::WeakUntil),
+                TokenKind::StrongRelease => Some(FutureKind::StrongRelease),
+                _ => None,
+            };
+            if let (Some(future_kind), Some((interval, interval_end))) = (future_kind, bracketed) {
+                let operator_span = (operator.start, interval_end);
+                left = self.lower_future(future_kind, interval, operator_span, left, right)?;
+                continue;
+            }
             let kind = match operator.kind {
                 TokenKind::Equivalent => NodeKind::Equivalent {
                     left: left.node,
@@ -257,7 +300,7 @@ impl Parser<'_> {
             }
             TokenKind::Future | TokenKind::Globally => {
                 self.advance();
-                let interval = self.parse_interval()?;
+                let (interval, _) = self.parse_interval()?;
                 let operand = self.parse_prefix(depth.saturating_add(1))?;
                 let kind = match token.kind {
                     TokenKind::Future => NodeKind::Future {
@@ -322,7 +365,8 @@ impl Parser<'_> {
         }
     }
 
-    fn parse_interval(&mut self) -> Option<Interval> {
+    /// Parses a bracketed interval, returning it with its closing-bracket end.
+    fn parse_interval(&mut self) -> Option<(Interval, usize)> {
         let opening = self.current();
         if opening.kind != TokenKind::LeftBracket {
             self.push_diagnostic(
@@ -409,7 +453,7 @@ impl Parser<'_> {
         }
         self.advance();
         match Interval::new(start, end) {
-            Ok(interval) => Some(interval),
+            Ok(interval) => Some((interval, closing.end)),
             Err(error) => {
                 self.push_diagnostic(
                     DiagnosticCode::InvalidInterval,
@@ -425,6 +469,97 @@ impl Parser<'_> {
                 None
             }
         }
+    }
+
+    /// Lowers one derived expression through tl-syntax and appends its nodes.
+    ///
+    /// The three-node charge is checked before anything is appended, and
+    /// validating the borrowed formula charges one work unit per existing node.
+    fn lower_future(
+        &mut self,
+        kind: FutureKind,
+        interval: Interval,
+        (operator_start, operator_end): (usize, usize),
+        left: Parsed,
+        right: Parsed,
+    ) -> Option<Parsed> {
+        let expression = Token {
+            kind: TokenKind::Invalid,
+            start: left.extent_start,
+            end: right.extent_end,
+        };
+        if self.nodes.len().saturating_add(FUTURE_LOWERING_NODE_CHARGE) > self.limits.max_nodes {
+            self.push_diagnostic(
+                DiagnosticCode::NodeLimit,
+                expression,
+                Vec::new(),
+                RecoveryAction::Stopped,
+                format!(
+                    "formula node count exceeds effective limit {}",
+                    self.limits.max_nodes
+                ),
+            );
+            self.stopped = true;
+            return None;
+        }
+        if !self.charge_work_units(self.nodes.len()) {
+            return None;
+        }
+        let root = NodeId(self.nodes.len().saturating_sub(1) as u32);
+        let lowered = Formula::new(self.profile, root, &self.nodes)
+            .map_err(|error| format!("pinned tl-syntax validation failed: {error}"))
+            .and_then(|formula| {
+                FutureLoweringRequest {
+                    request_identity: FUTURE_LOWERING_REQUEST_V1.as_bytes(),
+                    operator_profile: FUTURE_OPERATORS_V1.as_bytes(),
+                    kind: kind.as_str().as_bytes(),
+                    semantic_profile: self.profile.as_str().as_bytes(),
+                    formula,
+                    left: u64::from(left.node.0),
+                    right: u64::from(right.node.0),
+                    interval: Some(RawBounds::new(
+                        u64::from(interval.start()),
+                        u64::from(interval.end()),
+                    )),
+                    operator_span: Some(RawBounds::new(operator_start as u64, operator_end as u64)),
+                    expression_span: Some(RawBounds::new(
+                        left.extent_start as u64,
+                        right.extent_end as u64,
+                    )),
+                }
+                .lower()
+                .map_err(|refusal| format!("pinned tl-syntax lowering refused: {refusal}"))
+            });
+        let lowering = match lowered {
+            Ok(lowering) => lowering,
+            Err(message) => {
+                self.push_diagnostic(
+                    DiagnosticCode::ValidationFailure,
+                    expression,
+                    Vec::new(),
+                    RecoveryAction::Stopped,
+                    message,
+                );
+                self.stopped = true;
+                return None;
+            }
+        };
+        self.nodes.extend_from_slice(lowering.nodes());
+        let report = lowering.report();
+        self.lowerings.push(LoweringRecord {
+            kind: kind.into(),
+            operator_span: checked_span(operator_start, operator_end),
+            expression_span: checked_span(left.extent_start, right.extent_end),
+            left: report.left(),
+            right: report.right(),
+            first_generated: report.first_generated(),
+            root: report.root(),
+        });
+        Some(Parsed {
+            node: lowering.root(),
+            extent_start: left.extent_start,
+            extent_end: right.extent_end,
+        })
     }
 
     fn push_node(&mut self, kind: NodeKind, start: usize, end: usize) -> Option<NodeId> {
@@ -499,6 +634,27 @@ impl Parser<'_> {
             false
         } else {
             self.work += 1;
+            true
+        }
+    }
+
+    fn charge_work_units(&mut self, units: usize) -> bool {
+        if self.work.saturating_add(units) > self.limits.max_work {
+            let token = self.current();
+            self.push_diagnostic(
+                DiagnosticCode::WorkLimit,
+                token,
+                Vec::new(),
+                RecoveryAction::Stopped,
+                format!(
+                    "lexer/parser work exceeds effective limit {}",
+                    self.limits.max_work
+                ),
+            );
+            self.stopped = true;
+            false
+        } else {
+            self.work += units;
             true
         }
     }

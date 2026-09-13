@@ -35,4 +35,5 @@ application-specific name resolution is outside this crate.
 
 ## Traceability
 
-This need is realized by FR-001, FR-002, and FR-003 and verified by TM-001.
+This need is realized by FR-001, FR-002, FR-003, and FR-008 and verified by
+TM-001.

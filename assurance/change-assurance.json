@@ -102,7 +102,7 @@
         },
         {
           "id": "NFR-002-AC-2",
-          "statement": "The attribution record enumerates the source-inspected 953ee825..26b801d4 compiled-pin delta, distinguishes new API families tl-parse consumes from those it does not, and preserves the historical authorship basis.",
+          "statement": "The attribution record enumerates the source-inspected 26b801d4..e3651cde and 953ee825..26b801d4 compiled-pin deltas, distinguishes new API families tl-parse consumes from those it does not, and preserves the historical authorship basis.",
           "source_ids": ["NFR-002", "attribution", "dialect"]
         },
         {
@@ -124,7 +124,7 @@
         },
         {
           "id": "PRESERVE-clean-room-provenance",
-          "statement": "The clean-room authorship basis at tl-syntax 740182f1 remains recorded as a separate fact from compiled revision 26b801d4, whose pin is enforced by Cargo.toml and Cargo.lock. The attribution record enumerates the source-inspected delta from prior compiled revision 953ee825 and states which added API families tl-parse does and does not consume. The negative declaration is unchanged. The per-file SHA-256 tables and the local re-derivation gate remain removed under issue #15: the authorship basis is on a deleted branch and cannot be re-derived by anyone, so its digests recorded an unverifiable claim in a verifiable-looking shape.",
+          "statement": "The clean-room authorship basis at tl-syntax 740182f1 remains recorded as a separate fact from compiled revision e3651cde, whose pin is enforced by Cargo.toml and Cargo.lock. The attribution record enumerates the source-inspected deltas from prior compiled revisions 26b801d4 and 953ee825 and states which added API families tl-parse does and does not consume. The negative declaration is unchanged. The per-file SHA-256 tables and the local re-derivation gate remain removed under issue #15: the authorship basis is on a deleted branch and cannot be re-derived by anyone, so its digests recorded an unverifiable claim in a verifiable-looking shape.",
           "source_ids": ["NFR-002", "attribution", "dialect"]
         },
         {

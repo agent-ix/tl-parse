@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`26b801d4a68ebfe720062cfdb3c66b070ab60e92`, a commit that was reachable from
+`e3651cde5524c61cb9623ce39fcc9f0b90b99317`, a commit that was reachable from
 the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -38,6 +38,33 @@ checksum of it.
 ## Source-inspected compiled-pin delta
 
 The immediately preceding compiled pin was
+`26b801d4a68ebfe720062cfdb3c66b070ab60e92`. Source inspection of the exact
+range
+`26b801d4a68ebfe720062cfdb3c66b070ab60e92..e3651cde5524c61cb9623ce39fcc9f0b90b99317`
+found these changes:
+
+- the future-operator lowering family in `src/future.rs`
+  (`FutureLoweringRequest`, `FutureLowering`, `FutureLoweringReport`,
+  `FutureLoweringRefusal`, `FutureKind`, `UnsupportedFutureKind`, `RawBounds`,
+  and their identity constants), which lowers bounded `W` and `M` into primitive
+  nodes;
+- `MAX_FORMULA_DOCUMENT_NODES` moved from `src/document.rs` to `src/syntax.rs`
+  and is still re-exported at the crate root with the same value; and
+- a crate-private `SemanticProfile::ALL` constant, plus specification and
+  assurance records.
+
+tl-parse consumes the future-operator lowering family for the explicitly
+selected `tl-parse.clean-ascii/v2` dialect in
+`DIALECT-002-clean-ascii-v2.md`. That dialect was authored from the tl-syntax
+FR-009 requirement and the public lowering API, not from any third-party
+grammar. The v1 grammar is unaffected. `src/syntax.rs` introduced no operator or
+node-kind change in this range.
+
+Both licence files are byte-identical across `26b801d4` and `e3651cde`.
+
+### Earlier compiled-pin delta
+
+The compiled pin before that was
 `953ee825e5060335b4c79682f5f41a78c5a1bfae`. Source inspection of the exact
 range
 `953ee825e5060335b4c79682f5f41a78c5a1bfae..26b801d4a68ebfe720062cfdb3c66b070ab60e92`

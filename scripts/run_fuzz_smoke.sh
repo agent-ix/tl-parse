@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+target="${1:?usage: run_fuzz_smoke.sh <fuzz-target>}"
+if [[ ! -f "fuzz/corpus/$target/SHA256SUMS" ]]; then
+  echo "no checked seed corpus for fuzz target $target" >&2
+  exit 2
+fi
+
 scratch="$(mktemp -d)"
 preserve_scratch=0
 cleanup() {
@@ -17,8 +23,8 @@ seed_corpus="$scratch/seeds"
 artifact_dir="$scratch/artifacts"
 mkdir -p "$generated_corpus" "$seed_corpus" "$artifact_dir"
 while read -r _ filename; do
-  cp -- "fuzz/corpus/parser/$filename" "$seed_corpus/$filename"
-done < fuzz/corpus/parser/SHA256SUMS
+  cp -- "fuzz/corpus/$target/$filename" "$seed_corpus/$filename"
+done < "fuzz/corpus/$target/SHA256SUMS"
 
 if [[ -n "${ASAN_OPTIONS:-}" ]]; then
   echo "ambient ASAN_OPTIONS is not permitted" >&2
@@ -38,7 +44,7 @@ else
 fi
 
 set +e
-ASAN_OPTIONS=detect_leaks=1 rustup run nightly cargo fuzz run parser \
+ASAN_OPTIONS=detect_leaks=1 rustup run nightly cargo fuzz run "$target" \
   --target-dir "${CARGO_TARGET_DIR:-target}/fuzz" \
   "$generated_corpus" "$seed_corpus" -- \
   "-artifact_prefix=$artifact_dir/" -runs=64

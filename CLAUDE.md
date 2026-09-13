@@ -65,6 +65,7 @@ Backported from `agent-ix/ecaz`:
 src/lib.rs             # crate root
 src/lexer.rs           # bounded closed-dialect lexer
 src/parser.rs          # direct tl-syntax graph parser
+src/derived.rs         # clean-ascii v2 derived-operator report
 src/format.rs          # iterative bounded canonical formatter
 src/bin/tl-parse.rs    # thin validate/format CLI
 examples/              # the two domain producers: corpus replay, round-trip sweep
@@ -98,7 +99,7 @@ The constraint re-applies when this repository moves toward stable releases.
 
 Two different facts, and they no longer coincide.
 
-The crate **compiles against** `26b801d4a68ebfe720062cfdb3c66b070ab60e92`, the
+The crate **compiles against** `e3651cde5524c61cb9623ce39fcc9f0b90b99317`, the
 current reviewed tl-syntax `main`. The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
 move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and
