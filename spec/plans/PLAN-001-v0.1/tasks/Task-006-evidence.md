@@ -2,7 +2,7 @@
 id: Task-006
 title: "Exact-candidate evidence"
 type: Task
-status: done
+status: in_progress
 track: Evidence
 priority: P0
 relationships:
@@ -25,3 +25,6 @@ The retained `fc8e742cfb51` record has a passing post-seal collection summary,
 two passing sealed PGM-01 validations, and a checksum manifest covering every
 artifact. The envelope remains non-self-attesting; its separate post-seal
 summary records exact finalized-envelope validation.
+
+Reopened on 2026-09-13 to route the structured bounded-fuzz campaign results
+through the existing Quoin-owned intake and verify retained-byte identity.

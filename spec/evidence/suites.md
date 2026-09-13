@@ -19,6 +19,7 @@ type: SuiteRegistry
 | SUITE-007 | Shared assurance intake | `make assurance` | quire-cli 0.31.0, Quoin 0.23.1, engineering-assurance 0.2.0 | Integration |
 | SUITE-008 | Hosted candidate confirmation | Manual `workflow_dispatch` once for a finalized PR revision | GitHub Actions | Integration |
 | SUITE-009 | Parser conformance and round-trip | `make conformance roundtrip` | tl-parse corpus runner and round-trip sweep | Integration |
+| SUITE-010 | Structured bounded fuzz campaigns | `make fuzz-smoke` | `tl-parse.fuzz-campaign/v1` Rust producer and observed cargo-fuzz/nightly toolchain | Fuzz |
 
 Hosted CI intentionally has no push or pull-request trigger. Local `make ci` is
 the iteration gate; a hosted run is dispatched deliberately for a finalized
@@ -34,7 +35,7 @@ protected.
 
 ## Backing
 
-Five of the nine suites have a bound test. What that binding is, precisely,
+Six of the ten suites have a bound test. What that binding is, precisely,
 matters more than the count, because an earlier version of this section claimed
 those tests "actually invoke that suite's command" and **none of them does**:
 
@@ -45,6 +46,7 @@ those tests "actually invoke that suite's command" and **none of them does**:
 | SUITE-006 | TC-023 | reads `msrv.jsonl` and asserts the attested result, rather than running the MSRV check |
 | SUITE-007 | TC-023 | runs `scripts/assurance_chain.py` directly, so it covers the chain but not `pins` |
 | SUITE-009 | TC-023 | reads the two producers' retained results rather than running `make conformance roundtrip` |
+| SUITE-010 | TC-046 | reads the producer-owned structured campaign results and their retained Quoin bytes rather than inferring a verdict from libFuzzer console text |
 
 So these tests bind to the **retained output** of a suite, not to its
 invocation. That is the architecture working as intended — the whole point is

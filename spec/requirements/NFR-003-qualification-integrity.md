@@ -42,9 +42,15 @@ each retained input by digest and every attested result is derived from the
 producer's own bytes, so a *producer* that did not run yields an absent or empty
 input the chain names. That protects the five targets whose work is re-run
 inside `make assurance-inputs`. It does **not** protect a gate whose recipe
-writes nothing the chain reads: `fmt-check`, `lint`, `test`, `check-corpus`, `fuzz-build`, `fuzz-smoke`, `deny`, `audit-unsafe`, `rustdoc`, and the `quire validate` half of `spec`
+writes nothing the chain reads: `fmt-check`, `lint`, `test`, `check-corpus`, `fuzz-build`, `deny`, `audit-unsafe`, `rustdoc`, and the `quire validate` half of `spec`
 can each be neutered and every remaining check stays green. This was found by an
 adversarial review of this change, not predicted by it.
+
+`fuzz-smoke` leaves that unprotected list when TC-046 lands: it becomes a
+producer prerequisite of `assurance-inputs`, and the chain reads and retains
+one structured result for each target. This closes only the fuzz-result absence
+case; it does not qualify Make's execution controls or the other non-producer
+gates.
 
 The residue is recorded as an open unknown in the change-assurance declaration
 and tracked as `agent-ix/tl-parse#11`, which carries the reproduction.
@@ -89,7 +95,7 @@ coordinated scanner-and-expected-side edits.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-003-AC-1 | Every attested proof result is derived from the producer's own structured output; a producer whose output is absent, empty, or unreadable is an error naming the target that writes it, and never a pass. | Test (TC-023) |
+| NFR-003-AC-1 | Every attested proof result is derived from the producer's own structured output; a producer whose output is absent, empty, or unreadable is an error naming the target that writes it, and never a pass. | Test (TC-023, TC-046) |
 | NFR-003-AC-2 | Neither Quire nor Quoin executes a producer, demonstrated by stubbing every producer and requiring no invocation, together with a control that stubs Quoin and requires the chain to fail. | Test (TC-023) |
 | NFR-003-AC-3 | The twelve verification outcomes stay distinguishable, each demonstrated by a case that produced it and matched, with every negative paired with a positive control and a control naming a non-existent scenario refused. The dangling-control fixture owns its Quoin store, shares only produced inputs, resolves the repository store without requiring that leaf to exist, and proves the unmutated chain succeeds in the same scratch. | Test (TC-026) |
 | NFR-003-AC-4 | Every version-control-tracked SpecReview artifact has one unique normalized frontmatter identity; matching plain and quoted YAML spellings collide, and an empty tracked review population is refused rather than reported as unique. | Test (TC-029) |

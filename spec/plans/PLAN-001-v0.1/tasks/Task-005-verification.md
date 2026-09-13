@@ -2,7 +2,7 @@
 id: Task-005
 title: "Corpus, fuzz, CLI, and verification"
 type: Task
-status: done
+status: in_progress
 track: Verification
 priority: P0
 relationships:
@@ -23,3 +23,6 @@ Corpus hashes, seed consumption, successful round trips, CLI file/stdin/profile
 and exit-class tests, evidence contracts, code review, and gap analysis pass.
 Hosted CI remains manual-only and confirms the finalized PR revision after the
 retained Task-006 record is committed.
+
+Reopened on 2026-09-13 to replace console-only fuzz smoke execution with the
+FR-005-AC-2 structured Rust campaign result required by tl-parse#25.

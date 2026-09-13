@@ -7,6 +7,10 @@ description: "Chronological changes to the tl-parse v0.1 plan bundle."
 
 ## History
 
+- **2026-09-13** - Reopened Task-005 and Task-006 for tl-parse#25: specify a
+  Rust-owned structured bounded-fuzz campaign result, retain it through the
+  existing Quoin intake, and close SR-042/043/044/045's campaign-retention gap.
+
 - **2026-08-31** - Closed exact-head review follow-ups: failure propagation is
   behaviorally proved, traceability is 62/62 under a stable JSON completeness
   policy, oversized CLI input reports its true streamed byte count, formatter

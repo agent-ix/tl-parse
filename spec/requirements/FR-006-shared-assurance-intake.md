@@ -11,11 +11,11 @@ relationships:
 
 ## Description
 
-The repository shall produce its parser, formatter, corpus, round-trip and
-provenance results with its own tools in declared structured formats, and shall
-obtain every static specification fact from Quire and every retention,
-integrity, audit and receipt behaviour from Quoin, without either tool executing
-a producer and without a repository-local generic evidence framework.
+The repository shall produce its parser, formatter, corpus, round-trip, fuzz
+campaign, and provenance results with its own tools in declared structured
+formats, and shall obtain every static specification fact from Quire and every
+retention, integrity, audit and receipt behaviour from Quoin, without either tool
+executing a producer and without a repository-local generic evidence framework.
 
 ## Behavior
 
@@ -25,6 +25,11 @@ a producer and without a repository-local generic evidence framework.
 - One target, `make assurance-inputs`, runs the producers and writes their
   structured results. Everything downstream consumes those files and refuses to
   create them; an absent input is an error naming that target, never a skip.
+- The two `tl-parse.fuzz-campaign/v1` documents enter the existing Quoin
+  change-assurance path as separate proof results. The repository shall add no
+  generic collector or transcript scraper and shall derive each attested result
+  only from the normalized entry and domain outcome written by the Rust
+  producer.
 - Each proof attestation states the verdict read out of the bytes its producer
   wrote. No verdict is inferred from a transcript, an exit code alone, or a
   caller's expectation.
@@ -39,7 +44,7 @@ a producer and without a repository-local generic evidence framework.
 | ID | Criteria | Verification |
 |---|---|---|
 | FR-006-AC-1 | The adopted component versions are classified by the packaged Engineering Assurance compatibility matrix, not by a local restatement of it, and no component resolves from the internal mirror. | Test (TC-022) |
-| FR-006-AC-2 | Native parser, formatter, corpus, round-trip and test-census results are produced by this repository's tools in a declared structured format and transcribed by Quoin without Quoin or Quire executing the producer. | Test (TC-023) |
+| FR-006-AC-2 | Native parser, formatter, corpus, round-trip, fuzz-campaign, and test-census results are produced by this repository's tools in a declared structured format; both target-specific fuzz results are retained byte-identically as separate Quoin proof inputs, and neither Quoin nor Quire executes a producer. | Test (TC-023, TC-046) |
 | FR-006-AC-3 | Static specification, obligation, and coverage facts come from a Quire export that names every requirement in the repository, and Quire executes no producer. | Test (TC-024) |
 | FR-006-AC-5 | Pass, fail, unavailable, unsupported, inconclusive, not-computed, malformed, partial, stale, suspect, vacuous, and tampered remain twelve distinguishable states, each demonstrated and each negative paired with a positive control. | Test (TC-026) |
 | FR-006-AC-6 | A malformed source rejected with its declared diagnostic is reported as malformed, the count agrees with the corpus manifest's own declaration, and the state survives into the bytes Quoin retained. | Test (TC-027) |
@@ -49,4 +54,6 @@ a producer and without a repository-local generic evidence framework.
 
 Depends on the released Engineering Assurance, quire-cli, Quoin and ix-flow
 pins recorded in `assurance/pins.json`, and on FR-003, FR-004 and FR-005 for the
-domain behaviour whose results it transcribes.
+domain behaviour whose results it transcribes. Quoin issue 363 is required for
+future lossless binary crash-artifact attachment, not for the structured
+campaign-result bytes covered here.
