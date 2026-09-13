@@ -4,7 +4,8 @@
 use libfuzzer_sys::fuzz_target;
 use tl_parse::tl_syntax::SemanticProfile;
 use tl_parse::{
-    format_document, parse, parse_clean_ascii_v2, FormatLimits, ParseLimits, DIALECT_REVISION,
+    format_document, parse, parse_clean_ascii_v2, DiagnosticCode, FormatLimits, ParseLimits,
+    DIALECT_REVISION,
 };
 
 // Trace: TC-044, FR-008-AC-5
@@ -52,11 +53,23 @@ fuzz_target!(|data: &[u8]| {
         return;
     };
     // Lowering shares the left operand, so primitive text repeats it and the
-    // reparsed graph is larger. Only v1 acceptance under default limits and a
-    // canonical-text fixed point are required.
+    // reparsed graph is larger; chained left operands grow it exponentially.
+    // v1 must accept the text or refuse it only through a resource limit, and
+    // an accepted text must reach a canonical-text fixed point.
     let reparse_limits = ParseLimits::default();
     let primitive = parse(&text, SemanticProfile::ClosedTraceV1, reparse_limits);
-    let reparsed = primitive.document.expect("canonical text is primitive v1");
+    let Some(reparsed) = primitive.document else {
+        assert!(!primitive.diagnostics.is_empty());
+        assert!(primitive.diagnostics.iter().all(|diagnostic| matches!(
+            diagnostic.code,
+            DiagnosticCode::SourceLimit
+                | DiagnosticCode::TokenLimit
+                | DiagnosticCode::NodeLimit
+                | DiagnosticCode::DepthLimit
+                | DiagnosticCode::WorkLimit
+        )));
+        return;
+    };
     let again = format_document(
         &reparsed,
         FormatLimits {

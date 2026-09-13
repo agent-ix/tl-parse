@@ -14,4 +14,4 @@ description: "Contents of the tl-parse clean-ascii v2 derived future-operator pl
 | Dialect and requirement | complete | `docs/DIALECT-002-clean-ascii-v2.md`, FR-008 |
 | Parser lowering and report | complete | `src/lexer.rs`, `src/parser.rs`, `src/derived.rs` |
 | Acceptance matrix | complete | `tests/clean_ascii_v2.rs`, TC-039 through TC-045 |
-| Fuzz target and local gates | in progress | `fuzz/fuzz_targets/clean_ascii_v2.rs`, `fuzz/corpus/clean_ascii_v2`, plan log |
+| Fuzz target and local gates | complete | `fuzz/fuzz_targets/clean_ascii_v2.rs`, `fuzz/corpus/clean_ascii_v2`, plan log |

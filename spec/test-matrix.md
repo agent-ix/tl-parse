@@ -83,6 +83,6 @@ relationships:
 | TC-040 | Parse generated W/M/U/R/Boolean chains into the graph built by direct construction with tl-syntax lowering | Property | P0 | FR-008-AC-2 | ✅ implemented |
 | TC-041 | Attribute exact operator, expression, and lowered-node spans across whitespace, grouping, and nesting | Unit | P0 | FR-008-AC-2 | ✅ implemented |
 | TC-042 | Refuse interval-less, aliased, unsupported, malformed-bound, node-charge, and lowering-work inputs with stable codes and no document | Unit | P0 | FR-008-AC-3 | ✅ implemented |
-| TC-043 | Format lowered documents as primitive-only text that v1 accepts and v2 re-parses to the same text, byte-identical to direct construction | Property | P0 | FR-008-AC-4 | ✅ implemented |
+| TC-043 | Format lowered documents as primitive-only text that, within limits, v1 accepts and v2 re-parses to the same text, byte-identical to direct construction; beyond limits the reparse is refused only for resources | Property | P0 | FR-008-AC-4 | ✅ implemented |
 | TC-044 | Build and seed the clean-ascii v2 fuzz target and bound arbitrary-input outcomes | Fuzz | P1 | FR-008-AC-5 | ✅ implemented |
 | TC-045 | Serialize the derived report deterministically under a strict versioned identity that mutations change | Unit | P0 | FR-008-AC-6 | ✅ implemented |

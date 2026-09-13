@@ -236,7 +236,7 @@ fn v2_identity_is_explicit_and_v1_is_unchanged() {
     );
     assert_eq!(
         dialect_v2_document_digest(),
-        "dd8c652de4dbd26e7031310073fb5c657665f4cfd3e1f5b2040b9135da93ea5b"
+        "f3365451484a0585170d9382e253b8c39b75b77a20ca5e478629177b7faf3f73"
     );
 
     let report = v2("p0 W[0,1] p1");
@@ -406,6 +406,51 @@ fn v2_precedence_associativity_and_spans_are_exact() {
         NodeKind::Or { .. }
     ));
 
+    // W and M bind tighter than -> and <->, which stay right-associative.
+    let document = v2("p0 -> p1 W[0,1] p2").document.unwrap();
+    let NodeKind::Implies { left, right } = document.nodes()[document.root().0 as usize].kind
+    else {
+        panic!("root is not Implies");
+    };
+    assert_eq!(left, NodeId(0));
+    assert!(matches!(
+        document.nodes()[right.0 as usize].kind,
+        NodeKind::Or { .. }
+    ));
+    let document = v2("p0 M[0,1] p1 <-> p2").document.unwrap();
+    let NodeKind::Equivalent { left, right } = document.nodes()[document.root().0 as usize].kind
+    else {
+        panic!("root is not Equivalent");
+    };
+    assert!(matches!(
+        document.nodes()[left.0 as usize].kind,
+        NodeKind::And { .. }
+    ));
+    assert!(matches!(
+        document.nodes()[right.0 as usize].kind,
+        NodeKind::Proposition { .. }
+    ));
+
+    // The selected semantic profile reaches the request, document, and report;
+    // lowering itself is profile-independent.
+    let closed = v2("p0 W[1,2] p1");
+    let online = parse_clean_ascii_v2(
+        "p0 W[1,2] p1",
+        SemanticProfile::OnlinePrefixV1,
+        ParseLimits::default(),
+    );
+    assert_eq!(online.semantic_profile, SemanticProfile::OnlinePrefixV1);
+    let online_document = online.document.as_ref().unwrap();
+    assert_eq!(
+        online_document.semantic_profile(),
+        SemanticProfile::OnlinePrefixV1
+    );
+    assert_eq!(
+        online_document.nodes(),
+        closed.document.as_ref().unwrap().nodes()
+    );
+    assert_eq!(online.lowerings, closed.lowerings);
+
     // Parenthesized operands widen the expression span; interval whitespace
     // widens the operator span.
     let report = v2("(p0 W[0,1] p1) M[ 2 , 3 ] (p2)");
@@ -448,6 +493,20 @@ fn v2_refusals_are_typed_and_located() {
         ("p0 W[0,) p1", DiagnosticCode::UnexpectedToken, (7, 8)),
         ("p0 W[0,] p1", DiagnosticCode::UnexpectedToken, (7, 8)),
         ("p0 W[0,5s] p1", DiagnosticCode::UnknownIdentifier, (8, 9)),
+        (
+            "p0 W[0.5,1] p1",
+            DiagnosticCode::UnexpectedCharacter,
+            (6, 7),
+        ),
+        (
+            "p0 M[2026-01-01,1] p1",
+            DiagnosticCode::UnexpectedCharacter,
+            (9, 10),
+        ),
+        ("p0 W[0,inf] p1", DiagnosticCode::UnknownIdentifier, (7, 10)),
+        ("trueS[0,1]p1", DiagnosticCode::UnsupportedOperator, (4, 5)),
+        ("falseX[0,1]p1", DiagnosticCode::UnsupportedOperator, (5, 6)),
+        ("trueX p0", DiagnosticCode::UnknownIdentifier, (0, 5)),
     ];
     for (source, code, (start, end)) in cases {
         let report = v2(source);
@@ -484,7 +543,10 @@ fn v2_refusals_are_typed_and_located() {
             ..ParseLimits::default()
         },
     );
-    assert_eq!(report.diagnostics[0].code, DiagnosticCode::WorkLimit);
+    assert_eq!(
+        first_code(&report),
+        (DiagnosticCode::WorkLimit, span(0, 12))
+    );
     assert!(report.document.is_none() && report.lowerings.is_empty());
 }
 
@@ -500,6 +562,11 @@ fn every_checked_v2_fuzz_seed_is_bounded() {
         .unwrap();
     assert!(checksum.status.success());
     assert!(root.join("fuzz/fuzz_targets/clean_ascii_v2.rs").is_file());
+    // The build itself is proven by `make fuzz-build`; this pins that the
+    // manifest declares the target it builds.
+    let manifest = fs::read_to_string(root.join("fuzz/Cargo.toml")).unwrap();
+    assert!(manifest.contains("name = \"clean_ascii_v2\""));
+    assert!(manifest.contains("path = \"fuzz_targets/clean_ascii_v2.rs\""));
 
     let limits = ParseLimits {
         max_source_bytes: 4_096,
@@ -515,7 +582,7 @@ fn every_checked_v2_fuzz_seed_is_bounded() {
         .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("txt"))
         .collect::<Vec<_>>();
     paths.sort();
-    assert_eq!(paths.len(), 4);
+    assert_eq!(paths.len(), 5);
     let mut lowered = 0;
     for path in paths {
         let source = fs::read_to_string(&path).unwrap();
@@ -532,6 +599,30 @@ fn every_checked_v2_fuzz_seed_is_bounded() {
         }
     }
     assert!(lowered > 0, "no seed exercises lowering");
+}
+
+// Trace: TC-043, FR-008-AC-4
+#[test]
+fn v2_canonical_text_beyond_limits_is_refused_only_for_resources() {
+    // Chained left operands double in canonical text. The checked growth seed
+    // formats within fuzz output limits, but v1 refuses the reparse through a
+    // resource limit, which the fuzz target treats as a bounded outcome.
+    let seed =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fuzz/corpus/clean_ascii_v2/growth.txt");
+    let source = fs::read_to_string(seed).unwrap();
+    let document = v2(&source).document.unwrap();
+    let text = format_document(
+        &document,
+        FormatLimits {
+            max_output_bytes: 16_384,
+            max_work: 65_536,
+        },
+    )
+    .text
+    .unwrap();
+    let reparsed = parse(&text, PROFILE, ParseLimits::default());
+    assert!(reparsed.document.is_none());
+    assert_eq!(reparsed.diagnostics[0].code, DiagnosticCode::NodeLimit);
 }
 
 // Trace: TC-045, FR-008-AC-6
@@ -566,6 +657,16 @@ fn derived_report_is_deterministic_and_strict() {
     ));
     assert!(rejects(&|value| value["lowerings"][0]["kind"] = "U".into()));
     assert!(rejects(&|value| value["document"] = serde_json::Value::Null));
+    let diagnostic = serde_json::to_value(&v2("p0 W p1").diagnostics[0]).unwrap();
+    assert!(rejects(
+        &|value| value["diagnostics"] = vec![diagnostic.clone()].into()
+    ));
+    assert!(rejects(
+        &|value| value["stats"]["diagnostics_truncated"] = true.into()
+    ));
+    for field in ["left", "right", "root"] {
+        assert!(rejects(&|value| value["lowerings"][1][field] = 99.into()));
+    }
 
     let changes = |mutate: &dyn Fn(&mut serde_json::Value)| {
         let mut mutated = value.clone();

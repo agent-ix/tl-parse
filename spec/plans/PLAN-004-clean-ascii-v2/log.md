@@ -17,3 +17,13 @@ description: "Chronological changes to the clean-ascii v2 derived future-operato
   `tl-parse.derived-parse-report/v1` report, `tests/clean_ascii_v2.rs`, and the
   `clean_ascii_v2` fuzz target with four checked seeds. `make check-corpus`,
   `fuzz-build`, and `fuzz-smoke` now cover both fuzz targets.
+- **2026-09-12** - Applied the PR #32 code review and gap analysis:
+  - Canonical text of left-nested chains grows exponentially. FR-008 AC-4 and
+    DIALECT-002 now bound v1 acceptance by the effective limits, and the fuzz
+    target accepts a resource refusal on reparse. A fifth `growth` seed pins it.
+  - The lowering work refusal sits at the expression span.
+  - Unsupported names split after `true`/`false` before `[`.
+  - Decoding refuses a document with diagnostics and lowering records outside
+    the document.
+  - Added tests for the online profile, `->`/`<->` precedence, and dense,
+    timestamped, and unbounded intervals.

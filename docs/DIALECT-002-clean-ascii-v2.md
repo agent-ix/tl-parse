@@ -51,6 +51,11 @@ Keywords are case sensitive and must stand alone as identifiers. `w`, `m`,
 In v2 these are refused as unsupported operators, not as unknown identifiers,
 with or without a following interval. In v1 they remain unknown identifiers.
 
+Glued directly after `true` or `false`, `W`, `M`, and every `UNSUPPORTED`
+name split off as their own token only when `[` follows, exactly as v1 splits
+`U` and `R`. So `trueS[0,1]p1` is refused as an unsupported operator, while
+`trueX` stays one unknown identifier.
+
 ## Normative syntax and precedence
 
 ```text
@@ -95,5 +100,8 @@ The three nodes carry the expression span.
 ## Canonical rendering
 
 Canonical text is the DIALECT-001 rendering of the lowered primitive graph. It
-never contains `W` or `M`. Old v1 parsers therefore accept it, and parsing it
-under v2 yields the same text again.
+never contains `W` or `M`. Lowering shares the left operand, so the text repeats
+it, and a chain of left-nested derived operators doubles it at each level.
+Within the effective parse limits, old v1 parsers accept the text and parsing it
+under v2 yields the same text again. Beyond them, the reparse is refused through
+a resource diagnostic, never a grammar diagnostic.

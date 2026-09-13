@@ -116,10 +116,29 @@ impl TryFrom<DerivedParseReportWire> for DerivedParseReport {
     type Error = &'static str;
 
     fn try_from(wire: DerivedParseReportWire) -> Result<Self, Self::Error> {
-        if wire.document.is_none() && !wire.lowerings.is_empty() {
-            return Err("lowering records require a document");
+        let Some(document) = wire.document.as_ref() else {
+            if !wire.lowerings.is_empty() {
+                return Err("lowering records require a document");
+            }
+            return Ok(Self::from_wire(wire));
+        };
+        if !wire.diagnostics.is_empty() || wire.stats.diagnostics_truncated {
+            return Err("a document requires a diagnostic-free parse");
         }
-        Ok(Self {
+        let nodes = document.nodes().len();
+        let in_document = |id: NodeId| (id.0 as usize) < nodes;
+        if !wire.lowerings.iter().all(|record| {
+            in_document(record.left) && in_document(record.right) && in_document(record.root)
+        }) {
+            return Err("lowering records must name document nodes");
+        }
+        Ok(Self::from_wire(wire))
+    }
+}
+
+impl DerivedParseReport {
+    fn from_wire(wire: DerivedParseReportWire) -> Self {
+        Self {
             schema_version: wire.schema_version,
             dialect_revision: wire.dialect_revision,
             operator_profile: wire.operator_profile,
@@ -130,7 +149,7 @@ impl TryFrom<DerivedParseReportWire> for DerivedParseReport {
             document: wire.document,
             lowerings: wire.lowerings,
             diagnostics: wire.diagnostics,
-        })
+        }
     }
 }
 

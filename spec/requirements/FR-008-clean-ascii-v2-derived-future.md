@@ -70,8 +70,12 @@ AST, an evaluator branch, a user-authored Quire language, or a FRETish parser.
   Lowering records are present only with the document. The wire form rejects
   unknown fields. The v1 `ParseReport` wire form is unchanged.
 - **Formatting:** canonical output of a v2 document is the existing
-  primitive-only rendering. It contains no `W` or `M`, v1 accepts it, and
-  parsing it under v2 returns identical canonical text.
+  primitive-only rendering. It contains no `W` or `M`.
+  - Within the effective parse limits, v1 accepts it and parsing it under v2
+    returns identical canonical text.
+  - Lowering shares the left operand, so the text repeats it and left-nested
+    chains double it per level. A reparse beyond the limits is refused only
+    through a resource diagnostic.
 
 ## Acceptance Criteria
 
@@ -80,7 +84,7 @@ AST, an evaluator branch, a user-authored Quire language, or a FRETish parser.
 | FR-008-AC-1 | The v2 identity and normative record are explicit and digest-bound. v2 is selected only through its own entry point. v1 parsing, reports, and diagnostics are byte-unchanged and still reject derived spellings. | Test (TC-039) |
 | FR-008-AC-2 | Every accepted v2 source produces the same graph as direct construction with tl-syntax lowering. That includes W/M precedence and left associativity mixed with U/R and Boolean operators, parenthesized operands, and exact operator, expression, and node spans. | Test (TC-040, TC-041) |
 | FR-008-AC-3 | Each of these produces its stable diagnostic code at the offending span, with no document and no lowering record: interval-less W/M, lowercase or long aliases, `X` and past spellings, non-canonical, overflowing, inverted, open, or unit-bearing bounds, the three-node charge at the node limit, and the lowering work charge at the work limit. | Test (TC-042) |
-| FR-008-AC-4 | Canonical text of a lowered document contains only primitive operators, v1 accepts it, and v2 re-parsing reaches the same canonical text. The lowered document is byte-identical on the formula-v1 wire to the directly constructed one. | Test (TC-043) |
+| FR-008-AC-4 | Canonical text of a lowered document contains only primitive operators. Within the effective parse limits v1 accepts it and v2 re-parsing reaches the same canonical text; beyond them the reparse is refused only through a resource diagnostic. The lowered document is byte-identical on the formula-v1 wire to the directly constructed one. | Test (TC-043) |
 | FR-008-AC-5 | A checked-in `clean_ascii_v2` fuzz target builds and consumes its seeds. For arbitrary input it returns either a document with lowering records or bounded diagnostics, never panics, and never reports the v1 dialect identity. | Test (TC-044) |
 | FR-008-AC-6 | The derived report is deterministic across repeated parses and serializes under its own strict versioned identity. Unknown fields and a v1 schema identity are rejected, and mutations of the identity, record, or span fields change the report. | Test (TC-045) |
 

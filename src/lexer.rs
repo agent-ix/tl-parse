@@ -279,7 +279,9 @@ impl Lexer<'_> {
             None => true,
             Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
             Some(b'U' | b'R') => self.source.as_bytes().get(end + 1) == Some(&b'['),
-            Some(b'W' | b'M') if self.dialect == Dialect::V2 => {
+            Some(b'W' | b'M' | b'X' | b'Y' | b'O' | b'H' | b'S' | b'T')
+                if self.dialect == Dialect::V2 =>
+            {
                 self.source.as_bytes().get(end + 1) == Some(&b'[')
             }
             Some(_) => false,

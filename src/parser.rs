@@ -502,7 +502,7 @@ impl Parser<'_> {
             self.stopped = true;
             return None;
         }
-        if !self.charge_work_units(self.nodes.len()) {
+        if !self.charge_work_units(self.nodes.len(), expression) {
             return None;
         }
         let root = NodeId(self.nodes.len().saturating_sub(1) as u32);
@@ -638,9 +638,9 @@ impl Parser<'_> {
         }
     }
 
-    fn charge_work_units(&mut self, units: usize) -> bool {
+    /// Charges `units` of work, refusing at `token` (the offending expression).
+    fn charge_work_units(&mut self, units: usize, token: Token) -> bool {
         if self.work.saturating_add(units) > self.limits.max_work {
-            let token = self.current();
             self.push_diagnostic(
                 DiagnosticCode::WorkLimit,
                 token,
