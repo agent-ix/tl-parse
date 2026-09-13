@@ -1017,14 +1017,14 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // is not itself a failure. So the figures themselves are asserted: an
     // export reporting different totals has to move a number in this file.
     let totals = &parsed["totals"];
-    // 49 acceptance and validation criteria, 45 test cases, and ten
-    // reference-only suite declarations total 104. Four historical suite rows
-    // are deliberately unbacked per SR-007, so 100 rows are backed.
-    assert_eq!(totals["total"], 104, "matrix row count changed: {totals}");
+    // 49 acceptance and validation criteria plus 45 test cases total 94, all
+    // backed. The pinned Quire 0.31 contract keeps the ten suite declarations
+    // reference-only, so they do not enter this coverage total.
+    assert_eq!(totals["total"], 94, "matrix row count changed: {totals}");
     assert_eq!(
-        totals["backed"], 100,
-        "backed-row count changed: {totals}. If that number moved, reconcile the \
-         four deliberately reference-only suite rows before adjusting this assertion."
+        totals["backed"], 94,
+        "backed-row count changed: {totals}. Every counted row is backed; if that \
+         number moved, find the unbacked row rather than adjusting this assertion."
     );
     assert!(
         parsed["status_lies"].as_array().unwrap().is_empty(),
