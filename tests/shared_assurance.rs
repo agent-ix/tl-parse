@@ -794,6 +794,17 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
         "refuses-an-unnamed-outcome",
         "refuses-an-empty-stream",
         "accepts-the-real-run",
+        "accepts-the-real-fuzz-campaign",
+        "refuses-a-foreign-fuzz-protocol",
+        "refuses-a-cross-target-fuzz-result",
+        "refuses-a-cross-symbol-fuzz-result",
+        "refuses-a-mutated-fuzz-run-bound",
+        "refuses-a-mutated-fuzz-deadline",
+        "refuses-a-mutated-fuzz-manifest",
+        "refuses-a-mutated-fuzz-tool",
+        "refuses-a-mutated-fuzz-sanitizer",
+        "refuses-a-mutated-fuzz-process",
+        "refuses-disagreeing-fuzz-outcomes",
     ] {
         assert!(
             probes.iter().any(|probe| probe["probe"] == required),
