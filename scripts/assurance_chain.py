@@ -48,6 +48,7 @@ CORPUS_MANIFEST = ROOT / "corpus" / "v1" / "manifest.json"
 
 CONFORMANCE_PROTOCOL = "tl-parse.parser-conformance/v1"
 ROUNDTRIP_PROTOCOL = "tl-parse.roundtrip-sweep/v1"
+FUZZ_CAMPAIGN_PROTOCOL = "tl-parse.fuzz-campaign/v1"
 
 # Every proof obligation's retained result, and the media type its producer
 # declares. Stated rather than sniffed, because a producer's content type is
@@ -55,6 +56,11 @@ ROUNDTRIP_PROTOCOL = "tl-parse.roundtrip-sweep/v1"
 INPUTS = {
     "PROOF-parser-conformance": ("parser-conformance.jsonl", "application/x-ndjson"),
     "PROOF-roundtrip-property": ("roundtrip-property.jsonl", "application/x-ndjson"),
+    "PROOF-parser-fuzz-campaign": ("fuzz-parser-campaign.json", "application/json"),
+    "PROOF-clean-ascii-v2-fuzz-campaign": (
+        "fuzz-clean-ascii-v2-campaign.json",
+        "application/json",
+    ),
     "PROOF-test-census": ("test-census.json", "application/json"),
     "PROOF-quire-static-export": ("quire-static-export.json", "application/json"),
     "PROOF-msrv": ("msrv.jsonl", "application/x-ndjson"),
@@ -522,6 +528,44 @@ def _load_json(raw: str, path: Path) -> Any:
         ) from error
 
 
+def _fuzz_result(document: Any, proof_id: str, path: Path) -> str:
+    """Read one closed fuzz-campaign result without collapsing its domain state."""
+    expected_target = {
+        "PROOF-parser-fuzz-campaign": "parser",
+        "PROOF-clean-ascii-v2-fuzz-campaign": "clean_ascii_v2",
+    }[proof_id]
+    if not isinstance(document, dict) or document.get("protocol") != FUZZ_CAMPAIGN_PROTOCOL:
+        raise ChainError(f"{path.name} is not a {FUZZ_CAMPAIGN_PROTOCOL} document")
+    entries = document.get("entries")
+    campaign = document.get("campaign")
+    if not isinstance(entries, list) or len(entries) != 1 or not isinstance(campaign, dict):
+        raise ChainError(f"{path.name} must carry exactly one entry and one campaign object")
+    entry = entries[0]
+    if not isinstance(entry, dict) or campaign.get("target") != expected_target:
+        raise ChainError(f"{path.name} does not bind the declared target {expected_target}")
+    expected_symbol = f"fuzz:{expected_target}"
+    if entry.get("symbol") != expected_symbol:
+        raise ChainError(f"{path.name} does not bind the declared symbol {expected_symbol}")
+    domain = campaign.get("domainOutcome")
+    if entry.get("domainOutcome") != domain:
+        raise ChainError(f"{path.name} entry and campaign domain outcomes disagree")
+    mapping = {
+        "pass": ("pass", "passed"),
+        "fail": ("fail", "failed"),
+        "unavailable": ("skip", "unavailable"),
+        "suspect": ("fail", "failed"),
+    }
+    if domain not in mapping:
+        raise ChainError(f"{path.name} declares unknown fuzz domain outcome {domain!r}")
+    normalized, attested = mapping[domain]
+    if entry.get("outcome") != normalized:
+        raise ChainError(
+            f"{path.name} maps domain outcome {domain!r} to {entry.get('outcome')!r}; "
+            f"expected {normalized!r}"
+        )
+    return attested
+
+
 def derive_result(proof_id: str, path: Path) -> str:
     """Read the producer's own structured verdict out of the bytes it wrote.
 
@@ -544,6 +588,8 @@ def derive_result(proof_id: str, path: Path) -> str:
     if proof_id in ("PROOF-parser-conformance", "PROOF-roundtrip-property"):
         rows = [_load_json(line, path) for line in raw.splitlines() if line.strip()]
         return _rows_result(rows, path.name)
+    if proof_id in ("PROOF-parser-fuzz-campaign", "PROOF-clean-ascii-v2-fuzz-campaign"):
+        return _fuzz_result(_load_json(raw, path), proof_id, path)
     if proof_id == "PROOF-test-census":
         return _rows_result(_load_json(raw, path)["entries"], path.name)
     if proof_id == "PROOF-quire-static-export":
@@ -677,6 +723,7 @@ def run_chain(candidate_revision: str, workspace: Path) -> dict[str, Any]:
     # -- 1. the honest path: seal, retain, and get the bytes back unchanged ---
     selections: dict[str, str] = {}
     observed_results: dict[str, str] = {}
+    retained_outputs: dict[str, str] = {}
     retained_conformance: bytes = b""
     for proof_id, path in inputs.items():
         media_type = INPUTS[proof_id][1]
@@ -692,6 +739,7 @@ def run_chain(candidate_revision: str, workspace: Path) -> dict[str, Any]:
         detail = json.loads(taken.stdout)
         retained = Path(detail["directory"]) / "output.bin"
         identical = retained.read_bytes() == path.read_bytes()
+        retained_outputs[proof_id] = str(retained)
         selections[proof_id] = sealed["digest"]
         if proof_id == "PROOF-parser-conformance":
             retained_conformance = retained.read_bytes()
@@ -713,6 +761,29 @@ def run_chain(candidate_revision: str, workspace: Path) -> dict[str, Any]:
         None,
         all(result == "passed" for result in observed_results.values()),
         observed_results,
+    )
+    scenario(
+        "retain-both-fuzz-campaign-results-byte-identically",
+        "pass",
+        all(
+            Path(retained_outputs[proof_id]).read_bytes() == inputs[proof_id].read_bytes()
+            for proof_id in (
+                "PROOF-parser-fuzz-campaign",
+                "PROOF-clean-ascii-v2-fuzz-campaign",
+            )
+        ),
+        {
+            proof_id: {
+                "retained": retained_outputs[proof_id],
+                "produced_sha256": digest_of(inputs[proof_id].read_bytes()),
+                "retained_sha256": digest_of(Path(retained_outputs[proof_id]).read_bytes()),
+                "bytes": inputs[proof_id].stat().st_size,
+            }
+            for proof_id in (
+                "PROOF-parser-fuzz-campaign",
+                "PROOF-clean-ascii-v2-fuzz-campaign",
+            )
+        },
     )
 
     # -- 1b. malformed input stays malformed ---------------------------------
@@ -1181,6 +1252,52 @@ def adapter_probes(workspace: Path) -> list[dict[str, Any]]:
             "detail": {"outcome": "mangled"},
         }
     )
+
+    # Probes 8-11: the fuzz result consumer binds the closed protocol, target,
+    # symbol and two agreeing outcome fields. A mutation of any identity is
+    # refused rather than attributed to the wrong proof.
+    fuzz_path = inputs["PROOF-parser-fuzz-campaign"]
+    fuzz_document = _load_json(fuzz_path.read_text(encoding="utf-8"), fuzz_path)
+    results.append(
+        {
+            "probe": "accepts-the-real-fuzz-campaign",
+            "state": "pass",
+            "matched": _fuzz_result(fuzz_document, "PROOF-parser-fuzz-campaign", fuzz_path)
+            == "passed",
+            "detail": {"target": "parser"},
+        }
+    )
+    fuzz_mutations = {
+        "refuses-a-foreign-fuzz-protocol": ("protocol", "other.fuzz/v1"),
+        "refuses-a-cross-target-fuzz-result": ("campaign.target", "clean_ascii_v2"),
+        "refuses-a-cross-symbol-fuzz-result": ("entries.0.symbol", "fuzz:clean_ascii_v2"),
+        "refuses-disagreeing-fuzz-outcomes": ("entries.0.domainOutcome", "suspect"),
+    }
+    for probe, (field, value) in fuzz_mutations.items():
+        mutated = json.loads(json.dumps(fuzz_document))
+        if field == "protocol":
+            mutated["protocol"] = value
+        elif field == "campaign.target":
+            mutated["campaign"]["target"] = value
+        elif field == "entries.0.symbol":
+            mutated["entries"][0]["symbol"] = value
+        elif field == "entries.0.domainOutcome":
+            mutated["entries"][0]["domainOutcome"] = value
+        else:
+            raise ChainError(f"unknown fuzz mutation field {field}")
+        refused = False
+        try:
+            _fuzz_result(mutated, "PROOF-parser-fuzz-campaign", fuzz_path)
+        except ChainError:
+            refused = True
+        results.append(
+            {
+                "probe": probe,
+                "state": "unsupported",
+                "matched": refused,
+                "detail": {"field": field, "value": value},
+            }
+        )
 
     return results
 

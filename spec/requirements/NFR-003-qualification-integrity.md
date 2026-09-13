@@ -40,17 +40,16 @@ own execution controls to notice.
 A structural backstop exists but covers only part of the gate set. Quoin binds
 each retained input by digest and every attested result is derived from the
 producer's own bytes, so a *producer* that did not run yields an absent or empty
-input the chain names. That protects the five targets whose work is re-run
+input the chain names. That protects the seven targets whose work is re-run
 inside `make assurance-inputs`. It does **not** protect a gate whose recipe
 writes nothing the chain reads: `fmt-check`, `lint`, `test`, `check-corpus`, `fuzz-build`, `deny`, `audit-unsafe`, `rustdoc`, and the `quire validate` half of `spec`
 can each be neutered and every remaining check stays green. This was found by an
 adversarial review of this change, not predicted by it.
 
-`fuzz-smoke` leaves that unprotected list when TC-046 lands: it becomes a
-producer prerequisite of `assurance-inputs`, and the chain reads and retains
-one structured result for each target. This closes only the fuzz-result absence
-case; it does not qualify Make's execution controls or the other non-producer
-gates.
+`fuzz-smoke` now leaves that unprotected list: it is a producer prerequisite of
+`assurance-inputs`, and the chain reads and retains one structured result for
+each target. This closes only the fuzz-result absence case; it does not qualify
+Make's execution controls or the other non-producer gates.
 
 The residue is recorded as an open unknown in the change-assurance declaration
 and tracked as `agent-ix/tl-parse#11`, which carries the reproduction.
