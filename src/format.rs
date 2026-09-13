@@ -1,4 +1,6 @@
-use tl_syntax::{Formula, FormulaDocument, Interval, NodeId, NodeKind};
+use tl_syntax::{
+    Formula, FormulaDocument, FormulaSchemaVersion, Interval, NodeId, NodeKind, SemanticProfile,
+};
 
 use crate::{FormatError, FormatErrorCode, FormatLimits, FormatReport, FormatStats};
 
@@ -13,6 +15,21 @@ pub fn format_document(document: &FormulaDocument, limits: FormatLimits) -> Form
             format!("pinned tl-syntax validation failed: {error}"),
         ),
     }
+}
+
+/// Canonically formats an origin-complete formula-v2 document as clean-ascii/v3.
+pub fn format_clean_ascii_v3(document: &FormulaDocument, limits: FormatLimits) -> FormatReport {
+    if document.schema_version() != FormulaSchemaVersion::V2
+        || document.semantic_profile() != SemanticProfile::OriginCompleteHistoryV1
+    {
+        return failed_report(
+            limits.clamped(),
+            FormatStats::default(),
+            FormatErrorCode::InvalidGraph,
+            "clean-ascii/v3 requires formula-v2 with mltl.origin-complete-history/v1".to_owned(),
+        );
+    }
+    format_document(document, limits)
 }
 
 /// Canonically formats a validated formula without recursive graph traversal.
@@ -199,6 +216,30 @@ fn interval_operator(operator: &str, interval: Interval) -> String {
     format!("{operator}[{},{}]", interval.start(), interval.end())
 }
 
+fn temporal_binary_actions(
+    actions: &mut Vec<Action>,
+    left: NodeId,
+    operator: &str,
+    interval: Interval,
+    right: NodeId,
+) {
+    actions.push(Action::Node(
+        right,
+        Context::Binary {
+            precedence: 5,
+            group_equal: true,
+        },
+    ));
+    actions.push(Action::Owned(interval_operator(operator, interval)));
+    actions.push(Action::Node(
+        left,
+        Context::Binary {
+            precedence: 5,
+            group_equal: false,
+        },
+    ));
+}
+
 fn push_node_actions(actions: &mut Vec<Action>, kind: NodeKind) {
     match kind {
         NodeKind::False => actions.push(Action::Static("false")),
@@ -230,52 +271,50 @@ fn push_node_actions(actions: &mut Vec<Action>, kind: NodeKind) {
             interval,
             left,
             right,
-        } => {
-            actions.push(Action::Node(
-                right,
-                Context::Binary {
-                    precedence: 5,
-                    group_equal: true,
-                },
-            ));
-            actions.push(Action::Owned(interval_operator("U", interval)));
-            actions.push(Action::Node(
-                left,
-                Context::Binary {
-                    precedence: 5,
-                    group_equal: false,
-                },
-            ));
-        }
+        } => temporal_binary_actions(actions, left, "U", interval, right),
         NodeKind::Release {
             interval,
             left,
             right,
-        } => {
-            actions.push(Action::Node(
-                right,
-                Context::Binary {
-                    precedence: 5,
-                    group_equal: true,
-                },
-            ));
-            actions.push(Action::Owned(interval_operator("R", interval)));
-            actions.push(Action::Node(
-                left,
-                Context::Binary {
-                    precedence: 5,
-                    group_equal: false,
-                },
-            ));
+        } => temporal_binary_actions(actions, left, "R", interval, right),
+        NodeKind::Once { interval, operand } => {
+            actions.push(Action::Node(operand, Context::Prefix));
+            actions.push(Action::Owned(interval_operator("O", interval)));
         }
+        NodeKind::Historically { interval, operand } => {
+            actions.push(Action::Node(operand, Context::Prefix));
+            actions.push(Action::Owned(interval_operator("H", interval)));
+        }
+        NodeKind::StrongPrevious { operand } => {
+            actions.push(Action::Node(operand, Context::Prefix));
+            actions.push(Action::Static("Y"));
+        }
+        NodeKind::Since {
+            interval,
+            left,
+            right,
+        } => temporal_binary_actions(actions, left, "S", interval, right),
+        NodeKind::Triggered {
+            interval,
+            left,
+            right,
+        } => temporal_binary_actions(actions, left, "T", interval, right),
     }
 }
 
 fn precedence(kind: NodeKind) -> u8 {
     match kind {
         NodeKind::False | NodeKind::True | NodeKind::Proposition { .. } => 7,
-        NodeKind::Not { .. } | NodeKind::Future { .. } | NodeKind::Globally { .. } => 6,
-        NodeKind::Until { .. } | NodeKind::Release { .. } => 5,
+        NodeKind::Not { .. }
+        | NodeKind::Future { .. }
+        | NodeKind::Globally { .. }
+        | NodeKind::Once { .. }
+        | NodeKind::Historically { .. }
+        | NodeKind::StrongPrevious { .. } => 6,
+        NodeKind::Until { .. }
+        | NodeKind::Release { .. }
+        | NodeKind::Since { .. }
+        | NodeKind::Triggered { .. } => 5,
         NodeKind::And { .. } => 4,
         NodeKind::Or { .. } => 3,
         NodeKind::Implies { .. } => 2,
@@ -288,13 +327,18 @@ fn operands(kind: NodeKind) -> [Option<NodeId>; 2] {
         NodeKind::False | NodeKind::True | NodeKind::Proposition { .. } => [None, None],
         NodeKind::Not { operand }
         | NodeKind::Future { operand, .. }
-        | NodeKind::Globally { operand, .. } => [Some(operand), None],
+        | NodeKind::Globally { operand, .. }
+        | NodeKind::Once { operand, .. }
+        | NodeKind::Historically { operand, .. }
+        | NodeKind::StrongPrevious { operand } => [Some(operand), None],
         NodeKind::And { left, right }
         | NodeKind::Or { left, right }
         | NodeKind::Implies { left, right }
         | NodeKind::Equivalent { left, right }
         | NodeKind::Until { left, right, .. }
-        | NodeKind::Release { left, right, .. } => [Some(left), Some(right)],
+        | NodeKind::Release { left, right, .. }
+        | NodeKind::Since { left, right, .. }
+        | NodeKind::Triggered { left, right, .. } => [Some(left), Some(right)],
     }
 }
 

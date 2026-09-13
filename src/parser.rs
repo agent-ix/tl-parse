@@ -42,6 +42,7 @@ pub(crate) fn parse_dialect(
     let mut parser = Parser {
         source,
         profile,
+        dialect,
         limits,
         tokens: lexed.tokens,
         cursor: 0,
@@ -88,7 +89,12 @@ pub(crate) fn parse_dialect(
 
     if !parser.had_error && !parser.stopped {
         if let Some(root) = root {
-            match FormulaDocument::new(profile, root.node, std::mem::take(&mut parser.nodes)) {
+            let nodes = std::mem::take(&mut parser.nodes);
+            let document = match parser.dialect {
+                Dialect::V1 | Dialect::V2 => FormulaDocument::new(profile, root.node, nodes),
+                Dialect::V3 => FormulaDocument::new_v2(profile, root.node, nodes),
+            };
+            match document {
                 Ok(document) => report.document = Some(document),
                 Err(error) => {
                     let eof = parser.current();
@@ -159,6 +165,7 @@ pub fn source_limit_report(
 struct Parser<'a> {
     source: &'a str,
     profile: SemanticProfile,
+    dialect: Dialect,
     limits: ParseLimits,
     tokens: Vec<Token>,
     cursor: usize,
@@ -198,7 +205,9 @@ impl Parser<'_> {
                 TokenKind::Until
                 | TokenKind::Release
                 | TokenKind::WeakUntil
-                | TokenKind::StrongRelease => (5, 6),
+                | TokenKind::StrongRelease
+                | TokenKind::Since
+                | TokenKind::Triggered => (5, 6),
                 _ => break,
             };
             if left_power < minimum_binding_power {
@@ -211,6 +220,8 @@ impl Parser<'_> {
                     | TokenKind::Release
                     | TokenKind::WeakUntil
                     | TokenKind::StrongRelease
+                    | TokenKind::Since
+                    | TokenKind::Triggered
             );
             let bracketed = if temporal {
                 Some(self.parse_interval()?)
@@ -252,6 +263,16 @@ impl Parser<'_> {
                     right: right.node,
                 },
                 TokenKind::Release => NodeKind::Release {
+                    interval: interval?,
+                    left: left.node,
+                    right: right.node,
+                },
+                TokenKind::Since => NodeKind::Since {
+                    interval: interval?,
+                    left: left.node,
+                    right: right.node,
+                },
+                TokenKind::Triggered => NodeKind::Triggered {
                     interval: interval?,
                     left: left.node,
                     right: right.node,
@@ -314,6 +335,34 @@ impl Parser<'_> {
                     _ => return None,
                 };
                 self.push_parsed_node(kind, token.start, operand.extent_end)
+            }
+            TokenKind::Once | TokenKind::Historically => {
+                self.advance();
+                let (interval, _) = self.parse_interval()?;
+                let operand = self.parse_prefix(depth.saturating_add(1))?;
+                let kind = match token.kind {
+                    TokenKind::Once => NodeKind::Once {
+                        interval,
+                        operand: operand.node,
+                    },
+                    TokenKind::Historically => NodeKind::Historically {
+                        interval,
+                        operand: operand.node,
+                    },
+                    _ => return None,
+                };
+                self.push_parsed_node(kind, token.start, operand.extent_end)
+            }
+            TokenKind::StrongPrevious => {
+                self.advance();
+                let operand = self.parse_prefix(depth.saturating_add(1))?;
+                self.push_parsed_node(
+                    NodeKind::StrongPrevious {
+                        operand: operand.node,
+                    },
+                    token.start,
+                    operand.extent_end,
+                )
             }
             TokenKind::LeftParenthesis => {
                 self.advance();

@@ -131,13 +131,18 @@ fn graph_is_topological_and_nodes_retain_full_source_spans() {
         match node.kind {
             NodeKind::Not { operand }
             | NodeKind::Future { operand, .. }
-            | NodeKind::Globally { operand, .. } => assert!((operand.0 as usize) < index),
+            | NodeKind::Globally { operand, .. }
+            | NodeKind::Once { operand, .. }
+            | NodeKind::Historically { operand, .. }
+            | NodeKind::StrongPrevious { operand } => assert!((operand.0 as usize) < index),
             NodeKind::And { left, right }
             | NodeKind::Or { left, right }
             | NodeKind::Implies { left, right }
             | NodeKind::Equivalent { left, right }
             | NodeKind::Until { left, right, .. }
-            | NodeKind::Release { left, right, .. } => {
+            | NodeKind::Release { left, right, .. }
+            | NodeKind::Since { left, right, .. }
+            | NodeKind::Triggered { left, right, .. } => {
                 assert!((left.0 as usize) < index);
                 assert!((right.0 as usize) < index);
             }
