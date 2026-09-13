@@ -13,5 +13,8 @@ targets with fixed 64-execution and 300-second bounds, LeakSanitizer enabled,
 and digest-verified copies of every declared seed. Each run emits a typed
 `tl-parse.fuzz-campaign/v1` result; crash artifacts are represented by bounded
 metadata identities while lossless binary attachment remains tracked by
-`agent-ix/quoin#363`. Longer libFuzzer campaigns are supplementary population
-evidence, not a universal proof.
+`agent-ix/quoin#363`. The tool's `validate` mode is also the Rust-owned result
+adapter: it refuses mutations to the protocol, target, trace, bounds, manifest,
+tool, sanitizer, process, outcome, limitation, or artifact identities before
+the existing Python driver invokes Quoin. Longer libFuzzer campaigns are
+supplementary population evidence, not a universal proof.

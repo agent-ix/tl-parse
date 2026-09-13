@@ -26,10 +26,13 @@ executing a producer and without a repository-local generic evidence framework.
   structured results. Everything downstream consumes those files and refuses to
   create them; an absent input is an error naming that target, never a skip.
 - The two `tl-parse.fuzz-campaign/v1` documents enter the existing Quoin
-  change-assurance path as separate proof results. The repository shall add no
-  generic collector or transcript scraper and shall derive each attested result
-  only from the normalized entry and domain outcome written by the Rust
-  producer.
+  change-assurance path as separate proof results. The repository-owned Rust
+  campaign tool shall validate and map the complete closed result contract.
+  The existing Python driver may invoke that Rust adapter and pass its result to
+  Quoin but contains no fuzz-result validation or outcome-mapping logic. The
+  repository adds no generic collector or transcript scraper, and each attested
+  result derives only from the normalized entry and domain outcome written by
+  the Rust producer.
 - Each proof attestation states the verdict read out of the bytes its producer
   wrote. No verdict is inferred from a transcript, an exit code alone, or a
   caller's expectation.

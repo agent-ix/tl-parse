@@ -18,7 +18,8 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use command_group::{CommandGroup, GroupChild};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use tempfile::TempDir;
 
@@ -62,9 +63,17 @@ impl Target {
             Self::CleanAsciiV2 => "fuzz:clean_ascii_v2",
         }
     }
+
+    fn from_proof_id(value: &OsStr) -> Option<Self> {
+        match value.to_str() {
+            Some("PROOF-parser-fuzz-campaign") => Some(Self::Parser),
+            Some("PROOF-clean-ascii-v2-fuzz-campaign") => Some(Self::CleanAsciiV2),
+            _ => None,
+        }
+    }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum DomainOutcome {
     Pass,
@@ -91,7 +100,7 @@ impl DomainOutcome {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum NormalizedOutcome {
     Pass,
@@ -99,7 +108,7 @@ enum NormalizedOutcome {
     Skip,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum ElapsedClass {
     NotRun,
@@ -253,7 +262,7 @@ struct SanitizerReport {
     asan_options: Option<&'static str>,
 }
 
-#[derive(Clone, Copy, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum SanitizerState {
     NotChecked,
@@ -292,13 +301,84 @@ impl From<ProcessState> for ProcessReport {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum ProcessStateName {
     NotStarted,
     Exited,
     TimedOut,
     SupervisionFailed,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReadCampaignDocument {
+    protocol: String,
+    entries: Vec<ReadNormalizedEntry>,
+    campaign: ReadCampaign,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadNormalizedEntry {
+    symbol: String,
+    outcome: NormalizedOutcome,
+    trace_ids: Vec<String>,
+    domain_outcome: DomainOutcome,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadCampaign {
+    target: String,
+    requested_runs: u32,
+    deadline_seconds: u64,
+    seed_manifest: ReadSeedManifest,
+    tools: ReadTools,
+    sanitizer: ReadSanitizer,
+    process: ReadProcess,
+    elapsed_time_class: ElapsedClass,
+    domain_outcome: DomainOutcome,
+    limitations: Vec<String>,
+    artifacts: Vec<ReadArtifact>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadSeedManifest {
+    path: String,
+    sha256: Option<String>,
+    count: Option<u32>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadTools {
+    nightly_rust: Option<String>,
+    cargo_fuzz: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadSanitizer {
+    leak_sanitizer: SanitizerState,
+    asan_options: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadProcess {
+    state: ProcessStateName,
+    exit_code: Option<i32>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadArtifact {
+    name: String,
+    media_type: String,
+    byte_length: u64,
+    sha256: String,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -331,6 +411,271 @@ struct Execution {
 
 fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
+}
+
+fn exact_object_fields(value: &Value, fields: &[&str], name: &str) -> Result<(), String> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| format!("{name} is not an object"))?;
+    let actual = object.keys().map(String::as_str).collect::<BTreeSet<_>>();
+    let expected = fields.iter().copied().collect::<BTreeSet<_>>();
+    if actual != expected {
+        return Err(format!("{name} fields are not the closed protocol fields"));
+    }
+    Ok(())
+}
+
+fn validate_result_shape(value: &Value) -> Result<(), String> {
+    exact_object_fields(value, &["protocol", "entries", "campaign"], "document")?;
+    let entries = value["entries"]
+        .as_array()
+        .ok_or_else(|| "entries is not an array".to_owned())?;
+    if entries.len() != 1 {
+        return Err("entries must contain exactly one result".to_owned());
+    }
+    exact_object_fields(
+        &entries[0],
+        &["symbol", "outcome", "traceIds", "domainOutcome"],
+        "entry",
+    )?;
+    let campaign = &value["campaign"];
+    exact_object_fields(
+        campaign,
+        &[
+            "target",
+            "requestedRuns",
+            "deadlineSeconds",
+            "seedManifest",
+            "tools",
+            "sanitizer",
+            "process",
+            "elapsedTimeClass",
+            "domainOutcome",
+            "limitations",
+            "artifacts",
+        ],
+        "campaign",
+    )?;
+    exact_object_fields(
+        &campaign["seedManifest"],
+        &["path", "sha256", "count"],
+        "seedManifest",
+    )?;
+    exact_object_fields(&campaign["tools"], &["nightlyRust", "cargoFuzz"], "tools")?;
+    exact_object_fields(
+        &campaign["sanitizer"],
+        &["leakSanitizer", "asanOptions"],
+        "sanitizer",
+    )?;
+    exact_object_fields(&campaign["process"], &["state", "exitCode"], "process")?;
+    let artifacts = campaign["artifacts"]
+        .as_array()
+        .ok_or_else(|| "artifacts is not an array".to_owned())?;
+    for artifact in artifacts {
+        exact_object_fields(
+            artifact,
+            &["name", "mediaType", "byteLength", "sha256"],
+            "artifact",
+        )?;
+    }
+    Ok(())
+}
+
+fn bounded_result_bytes(path: &Path) -> Result<Vec<u8>, String> {
+    let metadata = fs::symlink_metadata(path)
+        .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
+    if !metadata.file_type().is_file() || metadata.len() > MAX_FILE_BYTES {
+        return Err(format!(
+            "{} is not a bounded regular, non-symlink result",
+            path.display()
+        ));
+    }
+    let mut bytes = Vec::new();
+    File::open(path)
+        .and_then(|file| file.take(MAX_FILE_BYTES + 1).read_to_end(&mut bytes))
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > MAX_FILE_BYTES {
+        return Err(format!(
+            "{} grew beyond its result byte limit",
+            path.display()
+        ));
+    }
+    Ok(bytes)
+}
+
+fn lower_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn validate_campaign_result(
+    root: &Path,
+    target: Target,
+    raw: &[u8],
+) -> Result<&'static str, String> {
+    let value: Value = serde_json::from_slice(raw)
+        .map_err(|error| format!("campaign result is not readable JSON: {error}"))?;
+    validate_result_shape(&value)?;
+    let document: ReadCampaignDocument = serde_json::from_value(value)
+        .map_err(|error| format!("campaign result is not the typed protocol: {error}"))?;
+    if document.protocol != PROTOCOL {
+        return Err(format!("campaign result is not {PROTOCOL}"));
+    }
+    let [entry] = document.entries.as_slice() else {
+        return Err("campaign result must contain exactly one entry".to_owned());
+    };
+    let campaign = &document.campaign;
+    if campaign.target != target.as_str() || entry.symbol != target.symbol() {
+        return Err("campaign target, proof, and symbol identities disagree".to_owned());
+    }
+    if entry.trace_ids
+        != [
+            "TC-047",
+            "FR-005-AC-2",
+            "FR-006-AC-2",
+            "NFR-003-AC-1",
+            "SUITE-010",
+        ]
+    {
+        return Err("campaign result does not bind the declared trace identities".to_owned());
+    }
+    if campaign.requested_runs != RUNS || campaign.deadline_seconds != DEADLINE.as_secs() {
+        return Err("campaign result does not bind the fixed run/deadline bounds".to_owned());
+    }
+
+    let expected_manifest = format!("fuzz/corpus/{}/SHA256SUMS", target.as_str());
+    if campaign.seed_manifest.path != expected_manifest {
+        return Err("campaign result does not bind the target seed manifest".to_owned());
+    }
+    match (
+        campaign.seed_manifest.sha256.as_deref(),
+        campaign.seed_manifest.count,
+    ) {
+        (None, None) => {}
+        (Some(digest), Some(count)) => {
+            let manifest_bytes = bounded_result_bytes(&root.join(&expected_manifest))?;
+            let declared_count = manifest_bytes
+                .split(|byte| *byte == b'\n')
+                .filter(|line| line.iter().any(|byte| !byte.is_ascii_whitespace()))
+                .count();
+            if !lower_sha256(digest)
+                || digest != sha256_hex(&manifest_bytes)
+                || count == 0
+                || count > u32::try_from(MAX_SEEDS).unwrap_or(u32::MAX)
+                || usize::try_from(count).ok() != Some(declared_count)
+            {
+                return Err(
+                    "campaign seed-manifest identity does not match the repository".to_owned(),
+                );
+            }
+        }
+        _ => return Err("campaign result has a partial seed-manifest identity".to_owned()),
+    }
+
+    if campaign
+        .tools
+        .nightly_rust
+        .as_deref()
+        .is_some_and(|value| !tool_identity_matches("nightly rustc", value))
+        || campaign
+            .tools
+            .cargo_fuzz
+            .as_deref()
+            .is_some_and(|value| !tool_identity_matches("cargo-fuzz", value))
+    {
+        return Err("campaign result carries an invalid tool identity".to_owned());
+    }
+    let sanitizer_enabled = campaign.sanitizer.leak_sanitizer == SanitizerState::Enabled;
+    if sanitizer_enabled != (campaign.sanitizer.asan_options.as_deref() == Some("detect_leaks=1")) {
+        return Err("campaign sanitizer state and ASAN_OPTIONS disagree".to_owned());
+    }
+    match campaign.process.state {
+        ProcessStateName::Exited if campaign.process.exit_code.is_none() => {
+            return Err("exited campaign result has no exit code".to_owned());
+        }
+        ProcessStateName::NotStarted
+        | ProcessStateName::TimedOut
+        | ProcessStateName::SupervisionFailed
+            if campaign.process.exit_code.is_some() =>
+        {
+            return Err("non-exited campaign result carries an exit code".to_owned());
+        }
+        _ => {}
+    }
+    if campaign.limitations.iter().any(String::is_empty) {
+        return Err("campaign result carries an empty limitation".to_owned());
+    }
+    if campaign.artifacts.len() > MAX_ARTIFACTS {
+        return Err("campaign artifact population exceeds its bound".to_owned());
+    }
+    for artifact in &campaign.artifacts {
+        if !normalized_file_name(&artifact.name)
+            || artifact.media_type != "application/octet-stream"
+            || artifact.byte_length > MAX_FILE_BYTES
+            || !lower_sha256(&artifact.sha256)
+        {
+            return Err("campaign result carries an invalid artifact identity".to_owned());
+        }
+    }
+
+    let domain = campaign.domain_outcome;
+    if entry.domain_outcome != domain || entry.outcome != domain.normalized() {
+        return Err("campaign entry and domain outcomes disagree".to_owned());
+    }
+    let launched = matches!(
+        domain,
+        DomainOutcome::Pass | DomainOutcome::Fail | DomainOutcome::Suspect
+    );
+    if launched
+        && (!matches!(campaign.process.state, ProcessStateName::Exited)
+            || campaign.elapsed_time_class != ElapsedClass::WithinDeadline
+            || !sanitizer_enabled
+            || campaign.tools.nightly_rust.is_none()
+            || campaign.tools.cargo_fuzz.is_none()
+            || campaign.seed_manifest.sha256.is_none())
+    {
+        return Err("launched campaign outcome lacks execution prerequisites".to_owned());
+    }
+    match domain {
+        DomainOutcome::Pass
+            if campaign.process.exit_code != Some(0) || !campaign.artifacts.is_empty() =>
+        {
+            Err("passing campaign is contradicted by process/artifact state".to_owned())
+        }
+        DomainOutcome::Pass => Ok("passed"),
+        DomainOutcome::Fail if campaign.process.exit_code == Some(0) => {
+            Err("failed campaign is contradicted by a zero exit code".to_owned())
+        }
+        DomainOutcome::Fail => Ok("failed"),
+        DomainOutcome::Suspect
+            if campaign.process.exit_code != Some(0)
+                || campaign.artifacts.is_empty()
+                    && !campaign
+                        .limitations
+                        .iter()
+                        .any(|item| item.starts_with("artifact_population_suspect:")) =>
+        {
+            Err("suspect campaign has no suspect artifact population".to_owned())
+        }
+        DomainOutcome::Suspect => Ok("failed"),
+        DomainOutcome::Unavailable => {
+            let elapsed_matches = matches!(
+                (campaign.process.state, campaign.elapsed_time_class),
+                (ProcessStateName::NotStarted, ElapsedClass::NotRun)
+                    | (ProcessStateName::TimedOut, ElapsedClass::DeadlineExceeded)
+                    | (
+                        ProcessStateName::SupervisionFailed,
+                        ElapsedClass::WithinDeadline
+                    )
+            );
+            if !elapsed_matches {
+                return Err("unavailable campaign process/elapsed states disagree".to_owned());
+            }
+            Ok("unavailable")
+        }
+    }
 }
 
 fn normalized_file_name(value: &str) -> bool {
@@ -1025,13 +1370,54 @@ fn emit(document: &CampaignDocument) -> io::Result<()> {
     output.write_all(b"\n")
 }
 
+fn validate_mode(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> ExitCode {
+    let Some(proof_id) = arguments.next() else {
+        eprintln!("usage: fuzz_campaign validate <proof-id> <result-path>");
+        return ExitCode::from(64);
+    };
+    let Some(target) = Target::from_proof_id(&proof_id) else {
+        eprintln!("unknown fuzz proof identity {proof_id:?}");
+        return ExitCode::from(64);
+    };
+    let Some(path) = arguments.next().map(PathBuf::from) else {
+        eprintln!("usage: fuzz_campaign validate <proof-id> <result-path>");
+        return ExitCode::from(64);
+    };
+    if arguments.next().is_some() {
+        eprintln!("usage: fuzz_campaign validate <proof-id> <result-path>");
+        return ExitCode::from(64);
+    }
+    let raw = match bounded_result_bytes(&path) {
+        Ok(raw) => raw,
+        Err(error) => {
+            eprintln!("{error}");
+            return ExitCode::from(65);
+        }
+    };
+    match validate_campaign_result(Path::new(env!("CARGO_MANIFEST_DIR")), target, &raw) {
+        Ok(result) => {
+            println!("{result}");
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::from(65)
+        }
+    }
+}
+
 fn main() -> ExitCode {
     let mut arguments = env::args_os();
     let _program = arguments.next();
     let Some(raw_target) = arguments.next() else {
-        eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2>");
+        eprintln!(
+            "usage: fuzz_campaign <parser|clean_ascii_v2> | validate <proof-id> <result-path>"
+        );
         return ExitCode::from(64);
     };
+    if raw_target == "validate" {
+        return validate_mode(arguments);
+    }
     if arguments.next().is_some() {
         eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2>");
         return ExitCode::from(64);
@@ -1063,9 +1449,11 @@ fn main() -> ExitCode {
 mod tests {
     use super::{
         ambient_sanitizer_override, classify, document, inspect_artifacts, load_seed_manifest,
-        read_bounded_output, sha256_hex, supervise, tool_identity_matches, ArtifactReport,
-        DomainOutcome, ElapsedClass, ProcessState, Target, MAX_ARTIFACTS, MAX_FILE_BYTES,
-        MAX_TOOL_OUTPUT_BYTES, PROTOCOL,
+        read_bounded_output, sha256_hex, supervise, tool_identity_matches,
+        validate_campaign_result, ArtifactReport, Campaign, CampaignDocument, DomainOutcome,
+        ElapsedClass, NormalizedEntry, NormalizedOutcome, ProcessReport, ProcessState,
+        ProcessStateName, SanitizerReport, SanitizerState, SeedManifestReport, Target, ToolReport,
+        MAX_ARTIFACTS, MAX_FILE_BYTES, MAX_TOOL_OUTPUT_BYTES, PROTOCOL,
     };
     use std::ffi::OsStr;
     use std::fs;
@@ -1085,6 +1473,69 @@ mod tests {
         }
         fs::write(corpus.join("SHA256SUMS"), manifest).expect("fixture manifest");
         root
+    }
+
+    fn passing_result(root: &std::path::Path, target: Target) -> serde_json::Value {
+        let manifest_path = format!("fuzz/corpus/{}/SHA256SUMS", target.as_str());
+        let manifest = fs::read(root.join(&manifest_path)).expect("read fixture manifest");
+        let count = manifest
+            .split(|byte| *byte == b'\n')
+            .filter(|line| !line.is_empty())
+            .count();
+        serde_json::to_value(CampaignDocument {
+            protocol: PROTOCOL,
+            entries: [NormalizedEntry {
+                symbol: target.symbol(),
+                outcome: NormalizedOutcome::Pass,
+                trace_ids: [
+                    "TC-047",
+                    "FR-005-AC-2",
+                    "FR-006-AC-2",
+                    "NFR-003-AC-1",
+                    "SUITE-010",
+                ],
+                domain_outcome: DomainOutcome::Pass,
+            }],
+            campaign: Campaign {
+                target: target.as_str(),
+                requested_runs: 64,
+                deadline_seconds: 300,
+                seed_manifest: SeedManifestReport {
+                    path: manifest_path,
+                    sha256: Some(sha256_hex(&manifest)),
+                    count: Some(u32::try_from(count).expect("manifest count")),
+                },
+                tools: ToolReport {
+                    nightly_rust: Some("rustc 1.97.0-nightly (revision)".to_owned()),
+                    cargo_fuzz: Some("cargo-fuzz 0.13.2".to_owned()),
+                },
+                sanitizer: SanitizerReport {
+                    leak_sanitizer: SanitizerState::Enabled,
+                    asan_options: Some("detect_leaks=1"),
+                },
+                process: ProcessReport {
+                    state: ProcessStateName::Exited,
+                    exit_code: Some(0),
+                },
+                elapsed_time_class: ElapsedClass::WithinDeadline,
+                domain_outcome: DomainOutcome::Pass,
+                limitations: vec!["binary attachment deferred".to_owned()],
+                artifacts: Vec::new(),
+            },
+        })
+        .expect("serialize passing campaign")
+    }
+
+    fn validate_value(
+        root: &std::path::Path,
+        target: Target,
+        value: &serde_json::Value,
+    ) -> Result<&'static str, String> {
+        validate_campaign_result(
+            root,
+            target,
+            &serde_json::to_vec(value).expect("serialize mutation"),
+        )
     }
 
     // Trace: TC-047, FR-005-AC-2
@@ -1260,5 +1711,86 @@ mod tests {
         let encoded = serde_json::to_value(&result).expect("serialize result");
         assert_eq!(encoded["entries"][0]["traceIds"][0], "TC-047");
         assert_eq!(encoded["campaign"]["domainOutcome"], "unavailable");
+    }
+
+    // Trace: TC-047, FR-005-AC-2, FR-006-AC-2, NFR-003-AC-1
+    #[test]
+    fn tc_046_rust_adapter_accepts_coherent_outcomes_and_refuses_identity_mutations() {
+        let root = manifest_fixture(&[("one.txt", b"one")]);
+        let target = Target::Parser;
+        let passing = passing_result(root.path(), target);
+        assert_eq!(validate_value(root.path(), target, &passing), Ok("passed"));
+
+        let mut failing = passing.clone();
+        failing["entries"][0]["outcome"] = "fail".into();
+        failing["entries"][0]["domainOutcome"] = "fail".into();
+        failing["campaign"]["domainOutcome"] = "fail".into();
+        failing["campaign"]["process"]["exitCode"] = 9.into();
+        assert_eq!(validate_value(root.path(), target, &failing), Ok("failed"));
+
+        let mut unavailable = passing.clone();
+        unavailable["entries"][0]["outcome"] = "skip".into();
+        unavailable["entries"][0]["domainOutcome"] = "unavailable".into();
+        unavailable["campaign"]["domainOutcome"] = "unavailable".into();
+        unavailable["campaign"]["process"]["state"] = "timed_out".into();
+        unavailable["campaign"]["process"]["exitCode"] = serde_json::Value::Null;
+        unavailable["campaign"]["elapsedTimeClass"] = "deadline_exceeded".into();
+        assert_eq!(
+            validate_value(root.path(), target, &unavailable),
+            Ok("unavailable")
+        );
+
+        let mut suspect = passing.clone();
+        suspect["entries"][0]["outcome"] = "fail".into();
+        suspect["entries"][0]["domainOutcome"] = "suspect".into();
+        suspect["campaign"]["domainOutcome"] = "suspect".into();
+        suspect["campaign"]["artifacts"] = serde_json::json!([{
+            "name": "crash-example",
+            "mediaType": "application/octet-stream",
+            "byteLength": 1,
+            "sha256": sha256_hex(b"x"),
+        }]);
+        assert_eq!(validate_value(root.path(), target, &suspect), Ok("failed"));
+
+        let mutations: &[(&str, fn(&mut serde_json::Value))] = &[
+            ("protocol", |value| {
+                value["protocol"] = "other.fuzz/v1".into()
+            }),
+            ("target", |value| {
+                value["campaign"]["target"] = "clean_ascii_v2".into()
+            }),
+            ("symbol", |value| {
+                value["entries"][0]["symbol"] = "fuzz:clean_ascii_v2".into()
+            }),
+            ("runs", |value| {
+                value["campaign"]["requestedRuns"] = 0.into()
+            }),
+            ("deadline", |value| {
+                value["campaign"]["deadlineSeconds"] = 301.into()
+            }),
+            ("manifest", |value| {
+                value["campaign"]["seedManifest"]["sha256"] = "0".repeat(64).into()
+            }),
+            ("tool", |value| {
+                value["campaign"]["tools"]["nightlyRust"] = "rustc 1.75.0".into()
+            }),
+            ("sanitizer", |value| {
+                value["campaign"]["sanitizer"]["asanOptions"] = serde_json::Value::Null
+            }),
+            ("process", |value| {
+                value["campaign"]["process"]["exitCode"] = 9.into()
+            }),
+            ("outcome", |value| {
+                value["entries"][0]["domainOutcome"] = "suspect".into()
+            }),
+        ];
+        for (name, mutate) in mutations {
+            let mut mutated = passing.clone();
+            mutate(&mut mutated);
+            assert!(
+                validate_value(root.path(), target, &mutated).is_err(),
+                "{name} mutation was accepted"
+            );
+        }
     }
 }

@@ -794,20 +794,6 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
         "refuses-an-unnamed-outcome",
         "refuses-an-empty-stream",
         "accepts-the-real-run",
-        "accepts-the-real-fuzz-campaign",
-        "accepts-a-coherent-fuzz-failure",
-        "accepts-a-coherent-fuzz-unavailable-result",
-        "accepts-a-coherent-fuzz-suspect-result",
-        "refuses-a-foreign-fuzz-protocol",
-        "refuses-a-cross-target-fuzz-result",
-        "refuses-a-cross-symbol-fuzz-result",
-        "refuses-a-mutated-fuzz-run-bound",
-        "refuses-a-mutated-fuzz-deadline",
-        "refuses-a-mutated-fuzz-manifest",
-        "refuses-a-mutated-fuzz-tool",
-        "refuses-a-mutated-fuzz-sanitizer",
-        "refuses-a-mutated-fuzz-process",
-        "refuses-disagreeing-fuzz-outcomes",
     ] {
         assert!(
             probes.iter().any(|probe| probe["probe"] == required),
@@ -1320,6 +1306,13 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
         Err(error) => panic!("could not establish scratch target ownership: {error}"),
     }
     fs::create_dir_all(&scratch_target).expect("create isolated probe target");
+    let scratch_adapter_dir = scratch_target.join("debug/examples");
+    fs::create_dir_all(&scratch_adapter_dir).expect("create Rust adapter directory");
+    std::os::unix::fs::symlink(
+        root().join("target/debug/examples/fuzz_campaign"),
+        scratch_adapter_dir.join("fuzz_campaign"),
+    )
+    .expect("share only the built Rust fuzz-result adapter with the isolated probe");
     std::os::unix::fs::symlink(
         root().join("target/assurance"),
         scratch_target.join("assurance"),

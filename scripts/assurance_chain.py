@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -48,7 +49,6 @@ CORPUS_MANIFEST = ROOT / "corpus" / "v1" / "manifest.json"
 
 CONFORMANCE_PROTOCOL = "tl-parse.parser-conformance/v1"
 ROUNDTRIP_PROTOCOL = "tl-parse.roundtrip-sweep/v1"
-FUZZ_CAMPAIGN_PROTOCOL = "tl-parse.fuzz-campaign/v1"
 
 # Every proof obligation's retained result, and the media type its producer
 # declares. Stated rather than sniffed, because a producer's content type is
@@ -113,7 +113,7 @@ def digest_of(raw: bytes) -> str:
 
 
 def quoin(*arguments: str, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
-    """Invoke the pinned Quoin CLI. It is the only command this file runs."""
+    """Invoke the pinned Quoin CLI for retention and receipt operations."""
     if shutil.which("quoin") is None:
         raise ChainError("quoin is not on PATH; the pinned CLI is required")
     return subprocess.run(
@@ -528,210 +528,29 @@ def _load_json(raw: str, path: Path) -> Any:
         ) from error
 
 
-def _fuzz_result(document: Any, proof_id: str, path: Path) -> str:
-    """Read one closed fuzz-campaign result without collapsing its domain state."""
-    expected_target = {
-        "PROOF-parser-fuzz-campaign": "parser",
-        "PROOF-clean-ascii-v2-fuzz-campaign": "clean_ascii_v2",
-    }[proof_id]
-    if not isinstance(document, dict) or set(document) != {"protocol", "entries", "campaign"}:
-        raise ChainError(f"{path.name} is not a closed fuzz-campaign document")
-    if document.get("protocol") != FUZZ_CAMPAIGN_PROTOCOL:
-        raise ChainError(f"{path.name} is not a {FUZZ_CAMPAIGN_PROTOCOL} document")
-    entries = document.get("entries")
-    campaign = document.get("campaign")
-    if not isinstance(entries, list) or len(entries) != 1 or not isinstance(campaign, dict):
-        raise ChainError(f"{path.name} must carry exactly one entry and one campaign object")
-    entry = entries[0]
-    if not isinstance(entry, dict) or set(entry) != {
-        "symbol",
-        "outcome",
-        "traceIds",
-        "domainOutcome",
-    }:
-        raise ChainError(f"{path.name} does not contain one closed normalized entry")
-    expected_campaign_fields = {
-        "target",
-        "requestedRuns",
-        "deadlineSeconds",
-        "seedManifest",
-        "tools",
-        "sanitizer",
-        "process",
-        "elapsedTimeClass",
-        "domainOutcome",
-        "limitations",
-        "artifacts",
-    }
-    if set(campaign) != expected_campaign_fields or campaign.get("target") != expected_target:
-        raise ChainError(f"{path.name} does not bind the declared target {expected_target}")
-    expected_symbol = f"fuzz:{expected_target}"
-    if entry.get("symbol") != expected_symbol:
-        raise ChainError(f"{path.name} does not bind the declared symbol {expected_symbol}")
-    if entry.get("traceIds") != [
-        "TC-047",
-        "FR-005-AC-2",
-        "FR-006-AC-2",
-        "NFR-003-AC-1",
-        "SUITE-010",
-    ]:
-        raise ChainError(f"{path.name} does not bind the declared trace identities")
-    if campaign.get("requestedRuns") != 64 or campaign.get("deadlineSeconds") != 300:
-        raise ChainError(f"{path.name} does not bind the fixed 64-run/300-second campaign")
-
-    manifest = campaign.get("seedManifest")
-    expected_manifest = f"fuzz/corpus/{expected_target}/SHA256SUMS"
-    if not isinstance(manifest, dict) or set(manifest) != {"path", "sha256", "count"}:
-        raise ChainError(f"{path.name} has no closed seed-manifest identity")
-    if manifest.get("path") != expected_manifest:
-        raise ChainError(f"{path.name} does not bind {expected_manifest}")
-    digest = manifest.get("sha256")
-    count = manifest.get("count")
-    if (digest is None) != (count is None):
-        raise ChainError(f"{path.name} has a partial seed-manifest identity")
-    if digest is not None:
-        manifest_bytes = (ROOT / expected_manifest).read_bytes()
-        declared_count = sum(bool(line.strip()) for line in manifest_bytes.splitlines())
-        if (
-            not isinstance(digest, str)
-            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
-            or digest != digest_of(manifest_bytes)
-            or not isinstance(count, int)
-            or isinstance(count, bool)
-            or not 1 <= count <= 256
-            or count != declared_count
-        ):
-            raise ChainError(f"{path.name} seed-manifest digest/count does not match the repository")
-
-    tools = campaign.get("tools")
-    if not isinstance(tools, dict) or set(tools) != {"nightlyRust", "cargoFuzz"}:
-        raise ChainError(f"{path.name} has no closed tool identity")
-    nightly = tools.get("nightlyRust")
-    cargo_fuzz = tools.get("cargoFuzz")
-    if nightly is not None and (
-        not isinstance(nightly, str)
-        or not nightly.startswith("rustc ")
-        or "-nightly" not in nightly
-    ):
-        raise ChainError(f"{path.name} does not identify nightly rustc")
-    if cargo_fuzz is not None and (
-        not isinstance(cargo_fuzz, str) or not cargo_fuzz.startswith("cargo-fuzz ")
-    ):
-        raise ChainError(f"{path.name} does not identify cargo-fuzz")
-
-    sanitizer = campaign.get("sanitizer")
-    if not isinstance(sanitizer, dict) or set(sanitizer) != {
-        "leakSanitizer",
-        "asanOptions",
-    }:
-        raise ChainError(f"{path.name} has no closed sanitizer state")
-    sanitizer_state = sanitizer.get("leakSanitizer")
-    asan_options = sanitizer.get("asanOptions")
-    if sanitizer_state not in {
-        "not_checked",
-        "enabled",
-        "unavailable",
-        "refused_ambient_override",
-    } or (asan_options is not None and not isinstance(asan_options, str)):
-        raise ChainError(f"{path.name} has an unknown sanitizer state")
-    if (sanitizer_state == "enabled") != (asan_options == "detect_leaks=1"):
-        raise ChainError(f"{path.name} sanitizer state and ASAN_OPTIONS disagree")
-
-    process = campaign.get("process")
-    if not isinstance(process, dict) or set(process) != {"state", "exitCode"}:
-        raise ChainError(f"{path.name} has no closed process state")
-    process_state = process.get("state")
-    exit_code = process.get("exitCode")
-    if process_state == "exited":
-        if not isinstance(exit_code, int) or isinstance(exit_code, bool):
-            raise ChainError(f"{path.name} exited without an integer exit code")
-    elif process_state in {"not_started", "timed_out", "supervision_failed"}:
-        if exit_code is not None:
-            raise ChainError(f"{path.name} non-exited process carries an exit code")
-    else:
-        raise ChainError(f"{path.name} has an unknown process state")
-
-    limitations = campaign.get("limitations")
-    if not isinstance(limitations, list) or not all(
-        isinstance(item, str) for item in limitations
-    ):
-        raise ChainError(f"{path.name} limitations are not a string list")
-    artifacts = campaign.get("artifacts")
-    if not isinstance(artifacts, list) or len(artifacts) > 16:
-        raise ChainError(f"{path.name} artifact population is not bounded")
-    for artifact in artifacts:
-        if not isinstance(artifact, dict) or set(artifact) != {
-            "name",
-            "mediaType",
-            "byteLength",
-            "sha256",
-        }:
-            raise ChainError(f"{path.name} contains an untyped artifact identity")
-        name = artifact.get("name")
-        length = artifact.get("byteLength")
-        artifact_digest = artifact.get("sha256")
-        if (
-            not isinstance(name, str)
-            or not name
-            or name in {".", ".."}
-            or "/" in name
-            or "\\" in name
-            or artifact.get("mediaType") != "application/octet-stream"
-            or not isinstance(length, int)
-            or isinstance(length, bool)
-            or not 0 <= length <= 1024 * 1024
-            or not isinstance(artifact_digest, str)
-            or re.fullmatch(r"[0-9a-f]{64}", artifact_digest) is None
-        ):
-            raise ChainError(f"{path.name} contains an invalid artifact identity")
-
-    domain = campaign.get("domainOutcome")
-    if entry.get("domainOutcome") != domain:
-        raise ChainError(f"{path.name} entry and campaign domain outcomes disagree")
-    mapping = {
-        "pass": ("pass", "passed"),
-        "fail": ("fail", "failed"),
-        "unavailable": ("skip", "unavailable"),
-        "suspect": ("fail", "failed"),
-    }
-    if domain not in mapping:
-        raise ChainError(f"{path.name} declares unknown fuzz domain outcome {domain!r}")
-    normalized, attested = mapping[domain]
-    if entry.get("outcome") != normalized:
-        raise ChainError(
-            f"{path.name} maps domain outcome {domain!r} to {entry.get('outcome')!r}; "
-            f"expected {normalized!r}"
+def _fuzz_result(proof_id: str, path: Path) -> str:
+    """Ask the repository-owned Rust adapter to validate and map one campaign."""
+    target_dir = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target"))
+    if not target_dir.is_absolute():
+        target_dir = ROOT / target_dir
+    adapter = target_dir / "debug" / "examples" / "fuzz_campaign"
+    try:
+        result = subprocess.run(
+            [str(adapter), "validate", proof_id, str(path)],
+            capture_output=True,
+            text=True,
+            check=False,
         )
-    elapsed = campaign.get("elapsedTimeClass")
-    if domain in {"pass", "fail", "suspect"}:
-        if (
-            process_state != "exited"
-            or elapsed != "within_deadline"
-            or sanitizer_state != "enabled"
-            or nightly is None
-            or cargo_fuzz is None
-            or digest is None
-        ):
-            raise ChainError(f"{path.name} launched outcome lacks execution prerequisites")
-    if domain == "pass" and (exit_code != 0 or artifacts):
-        raise ChainError(f"{path.name} pass is contradicted by process/artifact state")
-    if domain == "fail" and exit_code == 0:
-        raise ChainError(f"{path.name} failure is contradicted by a zero exit code")
-    if domain == "suspect" and (
-        exit_code != 0
-        or not artifacts
-        and not any(item.startswith("artifact_population_suspect:") for item in limitations)
-    ):
-        raise ChainError(f"{path.name} suspect result has no suspect artifact population")
-    if domain == "unavailable":
-        expected_elapsed = {
-            "not_started": "not_run",
-            "timed_out": "deadline_exceeded",
-            "supervision_failed": "within_deadline",
-        }
-        if expected_elapsed.get(process_state) != elapsed:
-            raise ChainError(f"{path.name} unavailable process/elapsed states disagree")
-    return attested
+    except OSError as error:
+        raise ChainError(f"could not execute Rust fuzz-result adapter: {error}") from error
+    if result.returncode != 0:
+        raise ChainError(
+            f"Rust fuzz-result adapter refused {path.name}: {result.stderr.strip()}"
+        )
+    mapped = result.stdout.strip()
+    if not mapped:
+        raise ChainError(f"Rust fuzz-result adapter emitted no result for {path.name}")
+    return mapped
 
 
 def derive_result(proof_id: str, path: Path) -> str:
@@ -757,7 +576,7 @@ def derive_result(proof_id: str, path: Path) -> str:
         rows = [_load_json(line, path) for line in raw.splitlines() if line.strip()]
         return _rows_result(rows, path.name)
     if proof_id in ("PROOF-parser-fuzz-campaign", "PROOF-clean-ascii-v2-fuzz-campaign"):
-        return _fuzz_result(_load_json(raw, path), proof_id, path)
+        return _fuzz_result(proof_id, path)
     if proof_id == "PROOF-test-census":
         return _rows_result(_load_json(raw, path)["entries"], path.name)
     if proof_id == "PROOF-quire-static-export":
@@ -1420,127 +1239,6 @@ def adapter_probes(workspace: Path) -> list[dict[str, Any]]:
             "detail": {"outcome": "mangled"},
         }
     )
-
-    # The fuzz result consumer binds every field that determines whether this
-    # exact campaign can be attested. A mutation of protocol, identity, bounds,
-    # manifest, toolchain, sanitizer, process or outcome is refused rather than
-    # attributed to the wrong proof.
-    fuzz_path = inputs["PROOF-parser-fuzz-campaign"]
-    fuzz_document = _load_json(fuzz_path.read_text(encoding="utf-8"), fuzz_path)
-    results.append(
-        {
-            "probe": "accepts-the-real-fuzz-campaign",
-            "state": "pass",
-            "matched": _fuzz_result(fuzz_document, "PROOF-parser-fuzz-campaign", fuzz_path)
-            == "passed",
-            "detail": {"target": "parser"},
-        }
-    )
-    coherent_outcomes = {
-        "accepts-a-coherent-fuzz-failure": {
-            "domain": "fail",
-            "outcome": "fail",
-            "attested": "failed",
-            "process_state": "exited",
-            "exit_code": 9,
-            "elapsed": "within_deadline",
-            "artifacts": [],
-        },
-        "accepts-a-coherent-fuzz-unavailable-result": {
-            "domain": "unavailable",
-            "outcome": "skip",
-            "attested": "unavailable",
-            "process_state": "timed_out",
-            "exit_code": None,
-            "elapsed": "deadline_exceeded",
-            "artifacts": [],
-        },
-        "accepts-a-coherent-fuzz-suspect-result": {
-            "domain": "suspect",
-            "outcome": "fail",
-            "attested": "failed",
-            "process_state": "exited",
-            "exit_code": 0,
-            "elapsed": "within_deadline",
-            "artifacts": [
-                {
-                    "name": "crash-example",
-                    "mediaType": "application/octet-stream",
-                    "byteLength": 1,
-                    "sha256": hashlib.sha256(b"x").hexdigest(),
-                }
-            ],
-        },
-    }
-    for probe, expected in coherent_outcomes.items():
-        variant = json.loads(json.dumps(fuzz_document))
-        variant["entries"][0]["outcome"] = expected["outcome"]
-        variant["entries"][0]["domainOutcome"] = expected["domain"]
-        variant["campaign"]["domainOutcome"] = expected["domain"]
-        variant["campaign"]["process"]["state"] = expected["process_state"]
-        variant["campaign"]["process"]["exitCode"] = expected["exit_code"]
-        variant["campaign"]["elapsedTimeClass"] = expected["elapsed"]
-        variant["campaign"]["artifacts"] = expected["artifacts"]
-        results.append(
-            {
-                "probe": probe,
-                "state": expected["domain"],
-                "matched": _fuzz_result(
-                    variant, "PROOF-parser-fuzz-campaign", fuzz_path
-                )
-                == expected["attested"],
-                "detail": {"domainOutcome": expected["domain"]},
-            }
-        )
-    fuzz_mutations = {
-        "refuses-a-foreign-fuzz-protocol": ("protocol", "other.fuzz/v1"),
-        "refuses-a-cross-target-fuzz-result": ("campaign.target", "clean_ascii_v2"),
-        "refuses-a-cross-symbol-fuzz-result": ("entries.0.symbol", "fuzz:clean_ascii_v2"),
-        "refuses-a-mutated-fuzz-run-bound": ("campaign.requestedRuns", 0),
-        "refuses-a-mutated-fuzz-deadline": ("campaign.deadlineSeconds", 301),
-        "refuses-a-mutated-fuzz-manifest": ("campaign.seedManifest.sha256", "0" * 64),
-        "refuses-a-mutated-fuzz-tool": ("campaign.tools.nightlyRust", "rustc 1.75.0"),
-        "refuses-a-mutated-fuzz-sanitizer": ("campaign.sanitizer.asanOptions", None),
-        "refuses-a-mutated-fuzz-process": ("campaign.process.exitCode", 9),
-        "refuses-disagreeing-fuzz-outcomes": ("entries.0.domainOutcome", "suspect"),
-    }
-    for probe, (field, value) in fuzz_mutations.items():
-        mutated = json.loads(json.dumps(fuzz_document))
-        if field == "protocol":
-            mutated["protocol"] = value
-        elif field == "campaign.target":
-            mutated["campaign"]["target"] = value
-        elif field == "entries.0.symbol":
-            mutated["entries"][0]["symbol"] = value
-        elif field == "campaign.requestedRuns":
-            mutated["campaign"]["requestedRuns"] = value
-        elif field == "campaign.deadlineSeconds":
-            mutated["campaign"]["deadlineSeconds"] = value
-        elif field == "campaign.seedManifest.sha256":
-            mutated["campaign"]["seedManifest"]["sha256"] = value
-        elif field == "campaign.tools.nightlyRust":
-            mutated["campaign"]["tools"]["nightlyRust"] = value
-        elif field == "campaign.sanitizer.asanOptions":
-            mutated["campaign"]["sanitizer"]["asanOptions"] = value
-        elif field == "campaign.process.exitCode":
-            mutated["campaign"]["process"]["exitCode"] = value
-        elif field == "entries.0.domainOutcome":
-            mutated["entries"][0]["domainOutcome"] = value
-        else:
-            raise ChainError(f"unknown fuzz mutation field {field}")
-        refused = False
-        try:
-            _fuzz_result(mutated, "PROOF-parser-fuzz-campaign", fuzz_path)
-        except ChainError:
-            refused = True
-        results.append(
-            {
-                "probe": probe,
-                "state": "unsupported",
-                "matched": refused,
-                "detail": {"field": field, "value": value},
-            }
-        )
 
     return results
 

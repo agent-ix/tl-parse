@@ -68,8 +68,10 @@ Verification results are produced by this repository's own tools, transcribed
 and retained by [Quoin](https://github.com/agent-ix/quoin), and described by
 static facts exported from [Quire](https://github.com/agent-ix/quire-rs).
 Neither tool executes a producer. The two fuzz-campaign documents are retained
-byte-identically as separate Quoin proof inputs. `make assurance` classifies the toolchain
-through the packaged Engineering Assurance compatibility matrix and drives the
+byte-identically as separate Quoin proof inputs, and the same Rust campaign tool
+validates their closed protocol before the existing Python driver hands the
+mapped result to Quoin. `make assurance` classifies the toolchain through the
+packaged Engineering Assurance compatibility matrix and drives the
 seal/intake/receipt chain.
 
 This repository retains no evidence of its own. Verification evidence is what
