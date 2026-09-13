@@ -24,6 +24,18 @@ by the parser/formatter limits, proptest recursive sizes, and the 64-execution
 smoke cap. There is no async runtime, lock, blocking bridge, persistence integer
 conversion, foreign ABI, or production filesystem change in scope.
 
+## Assurance Context
+
+- **Profile:** AP-001, profile version 0.2, status `active`; the review policy
+  requires spec review, code review and gap analysis.
+- **Baseline:** PR #34 head `34eb45b158bf3d487aaa6bd9de42d404f65dc5e8`;
+  the reviewed Rust/property/fuzz bytes are unchanged from `9ca856b`.
+- **Impact evaluated:** silent source reinterpretation and hostile-input growth
+  across generated parse/format/lowering properties and both fuzz targets.
+- **Decision boundary:** bounded executions are review observations, not
+  durable normalized Quoin evidence, universal proof or release authority.
+- **Active exceptions:** none.
+
 ## Findings
 
 | ID | Severity | Summary | Refs |
@@ -38,3 +50,8 @@ conversion, foreign ABI, or production filesystem change in scope.
   LeakSanitizer enabled and no crash artifact.
 - rustc `1.97.0-nightly (e22c616e4 2026-04-19)`; cargo-fuzz 0.13.2.
 - Hosted CI was not dispatched.
+
+## Verdict
+
+**CONDITIONAL** — no Rust defect was found, but FND-4302 prevents a durable
+campaign-evidence completion claim.
