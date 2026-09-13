@@ -8,7 +8,7 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`8dc18eec5af227f484170362c9e8894b8531a27d`, an exact commit reachable from the
+`e70f2379a752117c79603bc399a86c26feed7716`, an exact commit reachable from the
 reviewed `main` history when admitted, not a moving branch head. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
@@ -17,6 +17,14 @@ a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
 exact git revision because
 `tl-syntax` has no registry release, and source release remains blocked while
 that is true.
+
+The additive `parse_clean_ascii_v2` API accepts bounded derived future
+operators `W` and `M`. The additive `parse_clean_ascii_v3` and
+`format_clean_ascii_v3` APIs provide the deliberately separate
+origin-complete past profile with `O`, `H`, strong `Y`, `S`, and `T`. See
+[`docs/DIALECT-002-clean-ascii-v2.md`](docs/DIALECT-002-clean-ascii-v2.md) and
+[`docs/DIALECT-003-clean-ascii-v3.md`](docs/DIALECT-003-clean-ascii-v3.md) for
+their closed grammars and wire identities. The v1 API and CLI remain unchanged.
 
 ## Build
 

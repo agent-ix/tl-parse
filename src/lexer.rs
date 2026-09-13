@@ -21,6 +21,11 @@ pub(crate) enum TokenKind {
     Release,
     WeakUntil,
     StrongRelease,
+    Once,
+    Historically,
+    StrongPrevious,
+    Since,
+    Triggered,
     LeftParenthesis,
     RightParenthesis,
     LeftBracket,
@@ -37,10 +42,12 @@ pub(crate) enum Dialect {
     V1,
     /// `tl-parse.clean-ascii/v2`: v1 plus the derived `W`/`M` operators.
     V2,
+    /// `tl-parse.clean-ascii/v3`: Boolean plus the closed past O/H/Y/S/T profile.
+    V3,
 }
 
-/// Operator spellings that `tl-syntax.future-operators/v1` refuses; v2 only.
-const UNSUPPORTED_OPERATORS: [&str; 6] = ["X", "Y", "O", "H", "S", "T"];
+const V2_UNSUPPORTED_OPERATORS: [&str; 6] = ["X", "Y", "O", "H", "S", "T"];
+const V3_UNSUPPORTED_OPERATORS: [&str; 7] = ["X", "F", "G", "U", "R", "W", "M"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Token {
@@ -223,6 +230,16 @@ impl Lexer<'_> {
             return;
         }
 
+        // Strong Previous has no interval delimiter, so recognize its closed
+        // single-letter spelling only when the following bytes can begin an
+        // operand (or end the token). This preserves compact `Yp0` while
+        // diagnosing `Yesterday` as one unknown identifier.
+        if byte == b'Y' && self.dialect == Dialect::V3 && self.strong_previous_boundary(start + 1) {
+            self.offset += 1;
+            self.push_token(TokenKind::StrongPrevious, start);
+            return;
+        }
+
         if byte == b'p'
             && self
                 .source
@@ -278,12 +295,26 @@ impl Lexer<'_> {
         match self.source.as_bytes().get(end) {
             None => true,
             Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
-            Some(b'U' | b'R') => self.source.as_bytes().get(end + 1) == Some(&b'['),
+            Some(b'U' | b'R') if self.dialect != Dialect::V3 => {
+                self.source.as_bytes().get(end + 1) == Some(&b'[')
+            }
             Some(b'W' | b'M' | b'X' | b'Y' | b'O' | b'H' | b'S' | b'T')
                 if self.dialect == Dialect::V2 =>
             {
                 self.source.as_bytes().get(end + 1) == Some(&b'[')
             }
+            Some(b'S' | b'T') if self.dialect == Dialect::V3 => {
+                self.source.as_bytes().get(end + 1) == Some(&b'[')
+            }
+            Some(_) => false,
+        }
+    }
+
+    fn strong_previous_boundary(&self, end: usize) -> bool {
+        match self.source.as_bytes().get(end) {
+            None => true,
+            Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
+            Some(b'p' | b'f' | b't' | b'O' | b'H' | b'Y') => true,
             Some(_) => false,
         }
     }
@@ -301,12 +332,16 @@ impl Lexer<'_> {
         let kind = match lexeme {
             "false" => Some(TokenKind::False),
             "true" => Some(TokenKind::True),
-            "F" => Some(TokenKind::Future),
-            "G" => Some(TokenKind::Globally),
-            "U" => Some(TokenKind::Until),
-            "R" => Some(TokenKind::Release),
+            "F" if self.dialect != Dialect::V3 => Some(TokenKind::Future),
+            "G" if self.dialect != Dialect::V3 => Some(TokenKind::Globally),
+            "U" if self.dialect != Dialect::V3 => Some(TokenKind::Until),
+            "R" if self.dialect != Dialect::V3 => Some(TokenKind::Release),
             "W" if self.dialect == Dialect::V2 => Some(TokenKind::WeakUntil),
             "M" if self.dialect == Dialect::V2 => Some(TokenKind::StrongRelease),
+            "O" if self.dialect == Dialect::V3 => Some(TokenKind::Once),
+            "H" if self.dialect == Dialect::V3 => Some(TokenKind::Historically),
+            "S" if self.dialect == Dialect::V3 => Some(TokenKind::Since),
+            "T" if self.dialect == Dialect::V3 => Some(TokenKind::Triggered),
             _ => None,
         };
         if let Some(kind) = kind {
@@ -325,7 +360,17 @@ impl Lexer<'_> {
             end: self.offset,
         }
         .found(self.source);
-        if self.dialect == Dialect::V2 && UNSUPPORTED_OPERATORS.contains(&lexeme) {
+        let unsupported_profile = match self.dialect {
+            Dialect::V1 => None,
+            Dialect::V2 if V2_UNSUPPORTED_OPERATORS.contains(&lexeme) => {
+                Some("tl-syntax.future-operators/v1")
+            }
+            Dialect::V3 if V3_UNSUPPORTED_OPERATORS.contains(&lexeme) => {
+                Some("tl-syntax.past-operators/v1")
+            }
+            Dialect::V2 | Dialect::V3 => None,
+        };
+        if let Some(profile) = unsupported_profile {
             self.push_diagnostic(
                 DiagnosticCode::UnsupportedOperator,
                 start,
@@ -333,7 +378,7 @@ impl Lexer<'_> {
                 &found,
                 vec![ExpectedToken::Expression],
                 RecoveryAction::SkippedToken,
-                format!("operator {found} is outside tl-syntax.future-operators/v1"),
+                format!("operator {found} is outside {profile}"),
             );
             self.push_token(TokenKind::Invalid, start);
             return;

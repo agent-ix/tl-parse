@@ -11,6 +11,7 @@ mod diagnostic;
 mod format;
 mod lexer;
 mod parser;
+mod past;
 
 pub use context::{
     parse_with_context, BoundProposition, ContextualParseError, ContextualParseReport,
@@ -24,8 +25,12 @@ pub use diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
     FormatLimits, FormatReport, FormatStats, ParseLimits, ParseReport, ParseStats, RecoveryAction,
 };
-pub use format::{format_document, format_formula};
+pub use format::{format_clean_ascii_v3, format_document, format_formula};
 pub use parser::{parse, source_limit_report};
+pub use past::{
+    parse_clean_ascii_v3, PastDialectRevision, PastOperatorProfile, PastParseReport,
+    PastParseSchemaVersion,
+};
 pub use tl_syntax;
 
 /// Stable identity of the independently authored textual dialect.
@@ -34,14 +39,20 @@ pub const DIALECT_REVISION: &str = "tl-parse.clean-ascii/v1";
 /// Stable identity of the explicitly selected derived-operator input dialect.
 pub const DIALECT_V2_REVISION: &str = "tl-parse.clean-ascii/v2";
 
+/// Stable identity of the origin-complete past-profile input dialect.
+pub const DIALECT_V3_REVISION: &str = "tl-parse.clean-ascii/v3";
+
 /// Stable identity of serialized v2 derived-operator parse reports.
 pub const DERIVED_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.derived-parse-report/v1";
+
+/// Stable identity of serialized clean-ascii/v3 parse reports.
+pub const PAST_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.past-parse-report/v1";
 
 /// Stable identity of serialized parser diagnostic reports.
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
 
 /// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "8dc18eec5af227f484170362c9e8894b8531a27d";
+pub const TL_SYNTAX_REVISION: &str = "e70f2379a752117c79603bc399a86c26feed7716";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";
@@ -63,8 +74,21 @@ pub const DIALECT_V2_RECORD: &str = concat!(
     "lowering:tl-syntax.future-lowering-request/v1|operators:tl-syntax.future-operators/v1"
 );
 
+/// Normative v3 dialect record hashed by [`dialect_v3_digest`].
+pub const DIALECT_V3_RECORD: &str = concat!(
+    "boolean:tl-parse.clean-ascii/v1|",
+    "O[canonical-u32,canonical-u32]|H[canonical-u32,canonical-u32]|Y|",
+    "S[canonical-u32,canonical-u32]|T[canonical-u32,canonical-u32]|",
+    "precedence:prefix>ST>&>|>implies-right>equivalent-left|associativity:ST-left|",
+    "profile:mltl.origin-complete-history/v1|operators:tl-syntax.past-operators/v1|",
+    "unsupported:X,F,G,U,R,W,M,weak-previous,long-names"
+);
+
 /// Complete normative v2 dialect document retained with the implementation.
 pub const DIALECT_V2_DOCUMENT: &str = include_str!("../docs/DIALECT-002-clean-ascii-v2.md");
+
+/// Complete normative v3 dialect document retained with the implementation.
+pub const DIALECT_V3_DOCUMENT: &str = include_str!("../docs/DIALECT-003-clean-ascii-v3.md");
 
 /// Complete normative dialect document retained with the implementation.
 pub const DIALECT_DOCUMENT: &str = include_str!("../docs/DIALECT-001-clean-room-mltl-v1.md");
@@ -98,6 +122,20 @@ pub fn dialect_v2_document_digest() -> String {
     use sha2::{Digest, Sha256};
 
     format!("{:x}", Sha256::digest(DIALECT_V2_DOCUMENT.as_bytes()))
+}
+
+/// Returns the lowercase SHA-256 digest of the normative v3 dialect record.
+pub fn dialect_v3_digest() -> String {
+    use sha2::{Digest, Sha256};
+
+    format!("{:x}", Sha256::digest(DIALECT_V3_RECORD.as_bytes()))
+}
+
+/// Returns the SHA-256 digest of the complete normative v3 dialect document.
+pub fn dialect_v3_document_digest() -> String {
+    use sha2::{Digest, Sha256};
+
+    format!("{:x}", Sha256::digest(DIALECT_V3_DOCUMENT.as_bytes()))
 }
 
 /// Returns the SHA-256 digest of the complete attribution boundary document.

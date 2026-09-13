@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`8dc18eec5af227f484170362c9e8894b8531a27d`, a commit that was reachable from
+`e70f2379a752117c79603bc399a86c26feed7716`, a commit that was reachable from
 the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -35,10 +35,30 @@ is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
-`8dc18eec` is the squash merge of tl-syntax#42. Its tree
-(`f63a8d810c739a54e9b9b407d3936c6e549fbc43`) is identical to that of the
-reviewed PR head `e3651cde5524c61cb9623ce39fcc9f0b90b99317`, which this crate
-compiled against during development, so the delta below is unchanged.
+`e70f2379` is the squash merge of tl-syntax#55 and contains the accepted
+formula-v2 and origin-complete past operator/profile contracts used by
+clean-ascii/v3.
+
+## Source-inspected formula-v2 compiled-pin delta
+
+The immediately preceding compiled pin was
+`8dc18eec5af227f484170362c9e8894b8531a27d`. Source inspection of the exact
+range
+`8dc18eec5af227f484170362c9e8894b8531a27d..e70f2379a752117c79603bc399a86c26feed7716`
+found the additive formula-v2 schema, origin-complete history semantic profile,
+O/H/Y/S/T node variants, closed past operator catalog, profile validation,
+conversion API, and owned v2 resource bounds. The existing formula-v1 graph,
+future-lowering request, and clean-ascii/v1/v2 inputs remain compatibility
+boundaries.
+
+tl-parse consumes those new contracts only through the explicitly selected
+`tl-parse.clean-ascii/v3` entry point. The past spelling and precedence rules
+were authored from accepted tl-syntax MRS-003/FR-013 and are recorded in
+`DIALECT-003-clean-ascii-v3.md`; no third-party parser or grammar was consulted.
+
+Both licence files are byte-identical across `8dc18eec` and `e70f2379`.
+
+### Earlier future-operator compiled-pin delta
 
 ## Source-inspected compiled-pin delta
 

@@ -118,7 +118,7 @@ pub enum DiagnosticCode {
     TrailingInput,
     /// Directly constructed graph failed the pinned tl-syntax validator.
     ValidationFailure,
-    /// A recognized operator outside the derived-operator profile; v2 only.
+    /// A recognized operator outside the explicitly selected operator profile.
     UnsupportedOperator,
 }
 
