@@ -2,7 +2,7 @@
 id: Task-006
 title: "Exact-candidate evidence"
 type: Task
-status: in_progress
+status: done
 track: Evidence
 priority: P0
 relationships:
@@ -29,3 +29,7 @@ remain separate proof results.
 
 Reopened on 2026-09-13 to route the structured bounded-fuzz campaign results
 through the existing Quoin-owned intake and verify retained-byte identity.
+
+Completed on 2026-09-13 at `cc543ea`: both target-specific campaign documents
+were retained byte-identically, all seven proof obligations attested from their
+producer bytes, and every Quoin scenario, control, and mutation probe matched.
