@@ -21,7 +21,7 @@ profiles can change a formula before later semantic checks begin.
 
 | ID | Criteria | Validation |
 |---|---|---|
-| StR-001-VC-1 | The dialect revision, grammar, precedence, associativity, and clean-room provenance are explicit and stable. | Inspection (TC-020) |
+| StR-001-VC-1 | The dialect revision, grammar, precedence, associativity, and clean-room provenance are explicit and stable. | Inspection (TC-020, TC-039) |
 | StR-001-VC-2 | Every accepted source produces a structurally valid graph from the exact pinned tl-syntax revision, while rejected source produces no graph. | Test (TC-007, TC-008) |
 
 ## Stakeholders
@@ -35,4 +35,5 @@ application-specific name resolution is outside this crate.
 
 ## Traceability
 
-This need is realized by FR-001, FR-002, and FR-003 and verified by TM-001.
+This need is realized by FR-001, FR-002, FR-003, and FR-008 and verified by
+TM-001.

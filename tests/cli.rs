@@ -54,11 +54,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "9cf586f0b0ed56432ab4e9480cec902a6024d5bfbc44ec720e3ffc78d1bd118c"
+        "ecc14168738656327721f29440700ad14b3294268deee31135dc3bdb5a68e814"
     );
     assert_eq!(
         attribution_document_digest(),
-        "92dda28dde376e3bec3ba5a3b066e9e453bbd539bc05ad582a1212bb59a774b5"
+        "ef94b783e46a5c5e509238dd489189e24aa0b2088026285e609887234dc763e8"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
@@ -106,6 +106,9 @@ fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
     let root = env!("CARGO_MANIFEST_DIR");
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     for required in [
+        "26b801d4a68ebfe720062cfdb3c66b070ab60e92..8dc18eec5af227f484170362c9e8894b8531a27d",
+        "future-operator lowering family",
+        "tl-parse consumes the future-operator lowering family",
         "953ee825e5060335b4c79682f5f41a78c5a1bfae..26b801d4a68ebfe720062cfdb3c66b070ab60e92",
         "caller-context APIs",
         "signal declarations",

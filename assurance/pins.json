@@ -25,12 +25,14 @@
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
-    "compiled_revision": "26b801d4a68ebfe720062cfdb3c66b070ab60e92",
+    "compiled_revision": "8dc18eec5af227f484170362c9e8894b8531a27d",
     "superseded_compiled_revisions": [
       "953ee825e5060335b4c79682f5f41a78c5a1bfae",
-      "6ad7499f2ccc179bb33b2590666399c6632a7e3c"
+      "26b801d4a68ebfe720062cfdb3c66b070ab60e92",
+      "6ad7499f2ccc179bb33b2590666399c6632a7e3c",
+      "e3651cde5524c61cb9623ce39fcc9f0b90b99317"
     ],
-    "why": "The compiled pin is an exact commit reachable from the reviewed tl-syntax main history when admitted; it is not a moving branch head. The parser consumes its shared catalog and requirement-context types for the additive context-bound report while leaving the span-free semantic-identity family unconsumed. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both facts and the consumed/unconsumed delta separately."
+    "why": "The compiled pin is an exact commit reachable from the reviewed tl-syntax main history when admitted; it is not a moving branch head. The parser consumes its shared catalog and requirement-context types for the additive context-bound report and its future-operator lowering API for the clean-ascii v2 dialect, while leaving the span-free semantic-identity family unconsumed. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both facts and the consumed/unconsumed delta separately."
   },
   "known_drift": [
     "engineering-assurance v0.2.0 packages compatibility-matrix.json with accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate. Both landed on main after the tag and no v0.2.1 was cut. Filed as agent-ix/engineering-assurance#20. scripts/check_shared_pins.py reports the acceptance state the installed package records and gates only on the local toolchain, so an absent field is never read as an approval in either direction.",

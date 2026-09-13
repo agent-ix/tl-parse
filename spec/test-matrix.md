@@ -11,7 +11,7 @@ relationships:
 
 ## Functional Requirement Coverage
 
-| Functional Req | Acceptance Criteria | Test Cases | Coverage Status |
+| Functional Req | Acceptance Criteria | Test Cases | Status |
 |---|---|---|---|
 | FR-001 | FR-001-AC-1 through FR-001-AC-3 | TC-001 through TC-004, TC-020 | ✅ covered |
 | FR-002 | FR-002-AC-1 through FR-002-AC-4 | TC-005 through TC-008, TC-030 | ✅ covered |
@@ -20,12 +20,13 @@ relationships:
 | FR-005 | FR-005-AC-1 through FR-005-AC-3 | TC-018 through TC-021 | ✅ covered |
 | FR-006 | FR-006-AC-1 through FR-006-AC-3, FR-006-AC-5 through FR-006-AC-7 | TC-022 through TC-024, TC-026 through TC-028 | ✅ covered |
 | FR-007 | FR-007-AC-1 through FR-007-AC-6 | TC-033 through TC-038 | ✅ covered |
+| FR-008 | FR-008-AC-1 through FR-008-AC-6 | TC-039 through TC-045 | ✅ covered |
 
 ## Stakeholder Requirement Coverage
 
-| Stakeholder Req | Trace to US/FR | Test/Validation | Coverage Status |
+| Stakeholder Req | Trace to US/FR | Test/Validation | Status |
 |---|---|---|---|
-| StR-001 | FR-001, FR-002, FR-003 | TC-001, TC-005, TC-008, TC-010, TC-020 | ✅ covered |
+| StR-001 | FR-001, FR-002, FR-003, FR-008 | TC-001, TC-005, TC-008, TC-010, TC-020, TC-039 | ✅ covered |
 | StR-002 | FR-003, FR-004, FR-005, FR-006 | TC-011, TC-016, TC-018, TC-019, TC-021, TC-027 | ✅ covered |
 | StR-003 | FR-007 | TC-033 through TC-037 | ✅ covered |
 
@@ -78,3 +79,10 @@ relationships:
 | TC-036 | Bind every declared document identity deterministically, detect document mutations, and equate source spellings that parse to the same document | Integration | P0 | FR-007-AC-4, StR-003-VC-2 | ✅ implemented |
 | TC-037 | Preserve context-free compatibility and strictly version binding wires | Integration | P0 | FR-007-AC-5, StR-003-VC-2 | ✅ implemented |
 | TC-038 | Retain public dependency and evidence-tool boundaries | Integration | P1 | FR-007-AC-6 | ✅ implemented |
+| TC-039 | Bind the explicit v2 dialect identity and digest, and keep v1 parsing, reports, and derived-spelling rejection byte-unchanged | Integration | P0 | FR-008-AC-1, StR-001-VC-1 | ✅ implemented |
+| TC-040 | Parse generated W/M/U/R/Boolean chains into the graph built by direct construction with tl-syntax lowering | Property | P0 | FR-008-AC-2 | ✅ implemented |
+| TC-041 | Attribute exact operator, expression, and lowered-node spans across whitespace, grouping, and nesting | Unit | P0 | FR-008-AC-2 | ✅ implemented |
+| TC-042 | Refuse interval-less, aliased, unsupported, malformed-bound, node-charge, and lowering-work inputs with stable codes and no document | Unit | P0 | FR-008-AC-3 | ✅ implemented |
+| TC-043 | Format lowered documents as primitive-only text that, within limits, v1 accepts and v2 re-parses to the same text, byte-identical to direct construction; beyond limits the reparse is refused only for resources | Property | P0 | FR-008-AC-4 | ✅ implemented |
+| TC-044 | Build and seed the clean-ascii v2 fuzz target and bound arbitrary-input outcomes | Fuzz | P1 | FR-008-AC-5 | ✅ implemented |
+| TC-045 | Serialize the derived report deterministically under a strict versioned identity that mutations change | Unit | P0 | FR-008-AC-6 | ✅ implemented |

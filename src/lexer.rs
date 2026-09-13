@@ -19,6 +19,8 @@ pub(crate) enum TokenKind {
     Globally,
     Until,
     Release,
+    WeakUntil,
+    StrongRelease,
     LeftParenthesis,
     RightParenthesis,
     LeftBracket,
@@ -27,6 +29,18 @@ pub(crate) enum TokenKind {
     Invalid,
     Eof,
 }
+
+/// Input dialect selected explicitly by the entry point.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Dialect {
+    /// `tl-parse.clean-ascii/v1`.
+    V1,
+    /// `tl-parse.clean-ascii/v2`: v1 plus the derived `W`/`M` operators.
+    V2,
+}
+
+/// Operator spellings that `tl-syntax.future-operators/v1` refuses; v2 only.
+const UNSUPPORTED_OPERATORS: [&str; 6] = ["X", "Y", "O", "H", "S", "T"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Token {
@@ -67,6 +81,7 @@ pub(crate) struct LexResult {
 struct Lexer<'a> {
     source: &'a str,
     limits: ParseLimits,
+    dialect: Dialect,
     offset: usize,
     tokens: Vec<Token>,
     diagnostics: Vec<Diagnostic>,
@@ -76,10 +91,11 @@ struct Lexer<'a> {
     stopped: bool,
 }
 
-pub(crate) fn lex(source: &str, limits: ParseLimits) -> LexResult {
+pub(crate) fn lex(source: &str, limits: ParseLimits, dialect: Dialect) -> LexResult {
     let mut lexer = Lexer {
         source,
         limits,
+        dialect,
         offset: 0,
         tokens: Vec::new(),
         diagnostics: Vec::new(),
@@ -263,6 +279,11 @@ impl Lexer<'_> {
             None => true,
             Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
             Some(b'U' | b'R') => self.source.as_bytes().get(end + 1) == Some(&b'['),
+            Some(b'W' | b'M' | b'X' | b'Y' | b'O' | b'H' | b'S' | b'T')
+                if self.dialect == Dialect::V2 =>
+            {
+                self.source.as_bytes().get(end + 1) == Some(&b'[')
+            }
             Some(_) => false,
         }
     }
@@ -284,6 +305,8 @@ impl Lexer<'_> {
             "G" => Some(TokenKind::Globally),
             "U" => Some(TokenKind::Until),
             "R" => Some(TokenKind::Release),
+            "W" if self.dialect == Dialect::V2 => Some(TokenKind::WeakUntil),
+            "M" if self.dialect == Dialect::V2 => Some(TokenKind::StrongRelease),
             _ => None,
         };
         if let Some(kind) = kind {
@@ -302,6 +325,19 @@ impl Lexer<'_> {
             end: self.offset,
         }
         .found(self.source);
+        if self.dialect == Dialect::V2 && UNSUPPORTED_OPERATORS.contains(&lexeme) {
+            self.push_diagnostic(
+                DiagnosticCode::UnsupportedOperator,
+                start,
+                self.offset,
+                &found,
+                vec![ExpectedToken::Expression],
+                RecoveryAction::SkippedToken,
+                format!("operator {found} is outside tl-syntax.future-operators/v1"),
+            );
+            self.push_token(TokenKind::Invalid, start);
+            return;
+        }
         self.push_diagnostic(
             DiagnosticCode::UnknownIdentifier,
             start,

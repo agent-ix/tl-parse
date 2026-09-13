@@ -27,7 +27,9 @@ does not introduce a second AST or temporal semantics.
 
 ### In Scope
 
-- A versioned ASCII dialect for Boolean and bounded MLTL operators.
+- A versioned ASCII dialect for Boolean and bounded MLTL operators, and an
+  explicitly selected v2 input dialect for bounded `W`/`M` that lowers to
+  primitive nodes.
 - Deterministic precedence parsing into validated tl-syntax documents.
 - Versioned, byte-located diagnostics with expected tokens and recovery action.
 - Explicit source, token, node, nesting, diagnostic, work, and output limits.
@@ -58,7 +60,8 @@ FR-003 diagnostics and fail-closed limits, FR-004 canonical formatting and
 round trips, FR-005 corpora, fuzzing, CLI, and evidence interchange, FR-006
 the shared-assurance intake boundary, and FR-007 additive shared-catalog/context
 binding reports for parsed formulas without changing the dialect or parser
-graph. NFR-001 constrains determinism/resources, NFR-002 provenance and
+graph, and FR-008 the explicitly selected `tl-parse.clean-ascii/v2` dialect,
+whose `W`/`M` operators lower through tl-syntax into primitive nodes. NFR-001 constrains determinism/resources, NFR-002 provenance and
 authority, and NFR-003 explicit fail-closed qualification controls.
 
 ### Responsibility and dependency allocation

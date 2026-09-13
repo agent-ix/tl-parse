@@ -118,6 +118,8 @@ pub enum DiagnosticCode {
     TrailingInput,
     /// Directly constructed graph failed the pinned tl-syntax validator.
     ValidationFailure,
+    /// A recognized operator outside the derived-operator profile; v2 only.
+    UnsupportedOperator,
 }
 
 impl DiagnosticCode {
@@ -138,6 +140,7 @@ impl DiagnosticCode {
             Self::InvalidInterval => "invalid_interval",
             Self::TrailingInput => "trailing_input",
             Self::ValidationFailure => "validation_failure",
+            Self::UnsupportedOperator => "unsupported_operator",
         }
     }
 }
