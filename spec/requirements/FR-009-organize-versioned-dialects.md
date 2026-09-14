@@ -50,9 +50,14 @@ retain exact spans and limits, and strict-read without unknown/duplicate fields,
 trailing data or noncanonical variants.
 
 The reorganization SHALL preserve all existing v1/v2/v3 canonical text,
-documents, spans, diagnostics, limit charging and report bytes. It introduces
-no second AST, temporal evaluation, rewrite, proposition inference or source
-language.
+documents, spans, diagnostics, limit charging and report bytes for graphs
+admitted by the pinned owner boundary, except that exact compiled-revision
+fields and provenance-document digests SHALL identify the newly pinned owner.
+A graph beyond an immutable tl-syntax
+owner ceiling SHALL fail with the corresponding typed resource diagnostic and
+no document; tl-parse SHALL NOT bypass or raise the owner ceiling to preserve a
+formerly broader local limit. It introduces no second AST, temporal evaluation,
+rewrite, proposition inference or source language.
 
 ## Acceptance Criteria
 
@@ -60,7 +65,7 @@ language.
 |---|---|---|
 | FR-009-AC-1 | V1, V2 and V3 accept exactly their closed spellings/profiles and cross-refuse every other dialect without fallback or partial graph. | Test (TC-046) |
 | FR-009-AC-2 | Every O/H/Y/S/T precedence, associativity, interval and span case parses to the exact formula-v2 graph and round-trips to one canonical v3 text. | Test (TC-046) |
-| FR-009-AC-3 | Existing v1/v2/v3 documents, diagnostics, report bytes, public paths and resource charges remain byte-identical across the module reorganization. | Test (TC-046) |
+| FR-009-AC-3 | Existing owner-admissible v1/v2/v3 documents, diagnostics, public paths and resource charges remain byte-identical across the module reorganization; report bytes change only in the required compiled-revision field, provenance digests bind that change, and inputs beyond an immutable owner ceiling refuse with the corresponding resource diagnostic. | Test (TC-046) |
 | FR-009-AC-4 | The real tl-syntax strict reader admits every successful graph and rejects every profile/operator/topology mutation; tl-parse owns no mirror node or semantic evaluator. | Test (TC-046) |
 | FR-009-AC-5 | Exact limits succeed and one-over source/token/node/depth/diagnostic/work/output inputs refuse before excess retention; bounded arbitrary UTF-8 never unwinds. | Test (TC-046) |
 
@@ -72,5 +77,5 @@ past profile and strict graph owner reader.
 
 ## Status
 
-Proposed architecture reconciliation of delivered Task-002 behavior under
-`tl-syntax#52/#64`.
+Implementation and base/code/Rust/gap review are complete on the Task-009
+tl-parse allocation; promotion remains pending under `tl-syntax#52/#64`.

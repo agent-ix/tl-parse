@@ -6,31 +6,31 @@
 //! [`tl_syntax::FormulaDocument`] model; tl-parse owns no second temporal AST.
 
 mod context;
-mod derived;
 mod diagnostic;
-mod format;
+mod dialect;
+mod formatter;
 mod lexer;
 mod parser;
-mod past;
 
 pub use context::{
     parse_with_context, BoundProposition, ContextualParseError, ContextualParseReport,
     ContextualParseSchemaVersion,
 };
-pub use derived::{
+pub use diagnostic::{
+    Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
+    FormatLimits, FormatReport, FormatStats, ParseArtifactLimits, ParseLimits, ParseReport,
+    ParseStats, RecoveryAction, StrictParseArtifactReadError,
+};
+pub use dialect::v2::{
     parse_clean_ascii_v2, DerivedDialectRevision, DerivedOperator, DerivedOperatorProfile,
     DerivedParseReport, DerivedParseSchemaVersion, LoweringRecord,
 };
-pub use diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
-    FormatLimits, FormatReport, FormatStats, ParseLimits, ParseReport, ParseStats, RecoveryAction,
-};
-pub use format::{format_clean_ascii_v3, format_document, format_formula};
-pub use parser::{parse, source_limit_report};
-pub use past::{
+pub use dialect::v3::{
     parse_clean_ascii_v3, PastDialectRevision, PastOperatorProfile, PastParseReport,
     PastParseSchemaVersion,
 };
+pub use formatter::{format_clean_ascii_v3, format_document, format_formula};
+pub use parser::{parse, source_limit_report};
 pub use tl_syntax;
 
 /// Stable identity of the independently authored textual dialect.
@@ -52,7 +52,7 @@ pub const PAST_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.past-parse-report/v
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
 
 /// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "e70f2379a752117c79603bc399a86c26feed7716";
+pub const TL_SYNTAX_REVISION: &str = "842d82553f045eb69a7f38745756d968254fc25e";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";

@@ -2,12 +2,26 @@ use tl_syntax::{
     Formula, FormulaDocument, FormulaSchemaVersion, Interval, NodeId, NodeKind, SemanticProfile,
 };
 
-use crate::{FormatError, FormatErrorCode, FormatLimits, FormatReport, FormatStats};
+use crate::{
+    dialect::Dialect, FormatError, FormatErrorCode, FormatLimits, FormatReport, FormatStats,
+};
 
 /// Validates and canonically formats an owned formula document.
 pub fn format_document(document: &FormulaDocument, limits: FormatLimits) -> FormatReport {
+    let dialect = match (document.schema_version(), document.semantic_profile()) {
+        (_, SemanticProfile::ClosedTraceV1) | (_, SemanticProfile::OnlinePrefixV1) => Dialect::V1,
+        (FormulaSchemaVersion::V2, SemanticProfile::OriginCompleteHistoryV1) => Dialect::V3,
+        _ => {
+            return failed_report(
+                limits.clamped(),
+                FormatStats::default(),
+                FormatErrorCode::InvalidGraph,
+                "formula schema/profile has no matching clean-ASCII dialect".to_owned(),
+            )
+        }
+    };
     match document.validate() {
-        Ok(formula) => format_formula(formula, limits),
+        Ok(formula) => format_formula_for_dialect(formula, limits, dialect),
         Err(error) => failed_report(
             limits.clamped(),
             FormatStats::default(),
@@ -29,17 +43,41 @@ pub fn format_clean_ascii_v3(document: &FormulaDocument, limits: FormatLimits) -
             "clean-ascii/v3 requires formula-v2 with mltl.origin-complete-history/v1".to_owned(),
         );
     }
-    format_document(document, limits)
+    match document.validate() {
+        Ok(formula) => format_formula_for_dialect(formula, limits, Dialect::V3),
+        Err(error) => failed_report(
+            limits.clamped(),
+            FormatStats::default(),
+            FormatErrorCode::InvalidGraph,
+            format!("pinned tl-syntax validation failed: {error}"),
+        ),
+    }
 }
 
 /// Canonically formats a validated formula without recursive graph traversal.
 pub fn format_formula(formula: Formula<'_>, limits: FormatLimits) -> FormatReport {
+    let dialect = Dialect::for_formula_profile(formula.profile());
+    format_formula_for_dialect(formula, limits, dialect)
+}
+
+fn format_formula_for_dialect(
+    formula: Formula<'_>,
+    limits: FormatLimits,
+    dialect: Dialect,
+) -> FormatReport {
     let limits = limits.clamped();
     let nodes = formula.nodes();
     let mut reachable = vec![false; nodes.len()];
     let mut stack = vec![formula.root()];
     while let Some(id) = stack.pop() {
-        let index = id.0 as usize;
+        let Ok(index) = usize::try_from(id.0) else {
+            return failed_report(
+                limits.clamped(),
+                FormatStats::default(),
+                FormatErrorCode::InvalidGraph,
+                format!("formula node {} cannot be indexed on this target", id.0),
+            );
+        };
         if reachable.get(index).copied().unwrap_or(false) {
             continue;
         }
@@ -79,7 +117,15 @@ pub fn format_formula(formula: Formula<'_>, limits: FormatLimits) -> FormatRepor
                 if let Err(error) = charge(&mut stats, 1, limits) {
                     Err(error)
                 } else {
-                    let grouped = context.groups(precedence(node.kind));
+                    let Some(node_precedence) = dialect.precedence(node.kind) else {
+                        return failed_report(
+                            limits,
+                            stats,
+                            FormatErrorCode::InvalidGraph,
+                            "formula node is outside the selected clean-ASCII dialect".to_owned(),
+                        );
+                    };
+                    let grouped = context.groups(node_precedence);
                     if grouped {
                         if let Err(error) = append(&mut text, "(", limits, &mut stats) {
                             return FormatReport {
@@ -91,8 +137,15 @@ pub fn format_formula(formula: Formula<'_>, limits: FormatLimits) -> FormatRepor
                         }
                         actions.push(Action::Static(")"));
                     }
-                    push_node_actions(&mut actions, node.kind);
-                    Ok(())
+                    if push_node_actions(&mut actions, dialect, node.kind) {
+                        Ok(())
+                    } else {
+                        Err(FormatError {
+                            code: FormatErrorCode::InvalidGraph,
+                            message: "formula node is outside the selected clean-ASCII dialect"
+                                .to_owned(),
+                        })
+                    }
                 }
             }
         };
@@ -216,109 +269,96 @@ fn interval_operator(operator: &str, interval: Interval) -> String {
     format!("{operator}[{},{}]", interval.start(), interval.end())
 }
 
-fn temporal_binary_actions(
-    actions: &mut Vec<Action>,
-    left: NodeId,
-    operator: &str,
-    interval: Interval,
-    right: NodeId,
-) {
-    actions.push(Action::Node(
-        right,
-        Context::Binary {
-            precedence: 5,
-            group_equal: true,
-        },
-    ));
-    actions.push(Action::Owned(interval_operator(operator, interval)));
-    actions.push(Action::Node(
-        left,
-        Context::Binary {
-            precedence: 5,
-            group_equal: false,
-        },
-    ));
-}
-
-fn push_node_actions(actions: &mut Vec<Action>, kind: NodeKind) {
+fn push_node_actions(actions: &mut Vec<Action>, dialect: Dialect, kind: NodeKind) -> bool {
     match kind {
-        NodeKind::False => actions.push(Action::Static("false")),
-        NodeKind::True => actions.push(Action::Static("true")),
+        NodeKind::False => {
+            actions.push(Action::Static("false"));
+            return true;
+        }
+        NodeKind::True => {
+            actions.push(Action::Static("true"));
+            return true;
+        }
         NodeKind::Proposition { proposition } => {
             actions.push(Action::Owned(format!("p{}", proposition.0)));
+            return true;
         }
-        NodeKind::Not { operand } => {
-            actions.push(Action::Node(operand, Context::Prefix));
-            actions.push(Action::Static("!"));
+        _ => {}
+    }
+
+    if let (Some(operator), Some(operand)) = (dialect.unary_spelling(kind), unary_operand(kind)) {
+        actions.push(Action::Node(operand, Context::Prefix));
+        if let Some(interval) = operator.interval {
+            actions.push(Action::Owned(interval_operator(
+                operator.operator,
+                interval,
+            )));
+        } else {
+            actions.push(Action::Static(operator.operator));
         }
-        NodeKind::And { left, right } => binary_actions(actions, left, "&", right, 4, false),
-        NodeKind::Or { left, right } => binary_actions(actions, left, "|", right, 3, false),
-        NodeKind::Implies { left, right } => {
-            binary_actions(actions, left, "->", right, 2, true);
+        return true;
+    }
+
+    if let (Some(operator), Some((left, right))) =
+        (dialect.binary_spelling(kind), binary_operands(kind))
+    {
+        if let Some(interval) = operator.interval {
+            actions.push(Action::Node(
+                right,
+                Context::Binary {
+                    precedence: operator.precedence,
+                    group_equal: true,
+                },
+            ));
+            actions.push(Action::Owned(interval_operator(
+                operator.operator,
+                interval,
+            )));
+            actions.push(Action::Node(
+                left,
+                Context::Binary {
+                    precedence: operator.precedence,
+                    group_equal: false,
+                },
+            ));
+        } else {
+            binary_actions(
+                actions,
+                left,
+                operator.operator,
+                right,
+                operator.precedence,
+                operator.right_associative,
+            );
         }
-        NodeKind::Equivalent { left, right } => {
-            binary_actions(actions, left, "<->", right, 1, false);
-        }
-        NodeKind::Future { interval, operand } => {
-            actions.push(Action::Node(operand, Context::Prefix));
-            actions.push(Action::Owned(interval_operator("F", interval)));
-        }
-        NodeKind::Globally { interval, operand } => {
-            actions.push(Action::Node(operand, Context::Prefix));
-            actions.push(Action::Owned(interval_operator("G", interval)));
-        }
-        NodeKind::Until {
-            interval,
-            left,
-            right,
-        } => temporal_binary_actions(actions, left, "U", interval, right),
-        NodeKind::Release {
-            interval,
-            left,
-            right,
-        } => temporal_binary_actions(actions, left, "R", interval, right),
-        NodeKind::Once { interval, operand } => {
-            actions.push(Action::Node(operand, Context::Prefix));
-            actions.push(Action::Owned(interval_operator("O", interval)));
-        }
-        NodeKind::Historically { interval, operand } => {
-            actions.push(Action::Node(operand, Context::Prefix));
-            actions.push(Action::Owned(interval_operator("H", interval)));
-        }
-        NodeKind::StrongPrevious { operand } => {
-            actions.push(Action::Node(operand, Context::Prefix));
-            actions.push(Action::Static("Y"));
-        }
-        NodeKind::Since {
-            interval,
-            left,
-            right,
-        } => temporal_binary_actions(actions, left, "S", interval, right),
-        NodeKind::Triggered {
-            interval,
-            left,
-            right,
-        } => temporal_binary_actions(actions, left, "T", interval, right),
+        return true;
+    }
+    false
+}
+
+fn unary_operand(kind: NodeKind) -> Option<NodeId> {
+    match kind {
+        NodeKind::Not { operand }
+        | NodeKind::Future { operand, .. }
+        | NodeKind::Globally { operand, .. }
+        | NodeKind::Once { operand, .. }
+        | NodeKind::Historically { operand, .. }
+        | NodeKind::StrongPrevious { operand } => Some(operand),
+        _ => None,
     }
 }
 
-fn precedence(kind: NodeKind) -> u8 {
+fn binary_operands(kind: NodeKind) -> Option<(NodeId, NodeId)> {
     match kind {
-        NodeKind::False | NodeKind::True | NodeKind::Proposition { .. } => 7,
-        NodeKind::Not { .. }
-        | NodeKind::Future { .. }
-        | NodeKind::Globally { .. }
-        | NodeKind::Once { .. }
-        | NodeKind::Historically { .. }
-        | NodeKind::StrongPrevious { .. } => 6,
-        NodeKind::Until { .. }
-        | NodeKind::Release { .. }
-        | NodeKind::Since { .. }
-        | NodeKind::Triggered { .. } => 5,
-        NodeKind::And { .. } => 4,
-        NodeKind::Or { .. } => 3,
-        NodeKind::Implies { .. } => 2,
-        NodeKind::Equivalent { .. } => 1,
+        NodeKind::And { left, right }
+        | NodeKind::Or { left, right }
+        | NodeKind::Implies { left, right }
+        | NodeKind::Equivalent { left, right }
+        | NodeKind::Until { left, right, .. }
+        | NodeKind::Release { left, right, .. }
+        | NodeKind::Since { left, right, .. }
+        | NodeKind::Triggered { left, right, .. } => Some((left, right)),
+        _ => None,
     }
 }
 

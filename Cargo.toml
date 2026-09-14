@@ -20,7 +20,7 @@ path = "src/lib.rs"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
-tl-syntax = { git = "https://github.com/agent-ix/tl-syntax.git", rev = "e70f2379a752117c79603bc399a86c26feed7716", features = ["serde"] }
+tl-syntax = { git = "https://github.com/agent-ix/tl-syntax.git", rev = "842d82553f045eb69a7f38745756d968254fc25e", features = ["serde"] }
 
 [dev-dependencies]
 proptest = "=1.5.0"

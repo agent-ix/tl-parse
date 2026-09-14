@@ -39,7 +39,7 @@ fn canonical(source: &str) -> String {
         .unwrap()
 }
 
-// Trace: TC-055, FR-013-AC-2
+// Trace: TC-046, TC-055, FR-009-AC-1, FR-009-AC-3, FR-013-AC-2
 #[test]
 fn v3_identity_is_closed_and_prior_dialects_are_unchanged() {
     assert_eq!(DIALECT_V3_REVISION, "tl-parse.clean-ascii/v3");
@@ -108,7 +108,7 @@ fn v3_identity_is_closed_and_prior_dialects_are_unchanged() {
     }
 }
 
-// Trace: TC-055, FR-013-AC-2
+// Trace: TC-046, TC-055, FR-009-AC-2, FR-013-AC-2
 #[test]
 fn every_past_operator_builds_the_exact_v2_node_and_span() {
     let cases = [
@@ -162,7 +162,7 @@ fn every_past_operator_builds_the_exact_v2_node_and_span() {
     }
 }
 
-// Trace: TC-055, FR-013-AC-2
+// Trace: TC-046, TC-055, FR-009-AC-2, FR-013-AC-2
 #[test]
 fn v3_precedence_associativity_and_canonical_format_are_exact() {
     assert_eq!(canonical("O[ 0 , 2 ] (p0 & Y p1)"), "O[0,2](p0&Yp1)");
@@ -186,7 +186,7 @@ fn v3_precedence_associativity_and_canonical_format_are_exact() {
     ));
 }
 
-// Trace: TC-055, TC-057, FR-013-AC-2
+// Trace: TC-046, TC-055, TC-057, FR-009-AC-4, FR-009-AC-5, FR-013-AC-2
 #[test]
 fn v3_refuses_future_weak_previous_long_names_and_malformed_intervals() {
     let cases = [
@@ -266,7 +266,7 @@ fn v3_resource_limits_and_formatter_profile_gate_fail_closed() {
     assert_eq!(formatted.error.unwrap().code, FormatErrorCode::InvalidGraph);
 }
 
-// Trace: TC-055, FR-013-AC-2
+// Trace: TC-046, TC-055, FR-009-AC-3, FR-009-AC-4, FR-013-AC-2
 #[test]
 fn past_report_wire_is_strict_and_self_consistent() {
     let report = v3("O[0,1]p0");
@@ -395,7 +395,7 @@ proptest! {
         );
     }
 
-    // Trace: TC-057, FR-013-AC-2
+    // Trace: TC-046, TC-057, FR-009-AC-5, FR-013-AC-2
     #[test]
     fn arbitrary_bounded_utf8_never_unwinds_or_crosses_profiles(
         characters in prop::collection::vec(any::<char>(), 0..2048)

@@ -4,8 +4,63 @@ use serde::{Deserialize, Serialize};
 use tl_syntax::{FormulaDocument, FutureKind, NodeId, SemanticProfile, SourceSpan};
 
 use crate::{
-    lexer::Dialect, parser::parse_dialect, Diagnostic, ParseLimits, ParseStats, TL_SYNTAX_REVISION,
+    lexer::TokenKind, parser::parse_dialect, Diagnostic, ParseLimits, ParseStats,
+    TL_SYNTAX_REVISION,
 };
+
+use super::{v1, BinarySpelling, Dialect, UnarySpelling};
+
+const UNSUPPORTED_OPERATORS: [&str; 6] = ["X", "Y", "O", "H", "S", "T"];
+
+pub(crate) fn classify_identifier(lexeme: &str) -> Option<TokenKind> {
+    match lexeme {
+        "W" => Some(TokenKind::WeakUntil),
+        "M" => Some(TokenKind::StrongRelease),
+        _ => v1::classify_identifier(lexeme),
+    }
+}
+
+pub(crate) fn unsupported_operator_profile(lexeme: &str) -> Option<&'static str> {
+    UNSUPPORTED_OPERATORS
+        .contains(&lexeme)
+        .then_some("tl-syntax.future-operators/v1")
+}
+
+pub(crate) const fn atom_keyword_boundary(next: u8, followed_by_bracket: bool) -> bool {
+    matches!(
+        next,
+        b'U' | b'R' | b'W' | b'M' | b'X' | b'Y' | b'O' | b'H' | b'S' | b'T'
+    ) && followed_by_bracket
+}
+
+pub(crate) const fn binary_binding_power(token: TokenKind) -> Option<(u8, u8)> {
+    match token {
+        TokenKind::WeakUntil | TokenKind::StrongRelease => Some((5, 6)),
+        _ => v1::binary_binding_power(token),
+    }
+}
+
+pub(crate) const fn permits_temporal_prefix(token: TokenKind) -> bool {
+    v1::permits_temporal_prefix(token)
+}
+
+pub(crate) fn build_document(
+    profile: SemanticProfile,
+    root: NodeId,
+    nodes: Vec<tl_syntax::Node>,
+) -> Result<FormulaDocument, tl_syntax::FormulaError> {
+    FormulaDocument::new(profile, root, nodes)
+}
+
+// W/M are always lowered at parse time, so the v2 canonical output policy is
+// deliberately the primitive v1 policy.
+pub(crate) const fn unary_spelling(kind: tl_syntax::NodeKind) -> Option<UnarySpelling> {
+    v1::unary_spelling(kind)
+}
+
+pub(crate) const fn binary_spelling(kind: tl_syntax::NodeKind) -> Option<BinarySpelling> {
+    v1::binary_spelling(kind)
+}
 
 /// Strict wire identity for a derived-operator parse report.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -126,7 +181,7 @@ impl TryFrom<DerivedParseReportWire> for DerivedParseReport {
             return Err("a document requires a diagnostic-free parse");
         }
         let nodes = document.nodes().len();
-        let in_document = |id: NodeId| (id.0 as usize) < nodes;
+        let in_document = |id: NodeId| usize::try_from(id.0).is_ok_and(|index| index < nodes);
         if !wire.lowerings.iter().all(|record| {
             in_document(record.left) && in_document(record.right) && in_document(record.root)
         }) {

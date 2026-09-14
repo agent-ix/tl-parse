@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`e70f2379a752117c79603bc399a86c26feed7716`, a commit that was reachable from
+`842d82553f045eb69a7f38745756d968254fc25e`, a commit that was reachable from
 the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -35,11 +35,29 @@ is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
-`e70f2379` is the squash merge of tl-syntax#55 and contains the accepted
-formula-v2 and origin-complete past operator/profile contracts used by
-clean-ascii/v3.
+`842d8255` is the squash merge of tl-syntax#67 and contains the accepted strict
+syntax-owner architecture used by every successful parse.
 
-## Source-inspected formula-v2 compiled-pin delta
+## Source-inspected strict-owner compiled-pin delta
+
+The immediately preceding compiled pin was
+`e70f2379a752117c79603bc399a86c26feed7716`. Source inspection of the exact
+range
+`e70f2379a752117c79603bc399a86c26feed7716..842d82553f045eb69a7f38745756d968254fc25e`
+found the cycle-free `formula`, `signal`, and `contracts` topology; canonical
+formula-v1/v2 JSON bytes and identities; caller-lowered immutable owner limits;
+the bounded strict `FormulaDocument::from_json_bytes` reader; strict signal
+catalog and proposition-map readers; and the unified ecosystem architecture and
+tracking artifacts.
+
+tl-parse consumes only the reorganized compatibility exports, canonical formula
+bytes, `SyntaxArtifactLimits`, and the strict `FormulaDocument` reader. It does
+not consume or mirror the signal/proposition contracts, and it introduces no
+evaluator, rewrite rule, monitoring state, or Contract-IR vocabulary.
+
+Both licence files are byte-identical across `e70f2379` and `842d8255`.
+
+## Earlier source-inspected formula-v2 compiled-pin delta
 
 The immediately preceding compiled pin was
 `8dc18eec5af227f484170362c9e8894b8531a27d`. Source inspection of the exact

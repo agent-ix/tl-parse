@@ -1,7 +1,8 @@
 use tl_syntax::SourceSpan;
 
 use crate::{
-    Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, ParseLimits, RecoveryAction,
+    dialect::Dialect, Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, ParseLimits,
+    RecoveryAction,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,20 +35,6 @@ pub(crate) enum TokenKind {
     Invalid,
     Eof,
 }
-
-/// Input dialect selected explicitly by the entry point.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum Dialect {
-    /// `tl-parse.clean-ascii/v1`.
-    V1,
-    /// `tl-parse.clean-ascii/v2`: v1 plus the derived `W`/`M` operators.
-    V2,
-    /// `tl-parse.clean-ascii/v3`: Boolean plus the closed past O/H/Y/S/T profile.
-    V3,
-}
-
-const V2_UNSUPPORTED_OPERATORS: [&str; 6] = ["X", "Y", "O", "H", "S", "T"];
-const V3_UNSUPPORTED_OPERATORS: [&str; 7] = ["X", "F", "G", "U", "R", "W", "M"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Token {
@@ -234,7 +221,10 @@ impl Lexer<'_> {
         // single-letter spelling only when the following bytes can begin an
         // operand (or end the token). This preserves compact `Yp0` while
         // diagnosing `Yesterday` as one unknown identifier.
-        if byte == b'Y' && self.dialect == Dialect::V3 && self.strong_previous_boundary(start + 1) {
+        if byte == b'Y'
+            && self.dialect.permits_strong_previous()
+            && self.strong_previous_boundary(start + 1)
+        {
             self.offset += 1;
             self.push_token(TokenKind::StrongPrevious, start);
             return;
@@ -295,18 +285,9 @@ impl Lexer<'_> {
         match self.source.as_bytes().get(end) {
             None => true,
             Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
-            Some(b'U' | b'R') if self.dialect != Dialect::V3 => {
-                self.source.as_bytes().get(end + 1) == Some(&b'[')
-            }
-            Some(b'W' | b'M' | b'X' | b'Y' | b'O' | b'H' | b'S' | b'T')
-                if self.dialect == Dialect::V2 =>
-            {
-                self.source.as_bytes().get(end + 1) == Some(&b'[')
-            }
-            Some(b'S' | b'T') if self.dialect == Dialect::V3 => {
-                self.source.as_bytes().get(end + 1) == Some(&b'[')
-            }
-            Some(_) => false,
+            Some(byte) => self
+                .dialect
+                .atom_keyword_boundary(*byte, self.source.as_bytes().get(end + 1) == Some(&b'[')),
         }
     }
 
@@ -329,21 +310,7 @@ impl Lexer<'_> {
             }
         }
         let lexeme = &self.source[start..self.offset];
-        let kind = match lexeme {
-            "false" => Some(TokenKind::False),
-            "true" => Some(TokenKind::True),
-            "F" if self.dialect != Dialect::V3 => Some(TokenKind::Future),
-            "G" if self.dialect != Dialect::V3 => Some(TokenKind::Globally),
-            "U" if self.dialect != Dialect::V3 => Some(TokenKind::Until),
-            "R" if self.dialect != Dialect::V3 => Some(TokenKind::Release),
-            "W" if self.dialect == Dialect::V2 => Some(TokenKind::WeakUntil),
-            "M" if self.dialect == Dialect::V2 => Some(TokenKind::StrongRelease),
-            "O" if self.dialect == Dialect::V3 => Some(TokenKind::Once),
-            "H" if self.dialect == Dialect::V3 => Some(TokenKind::Historically),
-            "S" if self.dialect == Dialect::V3 => Some(TokenKind::Since),
-            "T" if self.dialect == Dialect::V3 => Some(TokenKind::Triggered),
-            _ => None,
-        };
+        let kind = self.dialect.classify_identifier(lexeme);
         if let Some(kind) = kind {
             self.push_token(kind, start);
             return;
@@ -360,16 +327,7 @@ impl Lexer<'_> {
             end: self.offset,
         }
         .found(self.source);
-        let unsupported_profile = match self.dialect {
-            Dialect::V1 => None,
-            Dialect::V2 if V2_UNSUPPORTED_OPERATORS.contains(&lexeme) => {
-                Some("tl-syntax.future-operators/v1")
-            }
-            Dialect::V3 if V3_UNSUPPORTED_OPERATORS.contains(&lexeme) => {
-                Some("tl-syntax.past-operators/v1")
-            }
-            Dialect::V2 | Dialect::V3 => None,
-        };
+        let unsupported_profile = self.dialect.unsupported_operator_profile(lexeme);
         if let Some(profile) = unsupported_profile {
             self.push_diagnostic(
                 DiagnosticCode::UnsupportedOperator,
@@ -491,9 +449,13 @@ impl Lexer<'_> {
 }
 
 pub(crate) fn checked_span(start: usize, end: usize) -> SourceSpan {
-    match SourceSpan::new(start as u32, end as u32) {
-        Ok(span) => span,
-        Err(_) => match SourceSpan::new(0, 0) {
+    let span = u32::try_from(start)
+        .ok()
+        .zip(u32::try_from(end).ok())
+        .and_then(|(start, end)| SourceSpan::new(start, end).ok());
+    match span {
+        Some(span) => span,
+        None => match SourceSpan::new(0, 0) {
             Ok(span) => span,
             Err(_) => unreachable!("zero source span is valid"),
         },
