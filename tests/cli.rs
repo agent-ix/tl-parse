@@ -54,11 +54,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "b8fd8e188ad1fcb3ba750849bbefbb33230ee670208119042f59115191a4bfe0"
+        "493f33790f3e9590fa553780e1812fc28bfda98ab874ae8643f1e304a4eaff83"
     );
     assert_eq!(
         attribution_document_digest(),
-        "9aff72881a8590e2ec44a56ae37975e537223ba1fda2ee537ae3d26750e45db6"
+        "477db6154ffb8508759d057f36b24e15f4194a0435eb6352fdac1b36f19fd06f"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
@@ -106,6 +106,9 @@ fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
     let root = env!("CARGO_MANIFEST_DIR");
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     for required in [
+        "e70f2379a752117c79603bc399a86c26feed7716..842d82553f045eb69a7f38745756d968254fc25e",
+        "bounded strict `FormulaDocument::from_json_bytes` reader",
+        "tl-parse consumes only the reorganized compatibility exports",
         "8dc18eec5af227f484170362c9e8894b8531a27d..e70f2379a752117c79603bc399a86c26feed7716",
         "formula-v2 schema",
         "origin-complete history semantic profile",

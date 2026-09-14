@@ -1,11 +1,13 @@
 use tl_syntax::{
     Formula, FormulaDocument, FutureKind, FutureLoweringRequest, Interval, Node, NodeId, NodeKind,
-    PropositionId, RawBounds, SemanticProfile, SourceSpan, FUTURE_LOWERING_NODE_CHARGE,
-    FUTURE_LOWERING_REQUEST_V1, FUTURE_OPERATORS_V1,
+    PropositionId, RawBounds, SemanticProfile, SourceSpan, StrictDocumentReadError,
+    SyntaxArtifactLimits, FUTURE_LOWERING_NODE_CHARGE, FUTURE_LOWERING_REQUEST_V1,
+    FUTURE_OPERATORS_V1,
 };
 
 use crate::{
-    lexer::{checked_span, lex, Dialect, Token, TokenKind},
+    dialect::Dialect,
+    lexer::{checked_span, lex, Token, TokenKind},
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, LoweringRecord, ParseLimits,
     ParseReport, RecoveryAction,
 };
@@ -15,7 +17,7 @@ use crate::{
 /// Caller limits are clamped to process-safe hard maxima. Any diagnostic,
 /// including a resource diagnostic, suppresses the formula document.
 pub fn parse(source: &str, profile: SemanticProfile, limits: ParseLimits) -> ParseReport {
-    parse_dialect(source, profile, limits, Dialect::V1).report
+    crate::dialect::v1::parse(source, profile, limits)
 }
 
 /// A v1-shaped report plus the lowering records a v2 parse produced.
@@ -90,20 +92,21 @@ pub(crate) fn parse_dialect(
     if !parser.had_error && !parser.stopped {
         if let Some(root) = root {
             let nodes = std::mem::take(&mut parser.nodes);
-            let document = match parser.dialect {
-                Dialect::V1 | Dialect::V2 => FormulaDocument::new(profile, root.node, nodes),
-                Dialect::V3 => FormulaDocument::new_v2(profile, root.node, nodes),
-            };
+            let document = parser
+                .dialect
+                .build_document(profile, root.node, nodes)
+                .map_err(|error| (DiagnosticCode::ValidationFailure, error.to_string()))
+                .and_then(strictly_admit_document);
             match document {
                 Ok(document) => report.document = Some(document),
-                Err(error) => {
+                Err((code, message)) => {
                     let eof = parser.current();
                     parser.push_diagnostic(
-                        DiagnosticCode::ValidationFailure,
+                        code,
                         eof,
                         Vec::new(),
                         RecoveryAction::Stopped,
-                        format!("pinned tl-syntax validation failed: {error}"),
+                        format!("pinned tl-syntax validation failed: {message}"),
                     );
                 }
             }
@@ -124,6 +127,45 @@ pub(crate) fn parse_dialect(
     DialectParse { report, lowerings }
 }
 
+fn strictly_admit_document(
+    document: FormulaDocument,
+) -> Result<FormulaDocument, (DiagnosticCode, String)> {
+    // Construction checks the graph without serialization; strict admission is
+    // deliberately a second, real owner boundary over the exact canonical bytes.
+    let bytes = document.canonical_json_bytes().map_err(|error| {
+        (
+            DiagnosticCode::ValidationFailure,
+            format!("pinned tl-syntax canonical encoding failed: {error}"),
+        )
+    })?;
+    match FormulaDocument::from_json_bytes(&bytes, SyntaxArtifactLimits::default()) {
+        Ok(admitted) if admitted == document => Ok(admitted),
+        Ok(_) => Err((
+            DiagnosticCode::ValidationFailure,
+            "pinned tl-syntax strict admission changed the document".to_owned(),
+        )),
+        Err(error) => {
+            let code = match error {
+                StrictDocumentReadError::ResourceLimitExceeded {
+                    resource: "formula nodes",
+                    ..
+                } => DiagnosticCode::NodeLimit,
+                StrictDocumentReadError::ResourceLimitExceeded {
+                    resource: "formula depth",
+                    ..
+                }
+                | StrictDocumentReadError::DepthLimitExceeded { .. } => DiagnosticCode::DepthLimit,
+                StrictDocumentReadError::WorkLimitExceeded { .. } => DiagnosticCode::WorkLimit,
+                _ => DiagnosticCode::ValidationFailure,
+            };
+            Err((
+                code,
+                format!("pinned tl-syntax strict admission failed: {error}"),
+            ))
+        }
+    }
+}
+
 // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
 /// Builds the same fail-closed report as [`parse`] for an input whose full byte
 /// count is known but whose contents were intentionally not retained.
@@ -140,7 +182,11 @@ pub fn source_limit_report(
     let start = limits.max_source_bytes.min(source_bytes);
     let end = start.saturating_add(1).min(source_bytes);
     let mut report = ParseReport::empty(profile, limits, source_bytes);
-    let Ok(span) = SourceSpan::new(start as u32, end as u32) else {
+    let Some(span) = u32::try_from(start)
+        .ok()
+        .zip(u32::try_from(end).ok())
+        .and_then(|(start, end)| SourceSpan::new(start, end).ok())
+    else {
         // The clamped offsets above are ordered and bounded by the hard u32
         // source limit. If those invariants ever change, preserve a total,
         // fail-closed report instead of panicking in this public helper.
@@ -197,18 +243,9 @@ impl Parser<'_> {
                 return None;
             }
             let operator = self.current();
-            let (left_power, right_power) = match operator.kind {
-                TokenKind::Equivalent => (1, 2),
-                TokenKind::Implies => (2, 2),
-                TokenKind::Or => (3, 4),
-                TokenKind::And => (4, 5),
-                TokenKind::Until
-                | TokenKind::Release
-                | TokenKind::WeakUntil
-                | TokenKind::StrongRelease
-                | TokenKind::Since
-                | TokenKind::Triggered => (5, 6),
-                _ => break,
+            let Some((left_power, right_power)) = self.dialect.binary_binding_power(operator.kind)
+            else {
+                break;
             };
             if left_power < minimum_binding_power {
                 break;
@@ -289,6 +326,27 @@ impl Parser<'_> {
             return None;
         }
         let token = self.current();
+        let temporal_prefix = matches!(
+            token.kind,
+            TokenKind::Future
+                | TokenKind::Globally
+                | TokenKind::Once
+                | TokenKind::Historically
+                | TokenKind::StrongPrevious
+        );
+        if temporal_prefix && !self.dialect.permits_temporal_prefix(token.kind) {
+            self.push_diagnostic(
+                DiagnosticCode::UnsupportedOperator,
+                token,
+                vec![ExpectedToken::Expression],
+                RecoveryAction::SkippedToken,
+                "token is outside the explicitly selected dialect policy".to_owned(),
+            );
+            if token.kind != TokenKind::Eof {
+                self.advance();
+            }
+            return None;
+        }
         match token.kind {
             TokenKind::False => {
                 self.advance();
@@ -537,6 +595,17 @@ impl Parser<'_> {
             start: left.extent_start,
             end: right.extent_end,
         };
+        if !self.dialect.permits_lowering() {
+            self.push_diagnostic(
+                DiagnosticCode::UnsupportedOperator,
+                expression,
+                vec![ExpectedToken::Expression],
+                RecoveryAction::Stopped,
+                "derived lowering is outside the explicitly selected dialect policy".to_owned(),
+            );
+            self.stopped = true;
+            return None;
+        }
         if self.nodes.len().saturating_add(FUTURE_LOWERING_NODE_CHARGE) > self.limits.max_nodes {
             self.push_diagnostic(
                 DiagnosticCode::NodeLimit,
@@ -554,7 +623,40 @@ impl Parser<'_> {
         if !self.charge_work_units(self.nodes.len(), expression) {
             return None;
         }
-        let root = NodeId(self.nodes.len().saturating_sub(1) as u32);
+        let Ok(root_index) = u32::try_from(self.nodes.len().saturating_sub(1)) else {
+            self.push_diagnostic(
+                DiagnosticCode::NodeLimit,
+                expression,
+                Vec::new(),
+                RecoveryAction::Stopped,
+                "formula node identity exceeds the tl-syntax wire range".to_owned(),
+            );
+            self.stopped = true;
+            return None;
+        };
+        let Some(operator_span) = checked_raw_bounds(operator_start, operator_end) else {
+            self.push_diagnostic(
+                DiagnosticCode::ValidationFailure,
+                expression,
+                Vec::new(),
+                RecoveryAction::Stopped,
+                "operator offsets exceed the tl-syntax wire range".to_owned(),
+            );
+            self.stopped = true;
+            return None;
+        };
+        let Some(expression_span) = checked_raw_bounds(left.extent_start, right.extent_end) else {
+            self.push_diagnostic(
+                DiagnosticCode::ValidationFailure,
+                expression,
+                Vec::new(),
+                RecoveryAction::Stopped,
+                "expression offsets exceed the tl-syntax wire range".to_owned(),
+            );
+            self.stopped = true;
+            return None;
+        };
+        let root = NodeId(root_index);
         let lowered = Formula::new(self.profile, root, &self.nodes)
             .map_err(|error| format!("pinned tl-syntax validation failed: {error}"))
             .and_then(|formula| {
@@ -570,11 +672,8 @@ impl Parser<'_> {
                         u64::from(interval.start()),
                         u64::from(interval.end()),
                     )),
-                    operator_span: Some(RawBounds::new(operator_start as u64, operator_end as u64)),
-                    expression_span: Some(RawBounds::new(
-                        left.extent_start as u64,
-                        right.extent_end as u64,
-                    )),
+                    operator_span: Some(operator_span),
+                    expression_span: Some(expression_span),
                 }
                 .lower()
                 .map_err(|refusal| format!("pinned tl-syntax lowering refused: {refusal}"))
@@ -631,7 +730,22 @@ impl Parser<'_> {
             self.stopped = true;
             return None;
         }
-        let id = NodeId(self.nodes.len() as u32);
+        let Ok(id) = u32::try_from(self.nodes.len()) else {
+            self.push_diagnostic(
+                DiagnosticCode::NodeLimit,
+                Token {
+                    kind: TokenKind::Invalid,
+                    start,
+                    end,
+                },
+                Vec::new(),
+                RecoveryAction::Stopped,
+                "formula node identity exceeds the tl-syntax wire range".to_owned(),
+            );
+            self.stopped = true;
+            return None;
+        };
+        let id = NodeId(id);
         self.nodes
             .push(Node::with_span(kind, checked_span(start, end)));
         Some(id)
@@ -741,4 +855,11 @@ impl Parser<'_> {
             message,
         });
     }
+}
+
+fn checked_raw_bounds(start: usize, end: usize) -> Option<RawBounds> {
+    Some(RawBounds::new(
+        u64::try_from(start).ok()?,
+        u64::try_from(end).ok()?,
+    ))
 }

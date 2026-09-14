@@ -153,7 +153,8 @@ fn read_bounded(path: &str) -> Result<BoundedInput, String> {
             .metadata()
             .map_err(|error| format!("cannot inspect {path:?}: {error}"))?
             .len();
-        if source_bytes > byte_limit as u64 {
+        let byte_limit_wire = u64::try_from(byte_limit).unwrap_or(u64::MAX);
+        if source_bytes > byte_limit_wire {
             return Ok(BoundedInput::SourceLimit {
                 source_bytes: usize::try_from(source_bytes).unwrap_or(usize::MAX),
                 exact: true,
@@ -167,7 +168,9 @@ fn read_bounded(path: &str) -> Result<BoundedInput, String> {
 fn read_bounded_reader(reader: impl Read, byte_limit: usize) -> io::Result<BoundedInput> {
     let read_limit = byte_limit.saturating_add(1);
     let mut retained = Vec::with_capacity(read_limit.min(64 * 1024));
-    reader.take(read_limit as u64).read_to_end(&mut retained)?;
+    reader
+        .take(u64::try_from(read_limit).unwrap_or(u64::MAX))
+        .read_to_end(&mut retained)?;
     let source_bytes = retained.len();
     if source_bytes > byte_limit {
         return Ok(BoundedInput::SourceLimit {

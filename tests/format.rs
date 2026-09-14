@@ -150,20 +150,35 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     }
 }
 
-// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+// Trace: TC-017, TC-046, FR-004-AC-3, FR-009-AC-4, NFR-001-AC-2
 #[test]
-fn accepted_node_ceiling_is_reachable_with_default_formatter_limits() {
+fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() {
     let source = std::iter::repeat("p0")
-        .take(5_000)
+        .take(4_096)
         .collect::<Vec<_>>()
         .join("&");
     let document = parse_closed(&source);
-    assert_eq!(document.nodes().len(), 9_999);
+    assert_eq!(document.nodes().len(), 8_191);
     let report = format_document(&document, FormatLimits::default());
     assert!(report.error.is_none(), "{:?}", report.error);
-    assert_eq!(report.stats.nodes, 9_999);
-    assert_eq!(report.stats.work, 24_998);
+    assert_eq!(report.stats.nodes, 8_191);
+    assert_eq!(report.stats.work, 20_478);
     assert_eq!(report.text.as_deref(), Some(source.as_str()));
+
+    let one_over = std::iter::repeat("p0")
+        .take(4_097)
+        .collect::<Vec<_>>()
+        .join("&");
+    let refused = parse(
+        &one_over,
+        tl_syntax::SemanticProfile::ClosedTraceV1,
+        ParseLimits::default(),
+    );
+    assert!(refused.document.is_none());
+    assert_eq!(
+        refused.diagnostics[0].code,
+        tl_parse::DiagnosticCode::DepthLimit
+    );
 }
 
 // Trace: TC-017, FR-004-AC-3, NFR-001-AC-2

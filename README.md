@@ -8,7 +8,7 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`e70f2379a752117c79603bc399a86c26feed7716`, an exact commit reachable from the
+`842d82553f045eb69a7f38745756d968254fc25e`, an exact commit reachable from the
 reviewed `main` history when admitted, not a moving branch head. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
@@ -25,6 +25,18 @@ origin-complete past profile with `O`, `H`, strong `Y`, `S`, and `T`. See
 [`docs/DIALECT-002-clean-ascii-v2.md`](docs/DIALECT-002-clean-ascii-v2.md) and
 [`docs/DIALECT-003-clean-ascii-v3.md`](docs/DIALECT-003-clean-ascii-v3.md) for
 their closed grammars and wire identities. The v1 API and CLI remain unchanged.
+
+The implementation is organized around closed `dialect::{v1,v2,v3}` policies.
+The lexer, parser, formatter, and diagnostic layers share traversal and resource
+accounting, while each dialect owns its accepted spellings, precedence,
+associativity, semantic profile, owner schema, and lowering permission. Every
+successful parse is re-admitted from canonical bytes by the pinned
+`tl-syntax::FormulaDocument::from_json_bytes` boundary.
+
+`PastParseReport::from_json_bytes(bytes, ParseArtifactLimits)` is the bounded
+canonical reader for `tl-parse.past-parse-report/v1`. It rejects unknown or
+duplicate fields, trailing data, noncanonical JSON, incorrect identities,
+out-of-range report state, and invalid embedded owner documents.
 
 ## Build
 

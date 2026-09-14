@@ -21,6 +21,14 @@ pub const HARD_MAX_PARSE_WORK: usize = 1_000_000;
 pub const HARD_MAX_OUTPUT_BYTES: usize = 1_048_576;
 /// Hard maximum deterministic formatter work units.
 pub const HARD_MAX_FORMAT_WORK: usize = 4_194_304;
+/// Hard maximum bytes admitted by a strict parser-artifact reader.
+pub const HARD_MAX_PARSE_ARTIFACT_BYTES: usize = 64 * 1024 * 1024;
+/// Hard maximum JSON container nesting admitted by a strict parser-artifact reader.
+pub const HARD_MAX_PARSE_ARTIFACT_DEPTH: usize = 64;
+/// Hard maximum decoded bytes retained in one JSON string.
+pub const HARD_MAX_PARSE_ARTIFACT_STRING_BYTES: usize = 64 * 1024;
+/// Hard maximum deterministic strict-reader work units.
+pub const HARD_MAX_PARSE_ARTIFACT_WORK: usize = 256 * 1024 * 1024;
 
 /// Caller-selectable parse limits, clamped to process-safe hard maxima.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -64,6 +72,218 @@ impl Default for ParseLimits {
             max_work: HARD_MAX_PARSE_WORK,
         }
     }
+}
+
+/// Caller-selectable limits for strict parser-artifact admission.
+///
+/// Each field is intersected with immutable owner maxima before any typed
+/// artifact is retained. Callers can lower, but never raise, those ceilings.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ParseArtifactLimits {
+    /// Maximum exact JSON input bytes.
+    pub document_bytes: usize,
+    /// Maximum JSON object/array nesting.
+    pub json_depth: usize,
+    /// Maximum decoded UTF-8 bytes in one JSON string.
+    pub string_bytes: usize,
+    /// Maximum deterministic admission work units.
+    pub work: usize,
+}
+
+impl ParseArtifactLimits {
+    /// Immutable maxima enforced by tl-parse artifact readers.
+    pub const OWNER_MAXIMA: Self = Self {
+        document_bytes: HARD_MAX_PARSE_ARTIFACT_BYTES,
+        json_depth: HARD_MAX_PARSE_ARTIFACT_DEPTH,
+        string_bytes: HARD_MAX_PARSE_ARTIFACT_STRING_BYTES,
+        work: HARD_MAX_PARSE_ARTIFACT_WORK,
+    };
+
+    pub(crate) const fn constrained(self) -> Self {
+        let owner = Self::OWNER_MAXIMA;
+        Self {
+            document_bytes: minimum(self.document_bytes, owner.document_bytes),
+            json_depth: minimum(self.json_depth, owner.json_depth),
+            string_bytes: minimum(self.string_bytes, owner.string_bytes),
+            work: minimum(self.work, owner.work),
+        }
+    }
+}
+
+impl Default for ParseArtifactLimits {
+    fn default() -> Self {
+        Self::OWNER_MAXIMA
+    }
+}
+
+const fn minimum(left: usize, right: usize) -> usize {
+    if left < right {
+        left
+    } else {
+        right
+    }
+}
+
+/// Failure to read one complete, canonical, bounded parser artifact.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum StrictParseArtifactReadError {
+    /// The supplied byte string exceeds the effective input ceiling.
+    DocumentTooLarge { actual: usize, limit: usize },
+    /// JSON object/array nesting exceeds the effective depth ceiling.
+    DepthLimitExceeded { actual: usize, limit: usize },
+    /// A decoded JSON string exceeds the effective byte ceiling.
+    StringTooLarge { actual: usize, limit: usize },
+    /// Admission exceeds the effective deterministic-work ceiling.
+    WorkLimitExceeded { actual: usize, limit: usize },
+    /// Valid JSON does not use the one canonical owner encoding.
+    NonCanonicalDocument,
+    /// JSON shape, identity, duplicate-member, trailing-data, or invariant validation failed.
+    InvalidDocument(serde_json::Error),
+}
+
+impl fmt::Display for StrictParseArtifactReadError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DocumentTooLarge { actual, limit } => {
+                write!(formatter, "document has {actual} bytes; limit is {limit}")
+            }
+            Self::DepthLimitExceeded { actual, limit } => {
+                write!(
+                    formatter,
+                    "document nesting depth is {actual}; limit is {limit}"
+                )
+            }
+            Self::StringTooLarge { actual, limit } => {
+                write!(
+                    formatter,
+                    "JSON string has {actual} bytes; limit is {limit}"
+                )
+            }
+            Self::WorkLimitExceeded { actual, limit } => {
+                write!(
+                    formatter,
+                    "document admission costs {actual} work units; limit is {limit}"
+                )
+            }
+            Self::NonCanonicalDocument => {
+                formatter.write_str("document is not canonical tl-parse JSON")
+            }
+            Self::InvalidDocument(error) => write!(formatter, "invalid document: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for StrictParseArtifactReadError {}
+
+pub(crate) fn preflight_parse_artifact(
+    bytes: &[u8],
+    limits: ParseArtifactLimits,
+) -> Result<ParseArtifactLimits, StrictParseArtifactReadError> {
+    let limits = limits.constrained();
+    if bytes.len() > limits.document_bytes {
+        return Err(StrictParseArtifactReadError::DocumentTooLarge {
+            actual: bytes.len(),
+            limit: limits.document_bytes,
+        });
+    }
+    // One scan, one typed decode, and one canonical re-encoding/comparison.
+    let minimum_work = bytes.len().saturating_mul(4);
+    if minimum_work > limits.work {
+        return Err(StrictParseArtifactReadError::WorkLimitExceeded {
+            actual: minimum_work,
+            limit: limits.work,
+        });
+    }
+
+    let mut depth = 0_usize;
+    let mut index = 0_usize;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'"' => index = scan_json_string(bytes, index.saturating_add(1), limits.string_bytes)?,
+            b'{' | b'[' => {
+                depth = depth.saturating_add(1);
+                if depth > limits.json_depth {
+                    return Err(StrictParseArtifactReadError::DepthLimitExceeded {
+                        actual: depth,
+                        limit: limits.json_depth,
+                    });
+                }
+            }
+            b'}' | b']' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+        index = index.saturating_add(1);
+    }
+    Ok(limits)
+}
+
+fn scan_json_string(
+    bytes: &[u8],
+    mut index: usize,
+    limit: usize,
+) -> Result<usize, StrictParseArtifactReadError> {
+    let mut decoded_bytes = 0_usize;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'"' => return Ok(index),
+            b'\\' => {
+                index = index.saturating_add(1);
+                if index >= bytes.len() {
+                    return Ok(index);
+                }
+                if bytes[index] == b'u' {
+                    let (units, consumed) = decoded_unicode_escape(bytes, index);
+                    decoded_bytes = decoded_bytes.saturating_add(units);
+                    index = index.saturating_add(consumed);
+                } else {
+                    decoded_bytes = decoded_bytes.saturating_add(1);
+                }
+            }
+            _ => decoded_bytes = decoded_bytes.saturating_add(1),
+        }
+        if decoded_bytes > limit {
+            return Err(StrictParseArtifactReadError::StringTooLarge {
+                actual: decoded_bytes,
+                limit,
+            });
+        }
+        index = index.saturating_add(1);
+    }
+    Ok(index)
+}
+
+fn decoded_unicode_escape(bytes: &[u8], u_index: usize) -> (usize, usize) {
+    let Some(first) = parse_hex_quad(bytes, u_index.saturating_add(1)) else {
+        return (0, 0);
+    };
+    if (0xD800..=0xDBFF).contains(&first)
+        && bytes.get(u_index.saturating_add(5)) == Some(&b'\\')
+        && bytes.get(u_index.saturating_add(6)) == Some(&b'u')
+        && parse_hex_quad(bytes, u_index.saturating_add(7))
+            .is_some_and(|second| (0xDC00..=0xDFFF).contains(&second))
+    {
+        return (4, 10);
+    }
+    let width = match first {
+        0x0000..=0x007F => 1,
+        0x0080..=0x07FF => 2,
+        _ => 3,
+    };
+    (width, 4)
+}
+
+fn parse_hex_quad(bytes: &[u8], start: usize) -> Option<u16> {
+    let quad = bytes.get(start..start.checked_add(4)?)?;
+    quad.iter().try_fold(0_u16, |value, byte| {
+        let digit = match byte {
+            b'0'..=b'9' => u16::from(*byte - b'0'),
+            b'a'..=b'f' => u16::from(*byte - b'a' + 10),
+            b'A'..=b'F' => u16::from(*byte - b'A' + 10),
+            _ => return None,
+        };
+        Some(value.saturating_mul(16).saturating_add(digit))
+    })
 }
 
 /// Deterministic observations retained for every parse attempt.

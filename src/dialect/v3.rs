@@ -1,11 +1,106 @@
 //! Explicit clean-ascii/v3 parsing for the origin-complete past profile.
 
 use serde::{Deserialize, Serialize};
-use tl_syntax::{FormulaDocument, FormulaSchemaVersion, SemanticProfile, SourceSpan};
+use tl_syntax::{
+    FormulaDocument, FormulaSchemaVersion, SemanticProfile, SourceSpan, SyntaxArtifactLimits,
+};
 
 use crate::{
-    lexer::Dialect, parser::parse_dialect, Diagnostic, ParseLimits, ParseStats, TL_SYNTAX_REVISION,
+    diagnostic::preflight_parse_artifact, lexer::TokenKind, parser::parse_dialect, Diagnostic,
+    ParseArtifactLimits, ParseLimits, ParseStats, StrictParseArtifactReadError, TL_SYNTAX_REVISION,
 };
+
+use super::{BinarySpelling, Dialect, UnarySpelling};
+
+const UNSUPPORTED_OPERATORS: [&str; 7] = ["X", "F", "G", "U", "R", "W", "M"];
+
+pub(crate) fn classify_identifier(lexeme: &str) -> Option<TokenKind> {
+    match lexeme {
+        "false" => Some(TokenKind::False),
+        "true" => Some(TokenKind::True),
+        "O" => Some(TokenKind::Once),
+        "H" => Some(TokenKind::Historically),
+        "S" => Some(TokenKind::Since),
+        "T" => Some(TokenKind::Triggered),
+        _ => None,
+    }
+}
+
+pub(crate) fn unsupported_operator_profile(lexeme: &str) -> Option<&'static str> {
+    UNSUPPORTED_OPERATORS
+        .contains(&lexeme)
+        .then_some("tl-syntax.past-operators/v1")
+}
+
+pub(crate) const fn atom_keyword_boundary(next: u8, followed_by_bracket: bool) -> bool {
+    matches!(next, b'S' | b'T') && followed_by_bracket
+}
+
+pub(crate) const fn binary_binding_power(token: TokenKind) -> Option<(u8, u8)> {
+    match token {
+        TokenKind::Equivalent => Some((1, 2)),
+        TokenKind::Implies => Some((2, 2)),
+        TokenKind::Or => Some((3, 4)),
+        TokenKind::And => Some((4, 5)),
+        TokenKind::Since | TokenKind::Triggered => Some((5, 6)),
+        _ => None,
+    }
+}
+
+pub(crate) const fn permits_temporal_prefix(token: TokenKind) -> bool {
+    matches!(
+        token,
+        TokenKind::Once | TokenKind::Historically | TokenKind::StrongPrevious
+    )
+}
+
+pub(crate) fn build_document(
+    profile: SemanticProfile,
+    root: tl_syntax::NodeId,
+    nodes: Vec<tl_syntax::Node>,
+) -> Result<FormulaDocument, tl_syntax::FormulaError> {
+    FormulaDocument::new_v2(profile, root, nodes)
+}
+
+pub(crate) const fn unary_spelling(kind: tl_syntax::NodeKind) -> Option<UnarySpelling> {
+    match kind {
+        tl_syntax::NodeKind::Not { .. } => Some(UnarySpelling {
+            operator: "!",
+            interval: None,
+        }),
+        tl_syntax::NodeKind::Once { interval, .. } => Some(UnarySpelling {
+            operator: "O",
+            interval: Some(interval),
+        }),
+        tl_syntax::NodeKind::Historically { interval, .. } => Some(UnarySpelling {
+            operator: "H",
+            interval: Some(interval),
+        }),
+        tl_syntax::NodeKind::StrongPrevious { .. } => Some(UnarySpelling {
+            operator: "Y",
+            interval: None,
+        }),
+        _ => None,
+    }
+}
+
+pub(crate) const fn binary_spelling(kind: tl_syntax::NodeKind) -> Option<BinarySpelling> {
+    let (operator, interval, precedence, right_associative) = match kind {
+        tl_syntax::NodeKind::And { .. } => ("&", None, 4, false),
+        tl_syntax::NodeKind::Or { .. } => ("|", None, 3, false),
+        tl_syntax::NodeKind::Implies { .. } => ("->", None, 2, true),
+        tl_syntax::NodeKind::Equivalent { .. } => ("<->", None, 1, false),
+        tl_syntax::NodeKind::Since { interval, .. } => ("S", Some(interval), 5, false),
+        tl_syntax::NodeKind::Triggered { interval, .. } => ("T", Some(interval), 5, false),
+        _ => return None,
+    };
+    Some(BinarySpelling {
+        operator,
+        interval,
+        precedence,
+        right_associative,
+    })
+}
 
 /// Strict wire identity for a clean-ascii/v3 parse report.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -110,6 +205,11 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
             if !wire.diagnostics.is_empty() || wire.stats.diagnostics_truncated {
                 return Err("a document requires a diagnostic-free parse");
             }
+            if wire.stats.source_bytes > wire.limits.max_source_bytes
+                || wire.stats.max_depth > wire.limits.max_depth
+            {
+                return Err("a successful parse exceeds its effective source/depth limits");
+            }
             if document.schema_version() != FormulaSchemaVersion::V2
                 || document.semantic_profile() != SemanticProfile::OriginCompleteHistoryV1
             {
@@ -117,6 +217,15 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
             }
             if document.nodes().len() != wire.stats.nodes || document.validate().is_err() {
                 return Err("document graph does not match the parse report");
+            }
+            let owner_bytes = document
+                .canonical_json_bytes()
+                .map_err(|_| "document cannot be encoded as canonical owner JSON")?;
+            let admitted =
+                FormulaDocument::from_json_bytes(&owner_bytes, SyntaxArtifactLimits::default())
+                    .map_err(|_| "document fails the pinned tl-syntax strict reader")?;
+            if admitted != *document {
+                return Err("strictly admitted document differs from the parse report");
             }
             if document.nodes().iter().any(|node| {
                 node.span.map_or(true, |span| {
@@ -137,6 +246,32 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
             document: wire.document,
             diagnostics: wire.diagnostics,
         })
+    }
+}
+
+impl PastParseReport {
+    /// Strict-reads one complete canonical past-parse report under caller-lowered limits.
+    ///
+    /// Unknown or duplicate fields, trailing bytes, noncanonical JSON, identity drift,
+    /// out-of-bounds spans/counters, and invalid embedded owner documents are refused.
+    pub fn from_json_bytes(
+        bytes: &[u8],
+        limits: ParseArtifactLimits,
+    ) -> Result<Self, StrictParseArtifactReadError> {
+        preflight_parse_artifact(bytes, limits)?;
+        let report: Self =
+            serde_json::from_slice(bytes).map_err(StrictParseArtifactReadError::InvalidDocument)?;
+        let canonical =
+            serde_json::to_vec(&report).map_err(StrictParseArtifactReadError::InvalidDocument)?;
+        if canonical != bytes {
+            return Err(StrictParseArtifactReadError::NonCanonicalDocument);
+        }
+        Ok(report)
+    }
+
+    /// Returns the one canonical compact JSON encoding of this report.
+    pub fn canonical_json_bytes(&self) -> Result<Vec<u8>, serde_json::Error> {
+        serde_json::to_vec(self)
     }
 }
 

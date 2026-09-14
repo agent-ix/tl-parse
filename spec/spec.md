@@ -64,6 +64,10 @@ graph, and FR-008 the explicitly selected `tl-parse.clean-ascii/v2` dialect,
 whose `W`/`M` operators lower through tl-syntax into primitive nodes. NFR-001 constrains determinism/resources, NFR-002 provenance and
 authority, and NFR-003 explicit fail-closed qualification controls.
 
+FR-009 separates dialect policy from shared traversal and gives the delivered
+clean-ascii/v3 past boundary its complete owner contract while preserving every
+existing public and wire behavior.
+
 ### Responsibility and dependency allocation
 
 | Component | This specification guarantees | Assumption or external responsibility |
