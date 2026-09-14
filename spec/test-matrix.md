@@ -11,7 +11,7 @@ relationships:
 
 ## Functional Requirement Coverage
 
-| Functional Req | Acceptance Criteria | Test Cases | Status |
+| Functional Req | Acceptance Criteria | Test Cases | Coverage Status |
 |---|---|---|---|
 | FR-001 | FR-001-AC-1 through FR-001-AC-3 | TC-001 through TC-004, TC-020 | ✅ covered |
 | FR-002 | FR-002-AC-1 through FR-002-AC-4 | TC-005 through TC-008, TC-030 | ✅ covered |
@@ -21,10 +21,11 @@ relationships:
 | FR-006 | FR-006-AC-1 through FR-006-AC-3, FR-006-AC-5 through FR-006-AC-7 | TC-022 through TC-024, TC-026 through TC-028 | ✅ covered |
 | FR-007 | FR-007-AC-1 through FR-007-AC-6 | TC-033 through TC-038 | ✅ covered |
 | FR-008 | FR-008-AC-1 through FR-008-AC-6 | TC-039 through TC-045 | ✅ covered |
+| FR-009 | FR-009-AC-1 through FR-009-AC-5 | TC-046 | 🚧 planned architecture reconciliation |
 
 ## Stakeholder Requirement Coverage
 
-| Stakeholder Req | Trace to US/FR | Test/Validation | Status |
+| Stakeholder Req | Trace to US/FR | Test/Validation | Coverage Status |
 |---|---|---|---|
 | StR-001 | FR-001, FR-002, FR-003, FR-008 | TC-001, TC-005, TC-008, TC-010, TC-020, TC-039 | ✅ covered |
 | StR-002 | FR-003, FR-004, FR-005, FR-006 | TC-011, TC-016, TC-018, TC-019, TC-021, TC-027 | ✅ covered |
@@ -86,3 +87,4 @@ relationships:
 | TC-043 | Format lowered documents as primitive-only text that, within limits, v1 accepts and v2 re-parses to the same text, byte-identical to direct construction; beyond limits the reparse is refused only for resources | Property | P0 | FR-008-AC-4 | ✅ implemented |
 | TC-044 | Build and seed the clean-ascii v2 fuzz target and bound arbitrary-input outcomes | Fuzz | P1 | FR-008-AC-5 | ✅ implemented |
 | TC-045 | Serialize the derived report deterministically under a strict versioned identity that mutations change | Unit | P0 | FR-008-AC-6 | ✅ implemented |
+| TC-046 | Preserve all three dialects while separating their policies | Integration | P0 | FR-009-AC-1, FR-009-AC-2, FR-009-AC-3, FR-009-AC-4, FR-009-AC-5 | 🚧 planned |
