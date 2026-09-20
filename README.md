@@ -1,5 +1,7 @@
 # TL Parse
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/6qsdhSPE)
+
 Parsing, formatting, and diagnostics for Mission-time Linear Temporal Logic.
 
 The v0.1 boundary uses the independently authored, versioned ASCII dialect in
