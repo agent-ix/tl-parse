@@ -983,12 +983,39 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // claims it snapshotted, and to name every requirement this repository has.
     let parsed: Value = serde_json::from_slice(&bytes).expect("the Quire export is JSON");
     let text = String::from_utf8_lossy(&bytes);
-    for requirement in [
-        "FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "FR-008", "NFR-001",
-        "NFR-002", "NFR-003", "StR-001", "StR-002", "StR-003",
-    ] {
+    // Read live from spec/requirements/ rather than hardcoded: a hardcoded list
+    // here has the identical staleness failure mode as the hardcoded totals
+    // below (agent-ix/tl-parse#189) and would silently stop catching a new
+    // requirement file, such as FR-009, the way the hardcoded list here once did.
+    let requirements_dir = root().join("spec/requirements");
+    let mut requirement_ids: Vec<String> = fs::read_dir(&requirements_dir)
+        .unwrap_or_else(|error| panic!("{} is readable: {error}", requirements_dir.display()))
+        .map(|entry| {
+            entry
+                .expect("spec/requirements entry")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .filter(|name| name.ends_with(".md"))
+        .map(|name| {
+            let mut parts = name.splitn(3, '-');
+            let prefix = parts.next().expect("requirement filename has a prefix");
+            let number = parts
+                .next()
+                .expect("requirement filename has a number segment");
+            format!("{prefix}-{number}")
+        })
+        .collect();
+    requirement_ids.sort();
+    requirement_ids.dedup();
+    assert!(
+        requirement_ids.len() >= 14,
+        "spec/requirements/ yielded implausibly few requirement ids: {requirement_ids:?}"
+    );
+    for requirement in &requirement_ids {
         assert!(
-            text.contains(requirement),
+            text.contains(requirement.as_str()),
             "the Quire export does not mention {requirement}; it is not a coverage \
              export of this repository"
         );
@@ -998,19 +1025,79 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
         "the Quire export is not a populated document"
     );
 
-    // The measured coverage, pinned. `derive_result` refuses an export that
-    // measured nothing or carries a status lie, and a partially-backed export
-    // is not itself a failure. So the figures themselves are asserted: an
-    // export reporting different totals has to move a number in this file.
+    // The measured coverage, live rather than pinned. `derive_result` refuses
+    // an export that measured nothing or carries a status lie, and a
+    // partially-backed export is not itself a failure — spec/evidence/suites.md
+    // documents four suite rows (SUITE-001/002/004/008) as deliberately
+    // unbacked (see its own "Backing" section; PR #6's reviewers rejected
+    // satisfying them with a string-match binding instead). This repository's
+    // spec content grows over time (new FRs, new test cases), so a hardcoded
+    // total/backed snapshot goes stale on every such change
+    // (agent-ix/tl-parse#189, found asserting a stale 93/93 against an actual
+    // 108+/106+). What is asserted instead is read live from the same
+    // artifacts this test already has on disk, so it cannot go stale the same
+    // way: the only unbacked rows in the whole matrix are exactly the ones
+    // suites.md itself documents as unbacked, no more and no fewer.
     let totals = &parsed["totals"];
-    // 49 acceptance and validation criteria plus 45 test cases total 94, all
-    // backed. The pinned Quire 0.31 contract keeps the ten suite declarations
-    // reference-only, so they do not enter this coverage total.
-    assert_eq!(totals["total"], 94, "matrix row count changed: {totals}");
+    let total = totals["total"].as_u64().expect("totals.total is a number");
+    let backed = totals["backed"]
+        .as_u64()
+        .expect("totals.backed is a number");
+    assert!(
+        total > 0 && backed > 0,
+        "coverage export reports nothing measured: {totals}"
+    );
+    assert!(backed <= total, "backed count exceeds total: {totals}");
+
+    let suites_doc = fs::read_to_string(root().join("spec/evidence/suites.md"))
+        .expect("spec/evidence/suites.md is readable");
+    let (declaration_section, backing_section) = suites_doc
+        .split_once("## Backing")
+        .expect("spec/evidence/suites.md has a \"## Backing\" section");
+    fn table_row_id(line: &str) -> Option<&str> {
+        let line = line.trim();
+        if !line.starts_with("| SUITE-") {
+            return None;
+        }
+        line.split('|').nth(1).map(str::trim)
+    }
+    let declared_suites: BTreeSet<&str> = declaration_section
+        .lines()
+        .filter_map(table_row_id)
+        .collect();
+    let backed_suites: BTreeSet<&str> = backing_section.lines().filter_map(table_row_id).collect();
+    assert!(
+        backed_suites.is_subset(&declared_suites),
+        "spec/evidence/suites.md's Backing section names a suite its declaration table does \
+         not: backed {backed_suites:?} declared {declared_suites:?}"
+    );
+    let expected_unbacked_suites = declared_suites.len() - backed_suites.len();
+
+    let groups = parsed["groups"].as_array().expect("groups is an array");
+    let suites_group = groups
+        .iter()
+        .find(|group| group["document"] == "spec/evidence/suites.md")
+        .unwrap_or_else(|| panic!("no coverage group for spec/evidence/suites.md in {groups:?}"));
     assert_eq!(
-        totals["backed"], 94,
-        "backed-row count changed: {totals}. Every counted row is backed; if that \
-         number moved, find the unbacked row rather than adjusting this assertion."
+        suites_group["total"].as_u64().unwrap(),
+        declared_suites.len() as u64,
+        "quire's suite-declaration count disagrees with spec/evidence/suites.md's own table: {suites_group}"
+    );
+    assert_eq!(
+        suites_group["backed"].as_u64().unwrap(),
+        backed_suites.len() as u64,
+        "quire's suite-backed count disagrees with spec/evidence/suites.md's own Backing \
+         section: {suites_group}"
+    );
+
+    let overall_unbacked = total - backed;
+    assert_eq!(
+        overall_unbacked, expected_unbacked_suites as u64,
+        "the coverage gap moved off the documented suites.md exception: total {total} backed \
+         {backed} (expected only the {expected_unbacked_suites} deliberately-unbacked suite \
+         rows documented in spec/evidence/suites.md to be unbacked). If a non-suite row went \
+         unbacked, that is a real regression; if suites.md's own exception list changed, update \
+         suites.md's \"Backing\" section."
     );
     assert!(
         parsed["status_lies"].as_array().unwrap().is_empty(),

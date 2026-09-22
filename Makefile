@@ -8,20 +8,43 @@
 # computes a verdict, attests to its own correctness, or retains evidence of its
 # own.
 #
-# This file is not a trust root and no longer tries to be one. The parse-time
-# guards that used to police Make's own execution controls — SHELL, .SHELLFLAGS,
-# MAKEFLAGS, the `-` prefix, $(eval) — went with the collector they were
-# protecting.
+# This file is not a trust root. Quoin binds each retained input by digest and
+# the chain derives every attested result from the producer's own bytes, so a
+# producer that did not run yields an absent or empty input the chain names.
+# That covers the work re-run inside `assurance-inputs`. It does not cover a
+# pure gate with no retained output — fmt-check, lint, test, check-corpus,
+# fuzz-build, fuzz-smoke, deny, audit-unsafe, rustdoc, or the `quire validate`
+# half of spec.
 #
-# Read this before trusting a green `make ci`: adding `.IGNORE:` to this file
-# makes every recipe below report success without running, and nothing here
-# notices. The structural backstop only goes so far — Quoin binds each retained
-# input by digest and the chain derives every attested result from the producer's
-# own bytes, so a producer that did not run yields an absent or empty input the
-# chain names. That covers the work re-run inside `assurance-inputs`. It does not
-# cover fmt-check, lint, test, check-corpus, fuzz-build, fuzz-smoke, deny,
-# audit-unsafe, rustdoc, or the `quire validate` half of spec. Tracked as
-# agent-ix/tl-parse#11.
+# agent-ix/tl-parse#11: the local evidence collector this guard used to
+# protect is gone, but the class it caught is real — a `-` prefix, `.IGNORE`,
+# or a `SHELL := /usr/bin/true` assignment can make `make ci` exit 0 having
+# executed nothing. scripts/check_make_execution_control.sh reinstates a
+# minimal, collector-free version of that check: a parse-time scan (below) of
+# this file's own text for the constructs that neuter Make's execution
+# controls. Because it runs at parse time via $(shell ...) + $(error ...), it
+# fires before any target — including a neutered one — gets a chance to run,
+# and it re-reads this file from disk so an append anywhere below still gets
+# caught.
+MAKE_EXECUTION_CONTROL_GUARD := $(shell bash scripts/check_make_execution_control.sh $(MAKEFILE_LIST) 2>&1)
+ifneq ($(strip $(MAKE_EXECUTION_CONTROL_GUARD)),)
+$(error $(MAKE_EXECUTION_CONTROL_GUARD))
+endif
+
+# Ambient environment overrides the text scan above cannot see: MAKEFLAGS
+# already carries any -i/--ignore-errors or -s/--silent the invocation passed,
+# and PYTHONOPTIMIZE/ASAN_OPTIONS can silently strip Python assertions or mute
+# a sanitizer abort in the fuzz lane. All three are refused rather than let
+# `make ci` merely appear to have run these gates.
+ifneq ($(filter i,$(MAKEFLAGS)),)
+$(error execution-control guard: -i/--ignore-errors was passed to make; every recipe would report success without checking its exit code)
+endif
+ifdef PYTHONOPTIMIZE
+$(error execution-control guard: PYTHONOPTIMIZE is set in the environment; Python assert statements in scripts/ would be stripped)
+endif
+ifdef ASAN_OPTIONS
+$(error execution-control guard: ASAN_OPTIONS is set in the environment; it can silence a sanitizer abort in the fuzz lane)
+endif
 
 CARGO ?= cargo
 PYTHON ?= python3
