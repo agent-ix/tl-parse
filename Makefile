@@ -36,8 +36,17 @@ endif
 # and PYTHONOPTIMIZE/ASAN_OPTIONS can silently strip Python assertions or mute
 # a sanitizer abort in the fuzz lane. All three are refused rather than let
 # `make ci` merely appear to have run these gates.
-ifneq ($(filter i,$(MAKEFLAGS)),)
-$(error execution-control guard: -i/--ignore-errors was passed to make; every recipe would report success without checking its exit code)
+#
+# GNU Make bundles single-letter flags into one no-dash word (`-ik` and
+# `-i -k` both become the MAKEFLAGS word "ki"), except when a `-j` jobserver
+# is active, which forces -i back out to its own standalone "-i" word
+# (`-j -i` -> "j -i"). A bare $(filter i,$(MAKEFLAGS)) only matches the exact
+# lone word "i" and misses both of those (FND-001). Check every MAKEFLAGS
+# word instead: skip anything carrying "=" (jobserver-fds and other
+# long-option arguments), then look for "i" once leading dashes are gone.
+MAKEFLAGS_IGNORE_ERRORS := $(strip $(foreach w,$(MAKEFLAGS),$(if $(findstring =,$(w)),,$(if $(findstring i,$(subst -,,$(w))),$(w)))))
+ifneq ($(MAKEFLAGS_IGNORE_ERRORS),)
+$(error execution-control guard: -i/--ignore-errors was passed to make (MAKEFLAGS="$(MAKEFLAGS)"); every recipe would report success without checking its exit code)
 endif
 ifdef PYTHONOPTIMIZE
 $(error execution-control guard: PYTHONOPTIMIZE is set in the environment; Python assert statements in scripts/ would be stripped)
@@ -85,6 +94,7 @@ help:
 	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
 	@echo "  make deny             - cargo deny check licenses and sources"
 	@echo "  make audit-unsafe     - Enforce // SAFETY: comments on unsafe blocks"
+	@echo "  make test-execution-control-guard - Self-test the Make execution-control guard"
 	@echo "  make spec             - Validate specification and coverage with Quire"
 	@echo "  make msrv             - Check all targets and features with Rust 1.75"
 	@echo "  make rustdoc          - Build warning-free public documentation"
@@ -178,6 +188,16 @@ deny:
 audit-unsafe:
 	bash scripts/check_unsafe_comments.sh
 
+# Regression coverage for scripts/check_make_execution_control.sh and the
+# MAKEFLAGS check above (agent-ix/tl-parse#11), reproducing each bypass an
+# independent review found plus a control per fix. This is the guard's own
+# self-test, not the guard itself — the guard runs unconditionally at parse
+# time for every invocation of this Makefile, this target runs it once as
+# part of the gate set.
+.PHONY: test-execution-control-guard
+test-execution-control-guard:
+	bash scripts/check_make_execution_control.sh --self-test
+
 .PHONY: spec
 spec:
 	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/*.md' --strict --summary
@@ -253,4 +273,5 @@ assurance-record: assurance-inputs
 
 .PHONY: ci
 ci: fmt-check lint test check-corpus conformance roundtrip test-census \
-	fuzz-build fuzz-smoke deny audit-unsafe spec msrv rustdoc assurance
+	fuzz-build fuzz-smoke deny audit-unsafe test-execution-control-guard spec \
+	msrv rustdoc assurance
