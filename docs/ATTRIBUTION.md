@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`842d82553f045eb69a7f38745756d968254fc25e`, a commit that was reachable from
+`d52d89549b0a6c0c429261bab912cd5396c4a19e`, a commit that was reachable from
 the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -35,10 +35,44 @@ is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
-`842d8255` is the squash merge of tl-syntax#67 and contains the accepted strict
-syntax-owner architecture used by every successful parse.
+`d52d8954` is the squash merge of tl-syntax#82 and exports `tl_syntax::CORPUS_DIR`
+so dependents can read the shared `corpus/` tree through the compiled
+dependency instead of vendoring a copy of it.
 
-## Source-inspected strict-owner compiled-pin delta
+## Source-inspected CORPUS_DIR compiled-pin delta
+
+The immediately preceding compiled pin was
+`842d82553f045eb69a7f38745756d968254fc25e`. Source inspection of the exact
+range
+`842d82553f045eb69a7f38745756d968254fc25e..d52d89549b0a6c0c429261bab912cd5396c4a19e`
+found exactly one source-code change: a 7-line addition to `src/lib.rs`
+introducing `pub const CORPUS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"),
+"/corpus")`, a path resolved at tl-syntax's own compile time so a git
+dependent can join a corpus-relative path onto it and read the checked-in
+corpus directly. The only other code-adjacent change in the range is an
+internal hardening of tl-syntax's own `tests/past_formula_v2.rs` proptest
+(`assert!` replaced with `prop_assert!` so a failure shrinks instead of
+unwinding); that file is a test of tl-syntax's own crate, not part of its
+public API, and tl-parse does not consume it. The range also adds
+specification-only content — `FR-289` (infinite-trace interval grammar),
+`FR-290` (liveness capability registration), `FR-291` (infinite-trace
+downstream evidence), and a cross-reference from `FR-008` to `FR-289` — that
+describes a future `UnboundedInterval` extension to the future-operator
+lowering family. No corresponding implementation exists anywhere in this
+range: the addition is prose only. The remainder of the range is CLA/CI
+enablement, `.gitignore` housekeeping, a README badge, and PLAN-010 closure
+specification and review records.
+
+tl-parse consumes only the new `CORPUS_DIR` constant, and only to read
+tl-syntax's own `corpus/past-history/` in place instead of vendoring a
+byte-identical copy of it (see `tests/past_history_corpus.rs`). It does not
+consume the FR-289/290/291 infinite-trace specification additions — there is
+no implementation of them in this range to consume — and it introduces no new
+dependency on any other file this range touches.
+
+Both licence files are byte-identical across `842d8255` and `d52d8954`.
+
+## Earlier source-inspected strict-owner compiled-pin delta
 
 The immediately preceding compiled pin was
 `e70f2379a752117c79603bc399a86c26feed7716`. Source inspection of the exact
