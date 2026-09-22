@@ -33,9 +33,12 @@ endif
 
 # Ambient environment overrides the text scan above cannot see: MAKEFLAGS
 # already carries any -i/--ignore-errors or -s/--silent the invocation passed,
-# and PYTHONOPTIMIZE/ASAN_OPTIONS can silently strip Python assertions or mute
-# a sanitizer abort in the fuzz lane. All three are refused rather than let
-# `make ci` merely appear to have run these gates.
+# and PYTHONOPTIMIZE/ASAN_OPTIONS/LSAN_OPTIONS can silently strip Python
+# assertions or mute a sanitizer abort in the fuzz lane. All four are refused
+# rather than let `make ci` merely appear to have run these gates.
+# examples/fuzz_campaign.rs sets its own narrowly-scoped LSAN_OPTIONS
+# (fuzz/lsan_suppressions.txt, TL-195) after this guard passes; it is refused
+# here only when present ambiently, the same as ASAN_OPTIONS.
 #
 # GNU Make bundles single-letter flags into one no-dash word (`-ik` and
 # `-i -k` both become the MAKEFLAGS word "ki"), except when a `-j` jobserver
@@ -53,6 +56,9 @@ $(error execution-control guard: PYTHONOPTIMIZE is set in the environment; Pytho
 endif
 ifdef ASAN_OPTIONS
 $(error execution-control guard: ASAN_OPTIONS is set in the environment; it can silence a sanitizer abort in the fuzz lane)
+endif
+ifdef LSAN_OPTIONS
+$(error execution-control guard: LSAN_OPTIONS is set in the environment; it can silence a sanitizer abort in the fuzz lane)
 endif
 
 CARGO ?= cargo

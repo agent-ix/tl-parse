@@ -1016,8 +1016,12 @@ fn observe_version(arguments: &[&str], identity: &str) -> Result<String, Campaig
     Ok(observed.to_owned())
 }
 
-fn ambient_sanitizer_override(asan: Option<&OsStr>, disable_leaks: Option<&OsStr>) -> bool {
-    asan.is_some() || disable_leaks.is_some()
+fn ambient_sanitizer_override(
+    asan: Option<&OsStr>,
+    disable_leaks: Option<&OsStr>,
+    lsan: Option<&OsStr>,
+) -> bool {
+    asan.is_some() || disable_leaks.is_some() || lsan.is_some()
 }
 
 fn leak_sanitizer_available() -> io::Result<bool> {
@@ -1053,6 +1057,13 @@ fn run_fuzzer(
     artifacts: &Path,
 ) -> Result<ProcessState, CampaignError> {
     let artifact_prefix = format!("-artifact_prefix={}/", artifacts.display());
+    // TL-195: LeakSanitizer deterministically flags a 56-byte allocation made
+    // by libFuzzer's own driver thread, not by tl-parse or either fuzz target
+    // (see fuzz/lsan_suppressions.txt for the full stack and rationale).
+    // Suppressing only that named allocation site keeps
+    // ASAN_OPTIONS=detect_leaks=1 catching every real leak in the code under
+    // test.
+    let lsan_suppressions = root.join("fuzz").join("lsan_suppressions.txt");
     let mut command = Command::new("rustup");
     command
         .args(["run", "nightly", "cargo", "fuzz", "run", target.as_str()])
@@ -1065,6 +1076,10 @@ fn run_fuzzer(
         .arg(format!("-runs={RUNS}"))
         .current_dir(root)
         .env("ASAN_OPTIONS", "detect_leaks=1")
+        .env(
+            "LSAN_OPTIONS",
+            format!("suppressions={}", lsan_suppressions.display()),
+        )
         .stdout(Stdio::null())
         .stderr(Stdio::inherit());
     let child = command.group_spawn().map_err(|error| {
@@ -1199,11 +1214,12 @@ fn execute(
     if ambient_sanitizer_override(
         env::var_os("ASAN_OPTIONS").as_deref(),
         env::var_os("TL_PARSE_FUZZ_DISABLE_LEAKS").as_deref(),
+        env::var_os("LSAN_OPTIONS").as_deref(),
     ) {
         sanitizer.leak_sanitizer = SanitizerState::RefusedAmbientOverride;
         return unavailable(CampaignError::new(
             ErrorCode::AmbientSanitizerOverride,
-            "ASAN_OPTIONS and TL_PARSE_FUZZ_DISABLE_LEAKS must be absent",
+            "ASAN_OPTIONS, LSAN_OPTIONS, and TL_PARSE_FUZZ_DISABLE_LEAKS must be absent",
         ));
     }
     match leak_sanitizer_available() {
@@ -1576,9 +1592,14 @@ mod tests {
             Some(Target::CleanAsciiV2)
         );
         assert_eq!(Target::parse(OsStr::new("../parser")), None);
-        assert!(ambient_sanitizer_override(Some(OsStr::new("")), None));
-        assert!(ambient_sanitizer_override(None, Some(OsStr::new("0"))));
-        assert!(!ambient_sanitizer_override(None, None));
+        assert!(ambient_sanitizer_override(Some(OsStr::new("")), None, None));
+        assert!(ambient_sanitizer_override(
+            None,
+            Some(OsStr::new("0")),
+            None
+        ));
+        assert!(ambient_sanitizer_override(None, None, Some(OsStr::new(""))));
+        assert!(!ambient_sanitizer_override(None, None, None));
         assert!(tool_identity_matches(
             "nightly rustc",
             "rustc 1.97.0-nightly (revision)"
