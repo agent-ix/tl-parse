@@ -1,0 +1,36 @@
+# LeakSanitizer suppressions for the tl-parse fuzz lane (agent-ix/tl-parse
+# TL-195).
+#
+# `make fuzz-smoke` deterministically reports a 56-byte leak (8 + 48 bytes,
+# two allocations) with this exact stack:
+#
+#   std::__1::thread::thread<void (&)(fuzzer::Fuzzer*, unsigned long), ...>
+#   fuzzer::FuzzerDriver(...)
+#   main
+#
+#   std::__1::__thread_struct::__thread_struct()
+#   std::__1::thread::thread<...>
+#   fuzzer::FuzzerDriver(...)
+#   main
+#
+# Both allocations are made by libFuzzer's own driver spawning its internal
+# background thread (the RSS/timeout watchdog), before any byte of the corpus
+# reaches `LLVMFuzzerTestOneInput`. Neither tl-parse's parser/lexer/formatter
+# nor either fuzz target spawns a thread of its own
+# (`grep -rn 'std::thread' src fuzz/fuzz_targets` is empty), so the allocation
+# cannot be tl-parse's. On Darwin, LeakSanitizer's leak check runs before that
+# detached thread's pthread/TLS teardown is observed, so its still-live
+# allocations are reported as unreachable; this is a documented interaction
+# between libFuzzer's driver thread and LSan's weaker Darwin root-scanning
+# (LSan on Linux walks a running thread's registers/stack as GC roots; the
+# Darwin port does not), not a tl-parse defect and not a toolchain regression.
+#
+# Scope is deliberately narrow: these two patterns match only the allocation
+# site inside libFuzzer's thread constructor itself, not the `FuzzerDriver`
+# frame that also appears in the call stack of every leak this run could ever
+# report (including a genuine one inside `LLVMFuzzerTestOneInput`). Do not
+# broaden this to `leak:*FuzzerDriver*` or similar — that would suppress real
+# leaks in the code under test, which is exactly what ASAN_OPTIONS=
+# detect_leaks=1 in examples/fuzz_campaign.rs exists to keep catching.
+leak:*std::__1::thread::thread*
+leak:*__thread_struct::__thread_struct*
