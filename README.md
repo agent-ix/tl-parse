@@ -58,15 +58,20 @@ printf 'p0 U[1,2] true' | cargo run --bin tl-parse -- format --profile online -
 ```
 
 The checksum-protected hostile-input corpus is in `corpus/v1`; fuzz seeds and
-the `cargo-fuzz` target are under `fuzz/`.
+the `cargo-fuzz` targets are under `fuzz/`. `make fuzz-smoke` runs both targets
+through the bounded Rust campaign producer and writes one
+`tl-parse.fuzz-campaign/v1` result per target for shared assurance intake.
 
 ## Assurance
 
 Verification results are produced by this repository's own tools, transcribed
 and retained by [Quoin](https://github.com/agent-ix/quoin), and described by
 static facts exported from [Quire](https://github.com/agent-ix/quire-rs).
-Neither tool executes a producer. `make assurance` classifies the toolchain
-through the packaged Engineering Assurance compatibility matrix and drives the
+Neither tool executes a producer. The two fuzz-campaign documents are retained
+byte-identically as separate Quoin proof inputs, and the same Rust campaign tool
+validates their closed protocol before the existing Python driver hands the
+mapped result to Quoin. `make assurance` classifies the toolchain through the
+packaged Engineering Assurance compatibility matrix and drives the
 seal/intake/receipt chain.
 
 This repository retains no evidence of its own. Verification evidence is what

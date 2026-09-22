@@ -7,6 +7,17 @@ description: "Chronological changes to the tl-parse v0.1 plan bundle."
 
 ## History
 
+- **2026-09-13** - Closed the live-ticket language-policy finding: moved the
+  fuzz result validator, outcome mapping, and mutation assertions into the Rust
+  campaign tool and reduced Python to its pre-existing Quoin orchestration role.
+- **2026-09-13** - Completed the tl-parse#25 implementation slice at
+  `cc543ea`: both structured fuzz campaign results pass and retain
+  byte-identically, all Rust/code review findings are fixed in SR-063, Tasks
+  005-006 are done, and SR-064 leaves only human-owned Task-007 open.
+- **2026-09-13** - Reopened Task-005 and Task-006 for tl-parse#25: specify a
+  Rust-owned structured bounded-fuzz campaign result, retain it through the
+  existing Quoin intake, and close SR-051/043/044/045's campaign-retention gap.
+
 - **2026-08-31** - Closed exact-head review follow-ups: failure propagation is
   behaviorally proved, traceability is 62/62 under a stable JSON completeness
   policy, oversized CLI input reports its true streamed byte count, formatter

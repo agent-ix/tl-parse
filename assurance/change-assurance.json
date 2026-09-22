@@ -77,7 +77,7 @@
         },
         {
           "id": "FR-006-AC-2",
-          "statement": "Native parser, formatter, diagnostic, corpus, and round-trip results are produced by domain tools in a declared structured format and transcribed by Quoin without Quoin executing the producer.",
+          "statement": "Native parser, formatter, diagnostic, corpus, round-trip, fuzz-campaign, and test-census results are produced by domain tools in a declared structured format and transcribed by Quoin without Quoin executing the producer.",
           "source_ids": ["FR-006", "FR-003", "FR-004", "FR-005"]
         },
         {
@@ -157,6 +157,30 @@
           },
           "tool_identity": "tl-parse-roundtrip-sweep",
           "configuration": "docs/DIALECT-001-clean-room-mltl-v1.md"
+        },
+        {
+          "proof_id": "PROOF-parser-fuzz-campaign",
+          "statement": "The parser cargo-fuzz target consumes every digest-verified checked seed under the fixed 64-run and 300-second bounds, with LeakSanitizer enabled, and emits one typed campaign result whose normalized entry and domain outcome determine this attestation.",
+          "obligation_ids": ["FR-005-AC-2", "FR-006-AC-2", "NFR-003-AC-1"],
+          "evidence_kind": "Fuzz",
+          "command": {
+            "argv": ["cargo", "run", "--quiet", "--example", "fuzz_campaign", "--", "parser"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse-fuzz-campaign",
+          "configuration": "fuzz/corpus/parser/SHA256SUMS"
+        },
+        {
+          "proof_id": "PROOF-clean-ascii-v2-fuzz-campaign",
+          "statement": "The clean-ascii-v2 cargo-fuzz target consumes every digest-verified checked seed under the fixed 64-run and 300-second bounds, with LeakSanitizer enabled, and emits one typed campaign result whose normalized entry and domain outcome determine this attestation.",
+          "obligation_ids": ["FR-005-AC-2", "FR-006-AC-2", "NFR-003-AC-1"],
+          "evidence_kind": "Fuzz",
+          "command": {
+            "argv": ["cargo", "run", "--quiet", "--example", "fuzz_campaign", "--", "clean_ascii_v2"],
+            "working_directory": "."
+          },
+          "tool_identity": "tl-parse-fuzz-campaign",
+          "configuration": "fuzz/corpus/clean_ascii_v2/SHA256SUMS"
         },
         {
           "proof_id": "PROOF-test-census",

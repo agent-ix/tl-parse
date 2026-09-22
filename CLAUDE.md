@@ -68,7 +68,7 @@ src/parser.rs          # direct tl-syntax graph parser
 src/derived.rs         # clean-ascii v2 derived-operator report
 src/format.rs          # iterative bounded canonical formatter
 src/bin/tl-parse.rs    # thin validate/format CLI
-examples/              # the two domain producers: corpus replay, round-trip sweep
+examples/              # domain producers: corpus replay, round-trip sweep, fuzz campaigns
 tests/                 # unit, property, corpus, CLI, and shared-assurance tests
 corpus/v1/             # checksum-protected hostile-input fixtures
 fuzz/                  # isolated cargo-fuzz target and checked seeds

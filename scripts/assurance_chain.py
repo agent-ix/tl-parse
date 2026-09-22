@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -55,6 +56,11 @@ ROUNDTRIP_PROTOCOL = "tl-parse.roundtrip-sweep/v1"
 INPUTS = {
     "PROOF-parser-conformance": ("parser-conformance.jsonl", "application/x-ndjson"),
     "PROOF-roundtrip-property": ("roundtrip-property.jsonl", "application/x-ndjson"),
+    "PROOF-parser-fuzz-campaign": ("fuzz-parser-campaign.json", "application/json"),
+    "PROOF-clean-ascii-v2-fuzz-campaign": (
+        "fuzz-clean-ascii-v2-campaign.json",
+        "application/json",
+    ),
     "PROOF-test-census": ("test-census.json", "application/json"),
     "PROOF-quire-static-export": ("quire-static-export.json", "application/json"),
     "PROOF-msrv": ("msrv.jsonl", "application/x-ndjson"),
@@ -107,7 +113,7 @@ def digest_of(raw: bytes) -> str:
 
 
 def quoin(*arguments: str, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
-    """Invoke the pinned Quoin CLI. It is the only command this file runs."""
+    """Invoke the pinned Quoin CLI for retention and receipt operations."""
     if shutil.which("quoin") is None:
         raise ChainError("quoin is not on PATH; the pinned CLI is required")
     return subprocess.run(
@@ -522,6 +528,31 @@ def _load_json(raw: str, path: Path) -> Any:
         ) from error
 
 
+def _fuzz_result(proof_id: str, path: Path) -> str:
+    """Ask the repository-owned Rust adapter to validate and map one campaign."""
+    target_dir = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target"))
+    if not target_dir.is_absolute():
+        target_dir = ROOT / target_dir
+    adapter = target_dir / "debug" / "examples" / "fuzz_campaign"
+    try:
+        result = subprocess.run(
+            [str(adapter), "validate", proof_id, str(path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as error:
+        raise ChainError(f"could not execute Rust fuzz-result adapter: {error}") from error
+    if result.returncode != 0:
+        raise ChainError(
+            f"Rust fuzz-result adapter refused {path.name}: {result.stderr.strip()}"
+        )
+    mapped = result.stdout.strip()
+    if not mapped:
+        raise ChainError(f"Rust fuzz-result adapter emitted no result for {path.name}")
+    return mapped
+
+
 def derive_result(proof_id: str, path: Path) -> str:
     """Read the producer's own structured verdict out of the bytes it wrote.
 
@@ -544,6 +575,8 @@ def derive_result(proof_id: str, path: Path) -> str:
     if proof_id in ("PROOF-parser-conformance", "PROOF-roundtrip-property"):
         rows = [_load_json(line, path) for line in raw.splitlines() if line.strip()]
         return _rows_result(rows, path.name)
+    if proof_id in ("PROOF-parser-fuzz-campaign", "PROOF-clean-ascii-v2-fuzz-campaign"):
+        return _fuzz_result(proof_id, path)
     if proof_id == "PROOF-test-census":
         return _rows_result(_load_json(raw, path)["entries"], path.name)
     if proof_id == "PROOF-quire-static-export":
@@ -677,6 +710,7 @@ def run_chain(candidate_revision: str, workspace: Path) -> dict[str, Any]:
     # -- 1. the honest path: seal, retain, and get the bytes back unchanged ---
     selections: dict[str, str] = {}
     observed_results: dict[str, str] = {}
+    retained_outputs: dict[str, str] = {}
     retained_conformance: bytes = b""
     for proof_id, path in inputs.items():
         media_type = INPUTS[proof_id][1]
@@ -692,6 +726,7 @@ def run_chain(candidate_revision: str, workspace: Path) -> dict[str, Any]:
         detail = json.loads(taken.stdout)
         retained = Path(detail["directory"]) / "output.bin"
         identical = retained.read_bytes() == path.read_bytes()
+        retained_outputs[proof_id] = str(retained)
         selections[proof_id] = sealed["digest"]
         if proof_id == "PROOF-parser-conformance":
             retained_conformance = retained.read_bytes()
@@ -713,6 +748,29 @@ def run_chain(candidate_revision: str, workspace: Path) -> dict[str, Any]:
         None,
         all(result == "passed" for result in observed_results.values()),
         observed_results,
+    )
+    scenario(
+        "retain-both-fuzz-campaign-results-byte-identically",
+        "pass",
+        all(
+            Path(retained_outputs[proof_id]).read_bytes() == inputs[proof_id].read_bytes()
+            for proof_id in (
+                "PROOF-parser-fuzz-campaign",
+                "PROOF-clean-ascii-v2-fuzz-campaign",
+            )
+        ),
+        {
+            proof_id: {
+                "retained": retained_outputs[proof_id],
+                "produced_sha256": digest_of(inputs[proof_id].read_bytes()),
+                "retained_sha256": digest_of(Path(retained_outputs[proof_id]).read_bytes()),
+                "bytes": inputs[proof_id].stat().st_size,
+            }
+            for proof_id in (
+                "PROOF-parser-fuzz-campaign",
+                "PROOF-clean-ascii-v2-fuzz-campaign",
+            )
+        },
     )
 
     # -- 1b. malformed input stays malformed ---------------------------------

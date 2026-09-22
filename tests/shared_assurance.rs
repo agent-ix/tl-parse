@@ -777,8 +777,8 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
         .expect("attested_results");
     assert_eq!(
         attested.len(),
-        5,
-        "five proof obligations are declared; {} were attested",
+        7,
+        "seven proof obligations are declared; {} were attested",
         attested.len()
     );
     for (proof, result) in attested {
@@ -799,6 +799,52 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
             probes.iter().any(|probe| probe["probe"] == required),
             "adapter probe {required} is missing"
         );
+    }
+}
+
+// Trace: TC-047, FR-005-AC-2, FR-006-AC-2, NFR-003-AC-1, SUITE-010
+#[test]
+fn both_fuzz_campaign_results_are_retained_byte_identically_and_drive_attestations() {
+    let report = chain_report();
+    let retention = report["scenarios"]
+        .as_array()
+        .expect("scenarios")
+        .iter()
+        .find(|scenario| {
+            scenario["scenario"] == "retain-both-fuzz-campaign-results-byte-identically"
+        })
+        .expect("the fuzz retention scenario is absent");
+    assert_eq!(retention["matched"], true, "{retention:#}");
+    for (proof, input) in [
+        (
+            "PROOF-parser-fuzz-campaign",
+            "target/assurance/fuzz-parser-campaign.json",
+        ),
+        (
+            "PROOF-clean-ascii-v2-fuzz-campaign",
+            "target/assurance/fuzz-clean-ascii-v2-campaign.json",
+        ),
+    ] {
+        let produced = fs::read(root().join(input))
+            .unwrap_or_else(|error| panic!("could not read {input}: {error}"));
+        assert_eq!(
+            retention["detail"][proof]["produced_sha256"],
+            retention["detail"][proof]["retained_sha256"],
+            "Quoin changed the bytes for {proof}"
+        );
+        assert_eq!(
+            retention["detail"][proof]["bytes"].as_u64(),
+            u64::try_from(produced.len()).ok()
+        );
+
+        let document: Value = serde_json::from_slice(&produced)
+            .unwrap_or_else(|error| panic!("{input} is not JSON: {error}"));
+        assert_eq!(document["protocol"], "tl-parse.fuzz-campaign/v1");
+        assert_eq!(document["entries"].as_array().map(Vec::len), Some(1));
+        assert_eq!(document["entries"][0]["outcome"], "pass");
+        assert_eq!(document["entries"][0]["domainOutcome"], "pass");
+        assert_eq!(document["campaign"]["domainOutcome"], "pass");
+        assert_eq!(report["attested_results"][proof], "passed");
     }
 }
 
@@ -957,14 +1003,12 @@ fn the_sealed_records_impact_snapshot_is_the_quire_export() {
     // is not itself a failure. So the figures themselves are asserted: an
     // export reporting different totals has to move a number in this file.
     let totals = &parsed["totals"];
-    // 49 acceptance and validation criteria plus 44 test cases total 93, all
-    // backed. spec-artifacts-process 737987b (quire-rs#363) made evidence
-    // registries reference-only, so the nine suite rows in
-    // spec/evidence/suites.md, four of them unbacked on purpose per SR-007, are
-    // no longer coverage targets and no longer appear in these totals.
-    assert_eq!(totals["total"], 93, "matrix row count changed: {totals}");
+    // 49 acceptance and validation criteria plus 45 test cases total 94, all
+    // backed. The pinned Quire 0.31 contract keeps the ten suite declarations
+    // reference-only, so they do not enter this coverage total.
+    assert_eq!(totals["total"], 94, "matrix row count changed: {totals}");
     assert_eq!(
-        totals["backed"], 93,
+        totals["backed"], 94,
         "backed-row count changed: {totals}. Every counted row is backed; if that \
          number moved, find the unbacked row rather than adjusting this assertion."
     );
@@ -1262,6 +1306,13 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
         Err(error) => panic!("could not establish scratch target ownership: {error}"),
     }
     fs::create_dir_all(&scratch_target).expect("create isolated probe target");
+    let scratch_adapter_dir = scratch_target.join("debug/examples");
+    fs::create_dir_all(&scratch_adapter_dir).expect("create Rust adapter directory");
+    std::os::unix::fs::symlink(
+        root().join("target/debug/examples/fuzz_campaign"),
+        scratch_adapter_dir.join("fuzz_campaign"),
+    )
+    .expect("share only the built Rust fuzz-result adapter with the isolated probe");
     std::os::unix::fs::symlink(
         root().join("target/assurance"),
         scratch_target.join("assurance"),

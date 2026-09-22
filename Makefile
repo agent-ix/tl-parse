@@ -41,6 +41,8 @@ ASSURANCE_DIR := target/assurance
 CONFORMANCE_RESULT := $(ASSURANCE_DIR)/parser-conformance.jsonl
 ROUNDTRIP_RESULT := $(ASSURANCE_DIR)/roundtrip-property.jsonl
 CENSUS_RESULT := $(ASSURANCE_DIR)/test-census.json
+PARSER_FUZZ_RESULT := $(ASSURANCE_DIR)/fuzz-parser-campaign.json
+CLEAN_ASCII_V2_FUZZ_RESULT := $(ASSURANCE_DIR)/fuzz-clean-ascii-v2-campaign.json
 QUIRE_EXPORT := $(ASSURANCE_DIR)/quire-static-export.json
 MSRV_RESULT := $(ASSURANCE_DIR)/msrv.jsonl
 REVISION ?= $(shell git rev-parse HEAD)
@@ -125,8 +127,9 @@ fuzz-build:
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	bash scripts/run_fuzz_smoke.sh parser
-	bash scripts/run_fuzz_smoke.sh clean_ascii_v2
+	mkdir -p $(ASSURANCE_DIR)
+	$(CARGO) run --quiet --example fuzz_campaign -- parser > $(PARSER_FUZZ_RESULT)
+	$(CARGO) run --quiet --example fuzz_campaign -- clean_ascii_v2 > $(CLEAN_ASCII_V2_FUZZ_RESULT)
 
 .PHONY: build
 build:
@@ -184,7 +187,7 @@ assurance-env: $(ASSURANCE_PYTHON)
 # The only target that runs a producer. Everything downstream consumes these
 # files and refuses to create them.
 .PHONY: assurance-inputs
-assurance-inputs: assurance-env
+assurance-inputs: assurance-env fuzz-smoke
 	mkdir -p $(ASSURANCE_DIR)
 	$(CARGO) run --quiet --example corpus_conformance -- \
 		--manifest corpus/v1/manifest.json > $(CONFORMANCE_RESULT)
