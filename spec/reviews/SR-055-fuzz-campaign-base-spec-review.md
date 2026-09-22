@@ -1,9 +1,9 @@
 ---
-id: SR-046
+id: SR-055
 title: "Base review — structured bounded-fuzz campaign contract"
 type: SpecReview
 analysis: base
-scope: "FR-005, FR-006, NFR-003, MP-001, TM-001 TC-046, SUITE-010"
+scope: "FR-005, FR-006, NFR-003, MP-001, TM-001 TC-047, SUITE-010"
 review_set: all
 ---
 
@@ -22,4 +22,4 @@ before implementation.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-4601 | low | No remaining base-checklist defect: current `Coverage Status` headings validate, FR-005-AC-2 has happy/error/edge/resource outcomes, TC-046 reciprocally binds its owners, and affected aggregate rows remain partial until implementation. | FR-005-AC-2; FR-006-AC-2; NFR-003-AC-1; TC-046 |
+| FND-4601 | low | No remaining base-checklist defect: current `Coverage Status` headings validate, FR-005-AC-2 has happy/error/edge/resource outcomes, TC-047 reciprocally binds its owners, and affected aggregate rows remain partial until implementation. | FR-005-AC-2; FR-006-AC-2; NFR-003-AC-1; TC-047 |

@@ -46,7 +46,7 @@ those tests "actually invoke that suite's command" and **none of them does**:
 | SUITE-006 | TC-023 | reads `msrv.jsonl` and asserts the attested result, rather than running the MSRV check |
 | SUITE-007 | TC-023 | runs `scripts/assurance_chain.py` directly, so it covers the chain but not `pins` |
 | SUITE-009 | TC-023 | reads the two producers' retained results rather than running `make conformance roundtrip` |
-| SUITE-010 | TC-046 | reads the producer-owned structured campaign results and their retained Quoin bytes rather than inferring a verdict from libFuzzer console text |
+| SUITE-010 | TC-047 | reads the producer-owned structured campaign results and their retained Quoin bytes rather than inferring a verdict from libFuzzer console text |
 
 So these tests bind to the **retained output** of a suite, not to its
 invocation. That is the architecture working as intended — the whole point is

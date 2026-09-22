@@ -816,7 +816,7 @@ fn the_chain_reaches_quoin_without_quoin_or_quire_executing_a_producer() {
     }
 }
 
-// Trace: TC-046, FR-005-AC-2, FR-006-AC-2, NFR-003-AC-1, SUITE-010
+// Trace: TC-047, FR-005-AC-2, FR-006-AC-2, NFR-003-AC-1, SUITE-010
 #[test]
 fn both_fuzz_campaign_results_are_retained_byte_identically_and_drive_attestations() {
     let report = chain_report();

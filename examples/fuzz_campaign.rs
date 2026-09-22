@@ -993,7 +993,7 @@ fn document(root: &Path, target: Target) -> (CampaignDocument, Option<TempDir>) 
             symbol: target.symbol(),
             outcome: outcome.normalized(),
             trace_ids: [
-                "TC-046",
+                "TC-047",
                 "FR-005-AC-2",
                 "FR-006-AC-2",
                 "NFR-003-AC-1",
@@ -1087,7 +1087,7 @@ mod tests {
         root
     }
 
-    // Trace: TC-046, FR-005-AC-2
+    // Trace: TC-047, FR-005-AC-2
     #[test]
     fn tc_046_classifies_every_process_and_artifact_combination() {
         assert_eq!(
@@ -1116,7 +1116,7 @@ mod tests {
         );
     }
 
-    // Trace: TC-046, FR-005-AC-2
+    // Trace: TC-047, FR-005-AC-2
     #[test]
     fn tc_046_refuses_target_sanitizer_and_tool_identity_mutations() {
         assert_eq!(Target::parse(OsStr::new("parser")), Some(Target::Parser));
@@ -1142,7 +1142,7 @@ mod tests {
         assert!(bounded.error.is_none());
     }
 
-    // Trace: TC-046, FR-005-AC-2
+    // Trace: TC-047, FR-005-AC-2
     #[test]
     fn tc_046_zero_deadline_terminates_and_reaps_the_whole_process_group() {
         let mut command = std::process::Command::new("sh");
@@ -1154,7 +1154,7 @@ mod tests {
         );
     }
 
-    // Trace: TC-046, FR-005-AC-2
+    // Trace: TC-047, FR-005-AC-2
     #[test]
     fn tc_046_accepts_exact_manifest_bytes_and_refuses_digest_or_name_mutations() {
         let root = manifest_fixture(&[("one.txt", b"one"), ("two.txt", b"two")]);
@@ -1204,7 +1204,7 @@ mod tests {
         assert_eq!(linked.code.as_str(), "seed_invalid");
     }
 
-    // Trace: TC-046, FR-005-AC-2
+    // Trace: TC-047, FR-005-AC-2
     #[test]
     fn tc_046_bounds_artifacts_and_hashes_exact_bytes() {
         let root = tempfile::tempdir().expect("artifact root");
@@ -1226,7 +1226,7 @@ mod tests {
         assert!(excessive.contains("population exceeds"), "{excessive}");
     }
 
-    // Trace: TC-046, FR-005-AC-2
+    // Trace: TC-047, FR-005-AC-2
     #[test]
     fn tc_046_refuses_symlinked_and_oversized_artifacts() {
         let root = tempfile::tempdir().expect("artifact root");
@@ -1244,7 +1244,7 @@ mod tests {
         assert!(excessive.contains("artifact limit"), "{excessive}");
     }
 
-    // Trace: TC-046, FR-005-AC-2, FR-006-AC-2
+    // Trace: TC-047, FR-005-AC-2, FR-006-AC-2
     #[test]
     fn tc_046_unavailable_result_is_typed_versioned_and_non_passing() {
         let root = tempfile::tempdir().expect("campaign root");
@@ -1258,7 +1258,7 @@ mod tests {
         assert_eq!(result.campaign.requested_runs, 64);
         assert_eq!(result.campaign.deadline_seconds, 300);
         let encoded = serde_json::to_value(&result).expect("serialize result");
-        assert_eq!(encoded["entries"][0]["traceIds"][0], "TC-046");
+        assert_eq!(encoded["entries"][0]["traceIds"][0], "TC-047");
         assert_eq!(encoded["campaign"]["domainOutcome"], "unavailable");
     }
 }

@@ -1,5 +1,5 @@
 ---
-id: SR-054
+id: SR-063
 title: "Rust and code review — structured fuzz campaign evidence"
 type: SpecReview
 analysis: code-review
@@ -42,8 +42,8 @@ form the declared closed contract.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-5401 | high | **Fixed:** the first intake implementation bound protocol, target, symbol and outcomes but could still attest a pass after mutations to the run/deadline bounds, manifest identity, tool identity, sanitizer, or process result. The consumer now validates the complete closed campaign shape against repository-owned manifest bytes and explicit mutation probes prove every field is load-bearing. | `scripts/assurance_chain.py`; `tests/shared_assurance.rs`; commits `7502c80`, `95afdc2`; TC-046 |
-| FND-5402 | medium | **Fixed:** external process cleanup and output bounds were incomplete during review. Both cargo-fuzz and version probes now run in process groups, timeouts kill and reap the group, version output is capped at 8 KiB, and the campaign has finite seed, artifact, byte and time bounds. | `examples/fuzz_campaign.rs:520`; `examples/fuzz_campaign.rs:560`; `examples/fuzz_campaign.rs:703`; TC-046 |
+| FND-5401 | high | **Fixed:** the first intake implementation bound protocol, target, symbol and outcomes but could still attest a pass after mutations to the run/deadline bounds, manifest identity, tool identity, sanitizer, or process result. The consumer now validates the complete closed campaign shape against repository-owned manifest bytes and explicit mutation probes prove every field is load-bearing. | `scripts/assurance_chain.py`; `tests/shared_assurance.rs`; commits `7502c80`, `95afdc2`; TC-047 |
+| FND-5402 | medium | **Fixed:** external process cleanup and output bounds were incomplete during review. Both cargo-fuzz and version probes now run in process groups, timeouts kill and reap the group, version output is capped at 8 KiB, and the campaign has finite seed, artifact, byte and time bounds. | `examples/fuzz_campaign.rs:520`; `examples/fuzz_campaign.rs:560`; `examples/fuzz_campaign.rs:703`; TC-047 |
 | FND-5403 | medium | **Fixed:** the ambient dependency audit warned about a wildcard crate constraint and unused license allowances, while the first coverage assertion/header followed a different ambient module contract. `tl-syntax` now has both exact version and revision constraints, unused license allowances are removed, and the matrix/assertion follow pinned Quire 0.31's 94/94 contract. | `Cargo.toml`; `deny.toml`; `spec/test-matrix.md`; `tests/shared_assurance.rs`; commits `ecb3580`, `cc543ea` |
 | FND-5404 | low | No remaining Rust defect was found: production code contains no panic/unwrap/expect or unsafe block, fallible integer conversions protect wire sizes, test panics are test oracles, and the new dependency passes MSRV and cargo-deny. | `examples/fuzz_campaign.rs`; `Cargo.lock`; `deny.toml` |
 
@@ -56,7 +56,7 @@ form the declared closed contract.
   with no crash artifact and emitted separate passing
   `tl-parse.fuzz-campaign/v1` documents.
 - `cargo test --all-targets --all-features`: 65 requirement-tagged tests pass,
-  including seven TC-046 producer tests and the shared intake/mutation tests.
+  including seven TC-047 producer tests and the shared intake/mutation tests.
 - `quire coverage --scope . --strict`: 94/94 rows backed and Rust
   67/67/67 bound/tagged/candidates.
 - Rust 1.75 MSRV, strict Clippy, rustfmt, rustdoc warnings-as-errors,

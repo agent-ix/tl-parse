@@ -1,16 +1,16 @@
 ---
-id: SR-044
+id: SR-053
 title: "Gap analysis — tl-parse property grounding and fuzz evidence"
 type: SpecReview
 analysis: gap-analysis
-scope: "spec/plans/PLAN-001-v0.1/, tl-parse#25, spec/test-matrix.md, tests, fuzz, and SR-042 through SR-043"
+scope: "spec/plans/PLAN-001-v0.1/, tl-parse#25, spec/test-matrix.md, tests, fuzz, and SR-051 through SR-052"
 review_set: subset
 ---
 
 ## Summary
 
 The property-grounding portion of tl-parse#25 is complete. All 49 binding
-criteria have an explicit grounding disposition in SR-042, all 93 matrix rows
+criteria have an explicit grounding disposition in SR-051, all 93 matrix rows
 are backed, and all 59 Rust candidates are compiled, tagged and bound. No
 duplicate generated test was added over existing hand-written evidence.
 
@@ -34,7 +34,7 @@ itself is complete.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-4401 | medium | Durable campaign retention remains open: the exact run is recorded in SR-042, but there is no released structured libFuzzer producer-result contract or Quoin adapter that can retain it without a local substitute. | tl-parse#25, tl-syntax#26, SR-042 FND-4203, SR-043 FND-4302 |
+| FND-4401 | medium | Durable campaign retention remains open: the exact run is recorded in SR-051, but there is no released structured libFuzzer producer-result contract or Quoin adapter that can retain it without a local substitute. | tl-parse#25, tl-syntax#26, SR-051 FND-4203, SR-052 FND-4302 |
 | FND-4402 | low | Traceability closes exactly: Quire reports 93/93 rows backed, 49/49 criteria backed, and 59/59/59 Rust bound/tagged/candidates with no status lie, unbacked row, or untracked symbol. | TM-001, `quire coverage --scope . --strict` |
 | FND-4403 | high | PLAN-001 Task-007 is `not_started` and explicitly human-owned, so the plan cannot pass completion analysis and no automated review may advance it. | PLAN-001; Task-007 |
 

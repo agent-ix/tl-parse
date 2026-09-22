@@ -1,5 +1,5 @@
 ---
-id: SR-045
+id: SR-054
 title: "Exact-head review — tl-parse property and fuzz baseline"
 type: SpecReview
 analysis: code-review
@@ -9,8 +9,8 @@ review_set: subset
 
 ## Summary
 
-The complete local gate passes at the exact candidate containing SR-042 through
-SR-044. The candidate changes only validated review artifacts; the reviewed
+The complete local gate passes at the exact candidate containing SR-051 through
+SR-053. The candidate changes only validated review artifacts; the reviewed
 Rust/property/fuzz implementation remains byte-identical to current main
 `9ca856b`. No hosted workflow was dispatched.
 
@@ -24,8 +24,8 @@ shared pin admission and the complete assurance chain.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-4501 | low | Exact-head verification is clean: 91/91 documents validate, all 93 matrix rows and 59 Rust symbols bind, and both 64-run fuzz targets complete without a crash artifact. | `19e48c5`, TM-001, SR-042 through SR-044 |
-| FND-4502 | medium | The run remains review evidence rather than normalized retained Quoin evidence until a released structured libFuzzer producer-result/adapter boundary exists. No local substitute was introduced. | SR-042 FND-4203, SR-043 FND-4302, SR-044 FND-4401 |
+| FND-4501 | low | Exact-head verification is clean: 91/91 documents validate, all 93 matrix rows and 59 Rust symbols bind, and both 64-run fuzz targets complete without a crash artifact. | `19e48c5`, TM-001, SR-051 through SR-053 |
+| FND-4502 | medium | The run remains review evidence rather than normalized retained Quoin evidence until a released structured libFuzzer producer-result/adapter boundary exists. No local substitute was introduced. | SR-051 FND-4203, SR-052 FND-4302, SR-053 FND-4401 |
 
 ## Exact-head fuzz observations
 

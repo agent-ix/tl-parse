@@ -1,5 +1,5 @@
 ---
-id: SR-051
+id: SR-060
 title: "Risk and complexity review — structured bounded-fuzz campaigns"
 type: SpecReview
 analysis: risk-complexity
@@ -21,5 +21,5 @@ the mitigations.
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-5101 | medium | External process and artifact handling are bounded by closed targets, a 300-second deadline, finite seed/artifact populations, regular-file checks, digest identities, and non-pass defaults. | FR-005 Inputs; FR-005 Behavior; TC-046 |
+| FND-5101 | medium | External process and artifact handling are bounded by closed targets, a 300-second deadline, finite seed/artifact populations, regular-file checks, digest identities, and non-pass defaults. | FR-005 Inputs; FR-005 Behavior; TC-047 |
 | FND-5102 | medium | Nightly Rust and cargo-fuzz are externally volatile; the result binds the exact observed identities and treats missing/unobservable tools as unavailable instead of assuming a version. | FR-005 Inputs; FR-005 Outputs; FR-005-AC-2 |

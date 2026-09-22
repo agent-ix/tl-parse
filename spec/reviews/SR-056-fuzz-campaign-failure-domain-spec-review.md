@@ -1,9 +1,9 @@
 ---
-id: SR-047
+id: SR-056
 title: "Failure-domain review — structured bounded-fuzz campaigns"
 type: SpecReview
 analysis: failure-domain
-scope: "FR-005-AC-2, FR-006-AC-2, TC-046"
+scope: "FR-005-AC-2, FR-006-AC-2, TC-047"
 review_set: all
 ---
 

@@ -1,5 +1,5 @@
 ---
-id: SR-053
+id: SR-062
 title: "EARS review — structured bounded-fuzz campaign requirements"
 type: SpecReview
 analysis: ears-conformance

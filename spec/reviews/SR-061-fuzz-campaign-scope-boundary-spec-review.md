@@ -1,5 +1,5 @@
 ---
-id: SR-052
+id: SR-061
 title: "Scope-boundary review — structured bounded-fuzz campaigns"
 type: SpecReview
 analysis: scope-boundary
@@ -22,4 +22,4 @@ reconstructs a producer result.
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-5201 | low | The in-scope structured campaign result and out-of-scope binary attachment are allocated to their owning components with no local store or adapter substitution. | FR-005; FR-006; NFR-003; Quoin #363 |
-| FND-5202 | low | The producer/shared-tool boundary is testable: tl-parse writes result bytes, Quoin retains them, Quire supplies only static facts, and neither shared tool invokes cargo-fuzz. | FR-006-AC-2; NFR-003-AC-1; TC-046 |
+| FND-5202 | low | The producer/shared-tool boundary is testable: tl-parse writes result bytes, Quoin retains them, Quire supplies only static facts, and neither shared tool invokes cargo-fuzz. | FR-006-AC-2; NFR-003-AC-1; TC-047 |

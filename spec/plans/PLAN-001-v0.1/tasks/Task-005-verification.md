@@ -28,5 +28,5 @@ Reopened on 2026-09-13 to replace console-only fuzz smoke execution with the
 FR-005-AC-2 structured Rust campaign result required by tl-parse#25.
 
 Completed on 2026-09-13 at `cc543ea`: the complete local gate passed with both
-64-run campaigns, all SR-054 findings were fixed, and SR-055 found no remaining
+64-run campaigns, all SR-063 findings were fixed, and SR-064 found no remaining
 ticket-scoped verification gap.

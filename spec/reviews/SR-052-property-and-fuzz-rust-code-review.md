@@ -1,5 +1,5 @@
 ---
-id: SR-043
+id: SR-052
 title: "Rust review — tl-parse property and fuzz baseline"
 type: SpecReview
 analysis: code-review
@@ -41,7 +41,7 @@ conversion, foreign ABI, or production filesystem change in scope.
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
 | FND-4301 | low | No Rust defect was found in the reviewed property/fuzz scope. Test-only panics are the failure oracle, unsafe remains forbidden, generator sizes are bounded, and the exact existing test and fuzz lanes pass. | `tests/property.rs`, `tests/clean_ascii_v2.rs`, `fuzz/fuzz_targets/parser.rs`, `fuzz/fuzz_targets/clean_ascii_v2.rs` |
-| FND-4302 | medium | The runner's process output is not a declared structured domain report and Quoin has no libFuzzer adapter. Treating exit status or scraped stdout as a retained proof would violate the shared evidence boundary; the run can be review-recorded but not truthfully entered as normalized retained evidence yet. | SR-042 FND-4203, tl-syntax#26, engineering-assurance#7 |
+| FND-4302 | medium | The runner's process output is not a declared structured domain report and Quoin has no libFuzzer adapter. Treating exit status or scraped stdout as a retained proof would violate the shared evidence boundary; the run can be review-recorded but not truthfully entered as normalized retained evidence yet. | SR-051 FND-4203, tl-syntax#26, engineering-assurance#7 |
 
 ## Verification
 

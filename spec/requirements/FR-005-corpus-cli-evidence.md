@@ -74,7 +74,7 @@ target seeded by those fixtures, and thin CLI surfaces.
 | ID | Criteria | Verification |
 |---|---|---|
 | FR-005-AC-1 | The malformed/resource corpus is checksum-valid and every fixture produces its declared bounded outcome. | Test (TC-018) |
-| FR-005-AC-2 | Each checked-in fuzz target compiles, a 64-execution/300-second libFuzzer smoke run consumes every digest-verified declared seed, and the Rust producer writes one `tl-parse.fuzz-campaign/v1` result that binds the target, bounds, seed manifest, observed tools, sanitizer state, process status, domain outcome, limitation, and bounded artifact identities; every unavailable, failed, or suspect result is non-zero, and successful seeds round-trip under declared limits. | Test (TC-019, TC-046) |
+| FR-005-AC-2 | Each checked-in fuzz target compiles, a 64-execution/300-second libFuzzer smoke run consumes every digest-verified declared seed, and the Rust producer writes one `tl-parse.fuzz-campaign/v1` result that binds the target, bounds, seed manifest, observed tools, sanitizer state, process status, domain outcome, limitation, and bounded artifact identities; every unavailable, failed, or suspect result is non-zero, and successful seeds round-trip under declared limits. | Test (TC-019, TC-047) |
 | FR-005-AC-3 | CLI validation/formatting outputs and exit classes match the library for valid, invalid, profile, stdin, source-limit, and usage cases; an oversized seekable file reports its metadata byte count, while a non-closing stream is read only through the first byte beyond the limit, without parsing fabricated text. | Test (TC-020, TC-021) |
 
 ## Dependencies
