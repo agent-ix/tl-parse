@@ -569,7 +569,7 @@ def _fuzz_result(document: Any, proof_id: str, path: Path) -> str:
     if entry.get("symbol") != expected_symbol:
         raise ChainError(f"{path.name} does not bind the declared symbol {expected_symbol}")
     if entry.get("traceIds") != [
-        "TC-046",
+        "TC-047",
         "FR-005-AC-2",
         "FR-006-AC-2",
         "NFR-003-AC-1",
