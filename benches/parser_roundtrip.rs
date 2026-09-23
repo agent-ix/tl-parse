@@ -12,6 +12,7 @@ const BOUNDED_SMALL: &str = include_str!("inputs/bounded-small.txt");
 const PAST_SMALL: &str = include_str!("inputs/past-small.txt");
 const INFINITE_SMALL: &str = include_str!("inputs/infinite-small.txt");
 const INFINITE_FAIRNESS: &str = include_str!("inputs/infinite-fairness.txt");
+const SHARED_MEDIAN: &str = include_str!("inputs/shared-median.txt");
 const SHARED_NEAR_NODE_CAP: &str = include_str!("inputs/shared-near-node-cap.txt");
 const INPUT_SHA256SUMS: &str = include_str!("inputs/SHA256SUMS");
 
@@ -21,6 +22,7 @@ fn verify_inputs() {
         ("infinite-fairness.txt", INFINITE_FAIRNESS),
         ("infinite-small.txt", INFINITE_SMALL),
         ("past-small.txt", PAST_SMALL),
+        ("shared-median.txt", SHARED_MEDIAN),
         ("shared-near-node-cap.txt", SHARED_NEAR_NODE_CAP),
     ];
     let actual = files
@@ -84,11 +86,14 @@ fn parser_roundtrip(c: &mut Criterion) {
     group.sample_size(20);
     group.warm_up_time(Duration::from_millis(500));
     group.measurement_time(Duration::from_secs(1));
-    let cases: [BenchmarkCase; 7] = [
+    let cases: [BenchmarkCase; 10] = [
         ("bounded_small", BOUNDED_SMALL, false, bounded),
         ("past_small", PAST_SMALL, false, past),
         ("infinite_small", INFINITE_SMALL, false, infinite),
         ("infinite_fairness", INFINITE_FAIRNESS, false, infinite),
+        ("bounded_median", SHARED_MEDIAN, false, bounded),
+        ("past_median", SHARED_MEDIAN, false, past),
+        ("infinite_median", SHARED_MEDIAN, false, infinite),
         ("bounded_near_node_cap", SHARED_NEAR_NODE_CAP, true, bounded),
         ("past_near_node_cap", SHARED_NEAR_NODE_CAP, true, past),
         (

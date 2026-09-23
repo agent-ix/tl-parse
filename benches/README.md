@@ -1,8 +1,10 @@
 # Parser Criterion lane
 
 `parser_roundtrip` times real parsing followed by canonical formatting through
-the public V1 closed-trace, V3 past, and V4 infinite APIs. The seven cases use
+the public V1 closed-trace, V3 past, and V4 infinite APIs. The current ten cases use
 the exact text files in `inputs/`, checked against `SHA256SUMS` at startup.
+The V9 median input has 24 distinct atoms and 23 conjunctions (47 graph
+nodes); bounded, past, and infinite paths all use that same input.
 The shared Boolean case has 64 distinct atoms and 63 conjunctions (127 graph
 nodes) under a caller limit of 128 nodes. This approaches that declared test
 limit; it does not approach the library's 10,000-node hard maximum. The V4
