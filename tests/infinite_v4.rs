@@ -260,6 +260,7 @@ fn admits_all_infinite_future_and_past_forms() {
         "YG[1,2]p0",
         "p0 W[0,) p1",
         "p0 M[1,3] p1",
+        "!p0",
     ] {
         let result = parse(source);
         assert!(
@@ -443,7 +444,14 @@ fn derived_future_text_round_trips_the_exact_lowered_graph() {
 // Trace: TC-063, FR-017-AC-1
 #[test]
 fn ordinary_boolean_roots_do_not_masquerade_as_derived_temporal_forms() {
-    for source in ["p0 | p1", "p0 & p1", "(p0 U[0,)p1) | G[0,)p2"] {
+    for source in [
+        "p0 | p1",
+        "p0 & p1",
+        "p0 & p1 & p2",
+        "(p0 U[0,)p1) | G[0,)p2",
+        "(p0 U[0,)p1) & p2",
+        "(p0 R[0,)p1) | p2",
+    ] {
         let first = parse(source);
         let document = first.document.as_ref().expect("valid boolean graph");
         let text = format_clean_ascii_v4(document, None, FormatLimits::default())
@@ -471,7 +479,7 @@ fn ordinary_boolean_roots_do_not_masquerade_as_derived_temporal_forms() {
 fn derived_temporal_near_matches_do_not_emit_a_false_canonical_text() {
     let interval = TemporalInterval::Unbounded(UnboundedInterval::new(0));
     let other_interval = TemporalInterval::Unbounded(UnboundedInterval::new(1));
-    for weak in [true, false] {
+    for (weak, wrong_second_kind) in [(true, false), (false, false), (true, true), (false, true)] {
         let first = if weak {
             InfiniteNodeKind::Until {
                 interval,
@@ -485,7 +493,7 @@ fn derived_temporal_near_matches_do_not_emit_a_false_canonical_text() {
                 right: NodeId(1),
             }
         };
-        let second = if weak {
+        let second = if weak != wrong_second_kind {
             InfiniteNodeKind::Globally {
                 interval: other_interval,
                 operand: NodeId(0),
@@ -529,7 +537,7 @@ fn derived_temporal_near_matches_do_not_emit_a_false_canonical_text() {
         assert_eq!(
             result.error.unwrap().code,
             FormatErrorCode::UnrepresentableGraph,
-            "weak={weak}"
+            "weak={weak}, wrong_second_kind={wrong_second_kind}"
         );
     }
 }
@@ -546,6 +554,24 @@ fn formatter_refuses_fairness_from_a_different_owner_graph() {
     );
     assert!(report.text.is_none());
     assert_eq!(report.error.unwrap().code, FormatErrorCode::InvalidGraph);
+}
+
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn empty_fairness_document_formats_as_the_unqualified_claim() {
+    let report = parse("p0");
+    let document = report.document.as_ref().unwrap();
+    let empty = FairnessPremisesDocument::new(
+        document,
+        document.content_identity().unwrap(),
+        InfiniteClock::EventPosition,
+        Vec::new(),
+    )
+    .unwrap();
+    let plain = format_clean_ascii_v4(document, None, FormatLimits::default());
+    let qualified = format_clean_ascii_v4(document, Some(&empty), FormatLimits::default());
+    assert_eq!(qualified.text, plain.text);
+    assert_eq!(qualified.text.as_deref(), Some("p0"));
 }
 
 // Loci are retained for diagnostics but have no effect on the semantic graph
