@@ -10,8 +10,8 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`fed48a2fab3f5277131a7012e1a8d10993330cb1`, an exact commit reachable from the
-Stage 1 integration branch, not a moving branch head. That revision
+`6d182fa90e22d0cfbd9aff3728f3de069b8aefd4`, an exact reviewed commit, not a
+moving branch head. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
 a separate and historical fact; `docs/ATTRIBUTION.md` records both, and

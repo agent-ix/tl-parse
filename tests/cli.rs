@@ -54,11 +54,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "0a05433592c3e2669d502973df33f15aee7f88f009b49e20c86eee87cc521b98"
+        "77460c536531b4072940c4ab3bb1b2323fb33259fb111d6cb4f0dae7dc3cf22b"
     );
     assert_eq!(
         attribution_document_digest(),
-        "8c07389f0323253720c1503d421ff26cb4218ffa8d79e80a4f8601a8bf2d1027"
+        "c93c72cf380e752dec7ae2be2dc2fbbff0e28c34b9c2f0c8e6c879e010ac5e39"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
@@ -151,7 +151,8 @@ fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
     assert!(dialect.contains("carries no per-file SHA-256 table"));
 
     let deny = fs::read_to_string(format!("{root}/deny.toml")).unwrap();
-    assert!(deny.contains("tl-syntax Stage 1 integration branch"));
+    assert!(deny.contains(TL_SYNTAX_REVISION));
+    assert!(deny.contains("not a moving branch head"));
     assert!(!deny.contains("head of tl-syntax `main`"));
 }
 

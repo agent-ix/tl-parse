@@ -27,8 +27,8 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`fed48a2fab3f5277131a7012e1a8d10993330cb1`, a commit reachable from
-the tl-syntax Stage 1 integration branch. It is not a
+`6d182fa90e22d0cfbd9aff3728f3de069b8aefd4`, an exact reviewed commit.
+It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
 is enforced: cargo resolves the dependency by exact revision and refuses a
@@ -41,8 +41,9 @@ The previous `4a561419` pin is the squash merge of tl-syntax#88 and was the comm
 `formula-unbounded/v1`, fairness, and infinite trace identities. V1 through
 V3 continue to use the bounded owner vocabulary; the authorship basis above
 does not move.
-The latest pin advance from `8bcbce98` adds V4 fuzz evidence and does not
-change the syntax API or the historical authorship basis.
+The prior pin advance from `8bcbce98` to `fed48a2f` added V4 fuzz evidence.
+The current advance to `6d182fa9` makes tl-syntax MIT-only. Neither advance
+changes the syntax API or the historical authorship basis.
 
 ## Source-inspected 0.3.0 release compiled-pin delta
 
