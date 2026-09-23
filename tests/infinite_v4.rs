@@ -413,6 +413,110 @@ fn node_and_output_limits_refuse_without_partial_artifacts() {
     assert!(formatted.text.is_none());
 }
 
+// Trace: TC-184, FR-047-AC-2; TC-066, NFR-004-AC-1
+#[test]
+fn zero_diagnostic_budget_truncates_clock_refusal_without_emitting_a_diagnostic() {
+    let report = parse_clean_ascii_v4(
+        "p0",
+        PROFILE,
+        "wall_clock",
+        ParseLimits {
+            max_diagnostics: 0,
+            ..ParseLimits::default()
+        },
+    );
+    assert!(report.document.is_none());
+    assert!(report.diagnostics.is_empty());
+    assert_eq!(report.stats.diagnostics, 0);
+    assert!(report.stats.diagnostics_truncated);
+}
+
+// Trace: TC-184, FR-047-AC-2; TC-066, NFR-004-AC-1
+#[test]
+fn parser_work_diagnostics_never_leave_a_usable_graph() {
+    let mut observed_work_diagnostic_after_nodes = false;
+    for source in ["p0", "F[0,)p0", "p0 W[0,) p1"] {
+        let baseline = parse(source);
+        assert!(baseline.document.is_some());
+        for max_work in 0..baseline.stats.work {
+            let report = parse_clean_ascii_v4(
+                source,
+                PROFILE,
+                "event_position",
+                ParseLimits {
+                    max_work,
+                    ..ParseLimits::default()
+                },
+            );
+            if report.stats.nodes > 0
+                && report
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.code == DiagnosticCode::WorkLimit)
+            {
+                observed_work_diagnostic_after_nodes = true;
+            }
+            assert!(report.document.is_none(), "{source}, max_work={max_work}");
+            assert!(
+                !report.diagnostics.is_empty() || report.stats.diagnostics_truncated,
+                "{source}, max_work={max_work}"
+            );
+        }
+    }
+    assert!(observed_work_diagnostic_after_nodes);
+
+    let truncated = parse_clean_ascii_v4(
+        "p0",
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_work: 2,
+            max_diagnostics: 0,
+            ..ParseLimits::default()
+        },
+    );
+    assert_eq!(truncated.stats.nodes, 1);
+    assert!(truncated.diagnostics.is_empty());
+    assert!(truncated.stats.diagnostics_truncated);
+    assert!(truncated.document.is_none());
+}
+
+// Trace: TC-184, FR-047-AC-2; TC-066, NFR-004-AC-1
+#[test]
+fn derived_lowering_accepts_exact_node_budget_and_refuses_before_partial_push() {
+    let source = "p0 W[0,) p1";
+    let baseline = parse(source);
+    let node_count = baseline.stats.nodes;
+    assert!(baseline.document.is_some());
+    assert_eq!(node_count, 5);
+    let exact = parse_clean_ascii_v4(
+        source,
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_nodes: node_count,
+            ..ParseLimits::default()
+        },
+    );
+    assert!(exact.document.is_some(), "{:?}", exact.diagnostics);
+    assert_eq!(exact.stats.nodes, node_count);
+    let under = parse_clean_ascii_v4(
+        source,
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_nodes: node_count - 1,
+            ..ParseLimits::default()
+        },
+    );
+    assert!(under.document.is_none());
+    assert_eq!(under.diagnostics[0].code, DiagnosticCode::NodeLimit);
+    assert_eq!(
+        under.stats.nodes, 2,
+        "lowering must refuse before partial push"
+    );
+}
+
 // Trace: TC-066, NFR-004-AC-1
 #[test]
 fn exact_v4_limits_admit_and_one_under_refuses_deterministically() {
