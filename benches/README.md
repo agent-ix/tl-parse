@@ -14,13 +14,17 @@ For a same-host comparison, use one `CARGO_TARGET_DIR` and Criterion 0.5.1:
    `git archive <baseline-commit> | tar -x -C <baseline-dir>`. Do not edit the
    archived `src/` tree. Copy `benches/` and the candidate `Cargo.lock` into
    that directory. Add the candidate's `criterion` dev-dependency and `[[bench]]`
-   declaration to its `Cargo.toml`; no other package fields change. This is a
-   copied measurement harness, not a claim that the baseline release carried
-   it.
+   declaration to its `Cargo.toml`. Set its `tl-syntax` revision to the exact
+   candidate revision so both builds use one syntax dependency; no other
+   package fields change. This is a copied measurement harness, not a claim
+   that the baseline release carried it.
 2. In the archived directory, run `cargo bench --locked --bench
    parser_roundtrip -- --save-baseline <baseline-name>` with
    `CARGO_TARGET_DIR=<shared-target>`.
-3. From a clean candidate checkout, run `cargo bench --locked --bench
+3. Run `cargo clean --release -p tl-parse` when switching worktrees. This
+   forces Cargo to rebuild the parser and benchmark binary while retaining
+   Criterion's saved baseline in the shared target directory. From a clean
+   candidate checkout, run `cargo bench --locked --bench
    parser_roundtrip -- --baseline <baseline-name>` with the same target
    directory and Rust toolchain. Keep host and release profile fixed.
 4. Preserve the first Criterion directory, then repeat steps 2 and 3. Run
@@ -53,3 +57,17 @@ The final syntax-pinned parser candidate is measured separately in
 `reports/2026-09-22-parser-roundtrip-final-graph.json` against that same
 archived baseline. Its report records three paired measurements, because two
 cases were noisy after the second pair.
+
+The final parser commit `98f7e1f29e459862f3704b5dc663b0d5d90bff5e`
+with tl-syntax `8bcbce984f7ec3d86a92f90d866e842cc98b39fb` is measured
+in `reports/2026-09-22-parser-roundtrip-final-98f7e1f.json`. The archived
+baseline `src/` matched the exact `976050cfb10df05ac263be581d02f2b64c6cce74`
+source tree. Both worktrees used the copied benchmark harness (SHA-256
+`36d1f05f8e3a46fedec037da3423c35adba8c0104391230040d52a39bf0682b8`),
+inputs, lockfile, syntax pin, Rust 1.98.1, and shared target directory. The
+archive's manifest changed only to add the Criterion benchmark declaration
+and to match the candidate's syntax revision. Each baseline/candidate switch
+used `cargo clean --release -p tl-parse`; build output confirmed compilation
+from the intended worktree. Three paired runs retained all 20 samples per
+case. Two above-threshold first-run spikes did not recur in either repeat;
+the report finds no repeat-confirmed regression above 20%.
