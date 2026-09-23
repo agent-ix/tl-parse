@@ -6,7 +6,7 @@ statistics, report serialization, and successful canonical round trips. The
 is the v2 lowering and primitive-text path. `clean_ascii_v3` exercises past-time
 regressions; `unbounded_parse_roundtrip` exercises v4 mixed-time parsing,
 fairness, resource limits, and canonical-text fixed points.
-Their checked seeds are independently authored under `MIT OR Apache-2.0` and are
+Their checked seeds are independently authored under `MIT` and are
 protected by `corpus/<target>/SHA256SUMS`.
 
 Seed consumption is part of the normal Rust test suite. `make fuzz-smoke`

@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.98.1"
 description = "Parsing, formatting, and diagnostics for Mission-time Linear Temporal Logic."
 authors = ["Peter Krenesky <kreneskyp@gmail.com>"]
-license = "MIT OR Apache-2.0"
+license = "MIT"
 publish = false
 repository = "https://github.com/agent-ix/tl-parse"
 

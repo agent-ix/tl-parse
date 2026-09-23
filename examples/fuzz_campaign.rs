@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-License-Identifier: MIT
 // Copyright (C) 2026 Peter Krenesky
 
 //! Structured bounded-fuzz campaign producer (FR-005-AC-2, FR-006-AC-2).
