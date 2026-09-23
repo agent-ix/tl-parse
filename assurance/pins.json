@@ -31,7 +31,7 @@
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
-    "compiled_revision": "75ebec8ec8d15dcdee3a821119ae3ceb18e61bb3",
+    "compiled_revision": "5ced12e22917c56bb2ebd161a3e519cddf7a668a",
     "superseded_compiled_revisions": [
       "4a5614193d21e5ae99950ae683b04ba0ec931358",
       "953ee825e5060335b4c79682f5f41a78c5a1bfae",

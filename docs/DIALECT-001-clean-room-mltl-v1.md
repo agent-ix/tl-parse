@@ -21,7 +21,7 @@ reviewable artifact. It deliberately carries no per-file SHA-256 table because
 the historical authorship revision is no longer reachable from an upstream ref.
 
 The revision above is the authorship basis and is historical. The revision this
-crate compiles against is `75ebec8ec8d15dcdee3a821119ae3ceb18e61bb3`, an exact
+crate compiles against is `5ced12e22917c56bb2ebd161a3e519cddf7a668a`, an exact
 commit reachable from the tl-syntax Stage 1 integration branch, not a moving branch head.
 `ATTRIBUTION.md` enumerates the
 source-inspected delta from the prior compiled pin and the API families this
