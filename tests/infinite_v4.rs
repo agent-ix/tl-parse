@@ -38,6 +38,57 @@ fn v4_report_strict_reader_rejects_identity_and_locus_mutations() {
         ParseArtifactLimits::default()
     )
     .is_err());
+
+    for (axis, mutate) in [
+        (
+            "compiled owner revision",
+            Box::new(|wire: &mut serde_json::Value| {
+                wire["tl_syntax_revision"] = serde_json::json!("stale-owner");
+            }) as Box<dyn Fn(&mut serde_json::Value)>,
+        ),
+        (
+            "work counter",
+            Box::new(|wire: &mut serde_json::Value| {
+                wire["stats"]["work"] = serde_json::json!(u64::MAX);
+            }),
+        ),
+        (
+            "node counter",
+            Box::new(|wire: &mut serde_json::Value| {
+                wire["stats"]["nodes"] = serde_json::json!(0);
+            }),
+        ),
+        (
+            "missing graph",
+            Box::new(|wire: &mut serde_json::Value| {
+                wire["document"] = serde_json::Value::Null;
+                wire["fairness"] = serde_json::Value::Null;
+            }),
+        ),
+        (
+            "missing fairness binding",
+            Box::new(|wire: &mut serde_json::Value| {
+                wire["fairness"] = serde_json::Value::Null;
+            }),
+        ),
+        (
+            "foreign fairness graph",
+            Box::new(|wire: &mut serde_json::Value| {
+                wire["fairness"]["graph_identity"] = serde_json::json!("foreign-graph");
+            }),
+        ),
+    ] {
+        let mut wire = serde_json::to_value(&report).unwrap();
+        mutate(&mut wire);
+        assert!(
+            tl_parse::InfiniteParseReport::from_json_bytes(
+                &serde_json::to_vec(&wire).unwrap(),
+                ParseArtifactLimits::default()
+            )
+            .is_err(),
+            "{axis}"
+        );
+    }
 }
 
 // Trace: TC-058, FR-015-AC-1
