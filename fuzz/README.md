@@ -20,3 +20,21 @@ adapter: it refuses mutations to the protocol, target, trace, bounds, manifest,
 tool, sanitizer, process, outcome, limitation, or artifact identities before
 the existing Python driver invokes Quoin. Longer libFuzzer campaigns are
 supplementary population evidence, not a universal proof.
+
+## Recorded V4 libFuzzer run
+
+On a clean source commit with nightly `cargo`/`rustc` and `cargo-fuzz` on `PATH`:
+
+```bash
+export PATH="$(dirname "$(rustup which --toolchain nightly cargo)"):$HOME/.cargo/bin:$PATH"
+PYTHONPATH=fuzz python3 -m unittest fuzz.test_run_v4_campaign
+python3 fuzz/run_v4_campaign.py --output fuzz/evidence/v4-2026-09-23 \
+  --runs 1000 --seed 181 --seconds 30
+```
+
+This drives `unbounded_parse_roundtrip` through the public v4 parser,
+formatter, and second parse. The runner verifies checked seed bytes, copies
+them to scratch, and retains raw engine output, exact source/tool/lock pins,
+budget, actual executions, stop reason, and crash artifact hashes. Any crash
+requires minimization and same-revision replay before the lane can be treated
+as clean. A no-crash result describes only its recorded finite run.
