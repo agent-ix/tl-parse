@@ -18,7 +18,7 @@ version = 2
 unknown-registry = "deny"
 unknown-git = "deny"
 # tl-syntax is not published to a registry, so it resolves by exact git
-# revision. The pin is 8bcbce984f7ec3d86a92f90d866e842cc98b39fb, reachable from
+# revision. The pin is fed48a2fab3f5277131a7012e1a8d10993330cb1, reachable from
 # the tl-syntax Stage 1 integration branch, not a moving branch head.
 # The earlier form of this exception was scoped to
 # "until tl-syntax PR #6 merges or 2026-09-07"; that merge has happened (as
