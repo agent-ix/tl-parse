@@ -23,14 +23,16 @@ For a same-host comparison, use one `CARGO_TARGET_DIR` and Criterion 0.5.1:
 3. From a clean candidate checkout, run `cargo bench --locked --bench
    parser_roundtrip -- --baseline <baseline-name>` with the same target
    directory and Rust toolchain. Keep host and release profile fixed.
-4. Run `python3 scripts/benchmark_report.py --criterion-dir
-   <shared-target>/criterion --baseline-name <baseline-name>
+4. Preserve the first Criterion directory, then repeat steps 2 and 3. Run
+   `python3 scripts/benchmark_report.py --initial-criterion-dir
+   <first-criterion-copy> --criterion-dir <shared-target>/criterion
+   --baseline-name <baseline-name>
    --baseline-commit <full-sha> --candidate-commit <full-sha>
    --output <report.json>`. The script requires 20 samples for each of the
    seven workloads and records the normalized sample distributions, median
    confidence intervals, standard deviation, input hashes, source-tree IDs,
-   machine details, and toolchain. It refuses an above-threshold or ambiguous
-   result until the run is repeated and reviewed.
+   machine details, and toolchain. It keeps both runs and classifies a
+   one-run spike separately from a repeat-confirmed regression.
 
 Criterion warms each case for 500 ms and measures 20 samples over at least one
 second. The campaign threshold is a median regression over 20% whose 95%

@@ -125,6 +125,7 @@ def row(directory: Path, name: str, baseline_name: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--initial-criterion-dir", type=Path, required=True)
     parser.add_argument("--criterion-dir", type=Path, required=True)
     parser.add_argument("--baseline-name", required=True)
     parser.add_argument("--baseline-commit", required=True)
@@ -132,17 +133,58 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     head = command("git", "rev-parse", "HEAD")
-    if head != args.candidate_commit:
-        raise ValueError(f"candidate HEAD {head} differs from {args.candidate_commit}")
     if command("git", "status", "--porcelain"):
         raise ValueError("candidate worktree must be clean before reporting")
+    if head != args.candidate_commit:
+        for path in (
+            "src",
+            "benches/parser_roundtrip.rs",
+            "benches/inputs",
+            "Cargo.toml",
+            "Cargo.lock",
+        ):
+            measured = command("git", "rev-parse", f"{args.candidate_commit}:{path}")
+            current = command("git", "rev-parse", f"HEAD:{path}")
+            if measured != current:
+                raise ValueError(
+                    f"candidate HEAD {head} changes measured {path} from {args.candidate_commit}"
+                )
     if command("git", "rev-parse", args.baseline_commit) != args.baseline_commit:
         raise ValueError("baseline commit must be an exact full commit ID")
     inputs = checked_inputs()
-    cases = [row(args.criterion_dir, name, args.baseline_name) for name in CASES]
-    for case in cases:
-        if case["disposition"] != "below_20pct_threshold":
-            raise ValueError(f"{case['case']}: repeat or investigation required before this report")
+    cases = []
+    for name in CASES:
+        initial = row(args.initial_criterion_dir, name, args.baseline_name)
+        repeat = row(args.criterion_dir, name, args.baseline_name)
+        states = (initial["disposition"], repeat["disposition"])
+        if states == ("repeat_required_above_threshold",) * 2:
+            disposition = "confirmed_above_20pct_threshold"
+        elif "repeat_required_above_threshold" in states:
+            disposition = "one_run_spike_not_confirmed"
+        elif "inconclusive_threshold_overlap" in states:
+            disposition = "inconclusive_threshold_overlap"
+        else:
+            disposition = "below_20pct_threshold_in_both_runs"
+        cases.append(
+            {
+                "case": name,
+                "initial_paired_run": initial,
+                "repeat_paired_run": repeat,
+                "disposition": disposition,
+            }
+        )
+    confirmed = [case["case"] for case in cases if case["disposition"] == "confirmed_above_20pct_threshold"]
+    spikes = [case["case"] for case in cases if case["disposition"] == "one_run_spike_not_confirmed"]
+    uncertain = [case["case"] for case in cases if case["disposition"] == "inconclusive_threshold_overlap"]
+    if confirmed:
+        conclusion = f"Repeat-confirmed >20% parser roundtrip regressions require findings: {confirmed}."
+    elif uncertain:
+        conclusion = f"Threshold-overlapping parser roundtrip cases remain inconclusive: {uncertain}."
+    elif spikes:
+        conclusion = f"One-run >20% spikes were not reproduced: {spikes}; no repeat-confirmed regression is established."
+    else:
+        conclusion = "Both paired runs remain below the 20% parser roundtrip regression threshold."
+    conclusion += " The host was not thermally controlled; other TL performance lanes are outside this report."
     manifest = (ROOT / "Cargo.toml").read_text()
     syntax_pin = re.search(r'tl-syntax = \{[^\n]*rev = "([0-9a-f]{40})"', manifest)
     if syntax_pin is None:
@@ -158,6 +200,8 @@ def main() -> None:
         "candidate": {
             "parser_commit": args.candidate_commit,
             "parser_src_tree": command("git", "rev-parse", f"{args.candidate_commit}:src"),
+            "report_generator_commit": head,
+            "measured_code_and_benchmark_inputs_match_generator_head": True,
         },
         "shared": {
             "syntax_pin": syntax_pin.group(1),
@@ -167,6 +211,7 @@ def main() -> None:
             "release_profile": "Cargo [profile.release], lto=thin, codegen-units=1",
             "criterion_config": {"samples": 20, "warmup_ms": 500, "measurement_ms": 1000},
             "threshold": "median regression >20% with 95% change CI entirely above 20% requires a repeated run",
+            "comparison": "two consecutive paired baseline/candidate runs in one local session and shared target directory",
             "measurement_host": {
                 "machine": platform.machine(),
                 "system": platform.platform(),
@@ -180,7 +225,7 @@ def main() -> None:
             },
         },
         "cases": cases,
-        "conclusion": "No >20% parser roundtrip regression was observed in this paired run. This does not qualify other TL performance lanes.",
+        "conclusion": conclusion,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
