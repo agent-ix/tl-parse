@@ -10,7 +10,7 @@ second authority, and two authorities drift.
 
 It is not an acceptance authority. The native EA compatibility result carries
 both version classification and human acceptance; this gate requires both.
-The candidate v0.3.2 matrix withholds until its owner records acceptance.
+The candidate v0.4.1 matrix withholds until its owner records acceptance.
 
 It is not a network probe. It does not ask a registry whether a release landed.
 `npm.ix` in particular is a mirror that lags the public registry and is not an
