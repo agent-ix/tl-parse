@@ -5,15 +5,12 @@ Four things this file deliberately is not.
 
 It is not a copy of the compatibility matrix. It never says which version of
 anything is correct. It observes what is installed and hands every verdict to
-`engineering_assurance.compatibility`, because a second copy of the rule is a
+`engineering-assurance compatibility`, because a second copy of the rule is a
 second authority, and two authorities drift.
 
-It is not an acceptance gate. The pinned release records
-`accepted.state = accepted` and ships a `human_acceptance_recorded` predicate
-(release: accept ix-flow 0.2.3 matrix, agent-ix/engineering-assurance#47). This
-script reports the acceptance state the installed distribution carries and gates
-only on things that are local and checkable. An absent field is not read as an
-approval, and it is not read as a rejection either.
+It is not an acceptance authority. The native EA compatibility result carries
+both version classification and human acceptance; this gate requires both.
+The candidate v0.3.2 matrix withholds until its owner records acceptance.
 
 It is not a network probe. It does not ask a registry whether a release landed.
 `npm.ix` in particular is a mirror that lags the public registry and is not an
@@ -22,14 +19,15 @@ it written down anywhere in this repository.
 
 It is not an envelope. It prints a report and exits. It retains nothing.
 
-Exit status: 0 when every component is compatible and no local check fails,
-1 when something is not compatible, 2 when Engineering Assurance itself cannot
-be loaded — which is a different fact from a failing check and gets its own code.
+Exit status: 0 when the EA gate is satisfied and no local check fails,
+1 when the EA gate or a local check is unsatisfied, 2 when the EA CLI cannot
+be used — which is a different fact from a failing check and gets its own code.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -84,18 +82,45 @@ def observe_quire() -> str | None:
 
 
 def observe_engineering_assurance() -> str | None:
-    from importlib.metadata import PackageNotFoundError, version
-
-    try:
-        return version("engineering-assurance")
-    except PackageNotFoundError:
+    raw = observe(["engineering-assurance", "--version"])
+    if raw is None:
         return None
+    match = re.search(r"\b(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\b", raw)
+    return match.group(1) if match else None
+
+
+def classify_with_ea(observed: dict[str, str | None]) -> dict[str, Any]:
+    request = {
+        "protocol": "engineering-assurance.compatibility-request/v1",
+        "observed": [
+            {"component": name, "version": version}
+            for name, version in observed.items()
+        ],
+    }
+    try:
+        result = subprocess.run(
+            ["engineering-assurance", "compatibility"],
+            input=json.dumps(request), capture_output=True, text=True, check=False,
+        )
+    except (OSError, ValueError) as error:
+        raise PinError(f"the pinned EA CLI is unavailable: {error}") from error
+    try:
+        report = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise PinError(f"EA compatibility returned non-JSON: {error}; {result.stderr}") from error
+    if not isinstance(report, dict) or result.returncode not in (0, 1) or report.get("protocol") != "engineering-assurance.compatibility-result/v1":
+        raise PinError(f"EA compatibility failed: exit {result.returncode}; {report}; {result.stderr}")
+    if result.returncode != (0 if report.get("gate_satisfied") else 1):
+        raise PinError("EA compatibility exit status disagrees with gate_satisfied")
+    return report
 
 
 def artifact_digest_mismatches(pins: dict[str, Any]) -> list[str]:
     """Re-hash every artifact this repository reads out of the pinned release."""
-    import hashlib
+    if not any(artifact.get("sha256") for artifact in pins["consumed_artifacts"]):
+        return []
 
+    import hashlib
     import engineering_assurance
 
     package_root = Path(engineering_assurance.__file__).resolve().parent
@@ -172,49 +197,36 @@ def upstream_pin_mismatches(pins: dict[str, Any]) -> list[str]:
 
 
 def build_report() -> dict[str, Any]:
-    try:
-        from engineering_assurance.compatibility import accepted, classify_all, load_matrix
-    except ImportError as error:  # pragma: no cover - exercised by the mutation probe
-        raise PinError(f"the pinned assurance distribution is unusable: {error}") from error
-
     pins = json.loads(PINS_PATH.read_text(encoding="utf-8"))
-    matrix = load_matrix()
     observed = {
         "quire-cli": observe_quire(),
         "quoin": observe(["quoin", "--version"]),
         "ix-flow": observe(["ix-flow", "--version"]),
         "engineering-assurance": observe_engineering_assurance(),
     }
-    classifications = classify_all(matrix, observed)
+    classification = classify_with_ea(observed)
     mismatches = artifact_digest_mismatches(pins)
     offenders = mirror_references(pins)
     upstream = upstream_pin_mismatches(pins)
-    versions_ok = accepted(classifications)
-    acceptance = matrix["accepted"]
+    versions_ok = classification["versions_compatible"]
+    gate_satisfied = classification["gate_satisfied"]
     return {
         "schemaVersion": "tl-parse.shared-pin-report/v1",
-        "matrix_version": matrix["matrix_version"],
-        "acceptance_state": acceptance["state"],
+        "matrix_version": classification["matrix_version"],
+        "acceptance_state": "accepted" if classification["human_acceptance_recorded"] else "not_recorded",
         "acceptance_recorded_here": False,
         "acceptance_authority": (
-            "engineering_assurance/compatibility-matrix.json in the installed release. "
-            "This repository reports it and is not a second acceptance authority."
+            "The matrix embedded in the exact Engineering Assurance CLI. "
+            "This repository reports its result and is not a second acceptance authority."
         ),
         "versions_compatible": versions_ok,
+        "human_acceptance_recorded": classification["human_acceptance_recorded"],
+        "gate_satisfied": gate_satisfied,
         "artifact_mismatches": mismatches,
         "mirror_references": offenders,
         "upstream_pin_mismatches": upstream,
-        "accepted": versions_ok and not mismatches and not offenders and not upstream,
-        "components": [
-            {
-                "component": item.component,
-                "observed": item.observed,
-                "expected": item.expected,
-                "verdict": item.verdict,
-                "reason": item.reason,
-            }
-            for item in classifications
-        ],
+        "accepted": gate_satisfied and not mismatches and not offenders and not upstream,
+        "components": classification["components"],
     }
 
 
@@ -242,7 +254,7 @@ def main(argv: list[str]) -> int:
             print(f"upstream pin disagreement: {problem}", file=sys.stderr)
         print(
             f"acceptance state recorded by the pinned release: {report['acceptance_state']} "
-            "(reported, not gated on; see agent-ix/engineering-assurance#47)"
+            "(EA native gate; requires attributed human acceptance)"
         )
         print(
             "shared pins accepted" if report["accepted"] else "shared pins NOT accepted",

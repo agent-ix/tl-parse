@@ -681,6 +681,8 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
         );
     }
     assert_eq!(report["accepted"], true);
+    assert_eq!(report["gate_satisfied"], true);
+    assert_eq!(report["human_acceptance_recorded"], true);
     assert!(report["artifact_mismatches"].as_array().unwrap().is_empty());
     assert!(report["mirror_references"].as_array().unwrap().is_empty());
     assert!(
@@ -692,10 +694,7 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
         report["upstream_pin_mismatches"]
     );
 
-    // Acceptance is reported and never gated on: the pinned release records
-    // `accepted` and ships a predicate for it
-    // (agent-ix/engineering-assurance#47). Reading an absent field as approval,
-    // in either direction, is the mistake this asserts against.
+    // EA owns acceptance. A pending candidate must keep this release gate red.
     assert_eq!(report["acceptance_recorded_here"], false);
     assert!(report["acceptance_state"].is_string());
 

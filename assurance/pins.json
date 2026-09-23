@@ -1,13 +1,14 @@
 {
   "schema_version": "tl-parse.assurance-pins/v1",
-  "purpose": "The Engineering Assurance release this repository adopts, and the digests of the artifacts it actually reads from that release. Component version pins are NOT restated here: the packaged compatibility matrix is their authority and a second copy would drift from it.",
-  "matrix_authority": "engineering_assurance/compatibility-matrix.json in the installed distribution. scripts/check_shared_pins.py observes the local toolchain and delegates every verdict to engineering_assurance.compatibility.",
+  "purpose": "Candidate Engineering Assurance v0.3.2 adoption and the artifacts this repository consumes. Component versions are owned by its embedded matrix, not repeated here. The candidate remains withheld until the matrix has human acceptance and v0.3.2 is tagged.",
+  "matrix_authority": "engineering-assurance compatibility native CLI at the exact v0.3.2 tag; scripts/check_shared_pins.py observes local tools and sends a versioned request. The CLI owns classification and the human-acceptance gate.",
   "registry": "Every npm component resolves from the public npm registry (registry.npmjs.org). The internal npm.ix mirror must not appear in any requirement, pin, lockfile, or .npmrc, and is not an oracle for whether a release landed. Querying an @agent-ix package needs --@agent-ix:registry=https://registry.npmjs.org; a bare --registry does not override the scoped .npmrc entry.",
   "engineering_assurance": {
-    "version": "0.2.1",
-    "requirement": "engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.2.1",
-    "release_form": "git tag v0.2.1, a source distribution; the tag is the released artifact",
-    "declared_in": "requirements-assurance.txt"
+    "version": "0.3.2",
+    "requirement": "engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.3.2",
+    "cli_install": "cargo +1.98.1 install --git https://github.com/agent-ix/engineering-assurance --tag v0.3.2 --locked --bin engineering-assurance",
+    "release_form": "planned immutable git tag v0.3.2; candidate is not accepted or released",
+    "declared_in": "requirements-assurance.txt and .github/workflows/ci.yml"
   },
   "repinned_workflow_component": {
     "component": "quoin",
@@ -24,10 +25,10 @@
   "consumed_artifacts": [
     {
       "path": "compatibility-matrix.json",
-      "why": "The authority on which component versions are pinned. Deliberately carries no digest here: it is expected to advance as the matrix is re-accepted, and pinning its bytes locally would make this repository a second acceptance authority."
+      "why": "Embedded in the exact native CLI. The CLI classifies its own reviewed matrix and reports human acceptance; no local version or digest rule is duplicated."
     }
   ],
-  "consumed_artifacts_note": "This list shrank to one entry when the retained evidence was deleted. verification_semantics.py, schemas/pgm01-compatibility-view-v1.schema.json and the two PGM-01 positive-control fixtures were pinned by digest because the compatibility view read them; that view is gone, so this repository no longer reads them and pinning bytes it does not read would be a claim about work it does not do. The consequence is stated rather than hidden: artifact_digest_mismatches now has nothing with a digest to re-hash and reports an empty list for that reason, not because a comparison passed.",
+  "consumed_artifacts_note": "Historical evidence artifacts remain deleted. The current classifier consumes the matrix embedded in the native EA CLI; local artifact_digest_mismatches has no digest to re-hash and reports an empty list for that reason.",
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
@@ -53,5 +54,15 @@
   "known_drift": [
     "Resolved by the TL-192 bump to v0.2.1: engineering-assurance v0.2.0 packaged compatibility-matrix.json with accepted.state = pending_human_acceptance and shipped no human_acceptance_recorded predicate (agent-ix/engineering-assurance#20). v0.2.1 (release: accept ix-flow 0.2.3 matrix, #47) carries accepted.state = accepted with accepted_by and accepted_at populated, so the record this repository now reads is a real release carrying the acceptance rather than a branch head.",
     "Historical: the human acceptance itself was never in doubt: Peter Krenesky accepted the FR-012 matrix on 2026-09-01, attributed on engineering-assurance main as ae50e13, and the pinned release now carries it (see above)."
-  ]
+  ],
+  "current_migration": {
+    "state": "prepared_not_accepted",
+    "toolchain": {
+      "quire-cli": "0.33.0",
+      "quoin": "0.24.1",
+      "ix-flow": "0.2.3",
+      "engineering-assurance": "0.3.2"
+    },
+    "note": "Exact candidate pins for release prep. EA compatibility withholds until the named matrix acceptance is recorded and the immutable v0.3.2 tag exists. Historical migration records elsewhere in this file describe earlier releases."
+  }
 }
