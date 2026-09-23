@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize two Criterion runs without promoting an unmatched run to a pass.
+"""Summarize paired Criterion runs without promoting an unmatched run to a pass.
 
 The baseline archive must use the identical copied harness and inputs. This
 script only reads Criterion's existing measurements; it never runs a benchmark.
@@ -127,6 +127,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--initial-criterion-dir", type=Path, required=True)
     parser.add_argument("--criterion-dir", type=Path, required=True)
+    parser.add_argument("--additional-criterion-dir", type=Path, action="append", default=[])
     parser.add_argument("--baseline-name", required=True)
     parser.add_argument("--baseline-commit", required=True)
     parser.add_argument("--candidate-commit", required=True)
@@ -154,36 +155,57 @@ def main() -> None:
     inputs = checked_inputs()
     cases = []
     for name in CASES:
-        initial = row(args.initial_criterion_dir, name, args.baseline_name)
-        repeat = row(args.criterion_dir, name, args.baseline_name)
-        states = (initial["disposition"], repeat["disposition"])
-        if states == ("repeat_required_above_threshold",) * 2:
+        paired = [
+            row(directory, name, args.baseline_name)
+            for directory in (
+                args.initial_criterion_dir,
+                args.criterion_dir,
+                *args.additional_criterion_dir,
+            )
+        ]
+        states = [entry["disposition"] for entry in paired]
+        above = states.count("repeat_required_above_threshold")
+        overlaps = states.count("inconclusive_threshold_overlap")
+        if above >= 2:
             disposition = "confirmed_above_20pct_threshold"
-        elif "repeat_required_above_threshold" in states:
+        elif above == 1:
             disposition = "one_run_spike_not_confirmed"
-        elif "inconclusive_threshold_overlap" in states:
+        elif overlaps >= 2:
+            disposition = "inconclusive_threshold_overlap"
+        elif overlaps == 1 and len(states) > 2:
+            disposition = "one_run_threshold_overlap_not_reproduced"
+        elif overlaps:
             disposition = "inconclusive_threshold_overlap"
         else:
-            disposition = "below_20pct_threshold_in_both_runs"
+            disposition = "below_20pct_threshold_in_all_runs"
         cases.append(
             {
                 "case": name,
-                "initial_paired_run": initial,
-                "repeat_paired_run": repeat,
+                "initial_paired_run": paired[0],
+                "repeat_paired_run": paired[1],
+                "additional_paired_runs": paired[2:],
                 "disposition": disposition,
             }
         )
     confirmed = [case["case"] for case in cases if case["disposition"] == "confirmed_above_20pct_threshold"]
     spikes = [case["case"] for case in cases if case["disposition"] == "one_run_spike_not_confirmed"]
     uncertain = [case["case"] for case in cases if case["disposition"] == "inconclusive_threshold_overlap"]
+    unreplicated_overlap = [
+        case["case"] for case in cases
+        if case["disposition"] == "one_run_threshold_overlap_not_reproduced"
+    ]
     if confirmed:
         conclusion = f"Repeat-confirmed >20% parser roundtrip regressions require findings: {confirmed}."
     elif uncertain:
         conclusion = f"Threshold-overlapping parser roundtrip cases remain inconclusive: {uncertain}."
     elif spikes:
         conclusion = f"One-run >20% spikes were not reproduced: {spikes}; no repeat-confirmed regression is established."
+    elif unreplicated_overlap:
+        conclusion = f"One-run threshold overlaps were not reproduced: {unreplicated_overlap}; no repeat-confirmed regression is established."
     else:
-        conclusion = "Both paired runs remain below the 20% parser roundtrip regression threshold."
+        conclusion = "All paired runs remain below the 20% parser roundtrip regression threshold."
+    if spikes and unreplicated_overlap:
+        conclusion += f" One-run threshold overlaps were also not reproduced: {unreplicated_overlap}."
     conclusion += " The host was not thermally controlled; other TL performance lanes are outside this report."
     manifest = (ROOT / "Cargo.toml").read_text()
     syntax_pin = re.search(r'tl-syntax = \{[^\n]*rev = "([0-9a-f]{40})"', manifest)
@@ -211,7 +233,10 @@ def main() -> None:
             "release_profile": "Cargo [profile.release], lto=thin, codegen-units=1",
             "criterion_config": {"samples": 20, "warmup_ms": 500, "measurement_ms": 1000},
             "threshold": "median regression >20% with 95% change CI entirely above 20% requires a repeated run",
-            "comparison": "two consecutive paired baseline/candidate runs in one local session and shared target directory",
+            "comparison": (
+                f"{2 + len(args.additional_criterion_dir)} consecutive paired baseline/candidate "
+                "runs in one local session and shared target directory"
+            ),
             "measurement_host": {
                 "machine": platform.machine(),
                 "system": platform.platform(),

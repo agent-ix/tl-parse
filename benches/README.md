@@ -33,6 +33,9 @@ For a same-host comparison, use one `CARGO_TARGET_DIR` and Criterion 0.5.1:
    confidence intervals, standard deviation, input hashes, source-tree IDs,
    machine details, and toolchain. It keeps both runs and classifies a
    one-run spike separately from a repeat-confirmed regression.
+   If one case remains noisy, preserve and run a third paired baseline/candidate
+   measurement, then pass that directory with `--additional-criterion-dir`.
+   The report retains all three distributions and never drops an earlier spike.
 
 Criterion warms each case for 500 ms and measures 20 samples over at least one
 second. The campaign threshold is a median regression over 20% whose 95%
@@ -46,3 +49,7 @@ The retained 2026-09-22 report measured parser commit
 `976050cfb10df05ac263be581d02f2b64c6cce74`, with both builds pinned to
 tl-syntax `5ced12e22917c56bb2ebd161a3e519cddf7a668a`. A later exact
 tl-syntax repin is a separate candidate and is not covered by those timings.
+The final syntax-pinned parser candidate is measured separately in
+`reports/2026-09-22-parser-roundtrip-final-graph.json` against that same
+archived baseline. Its report records three paired measurements, because two
+cases were noisy after the second pair.
