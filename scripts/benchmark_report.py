@@ -215,7 +215,7 @@ def main() -> None:
             "measurement_host": {
                 "machine": platform.machine(),
                 "system": platform.platform(),
-                "kernel": optional_command("uname", "-a"),
+                "kernel_release": optional_command("uname", "-r"),
                 "cpu": optional_command("sysctl", "-n", "machdep.cpu.brand_string"),
                 "logical_cpus": optional_command("sysctl", "-n", "hw.logicalcpu"),
                 "memory_bytes": optional_command("sysctl", "-n", "hw.memsize"),
