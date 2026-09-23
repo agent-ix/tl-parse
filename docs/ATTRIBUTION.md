@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`fca935e00f66f7c5a35ad4e2fde53674786a41ac`, an exact reviewed commit.
+`b923fd4fdf2a2bafe66fe7d20f951e50bea2210f`, an exact reviewed commit.
 It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -36,16 +36,15 @@ graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
 The previous `4a561419` pin is the squash merge of tl-syntax#88 and was the commit tagged
-`v0.3.0`. The current pin retains the version requirement
-`=0.3.0` while Stage 1 remains prerelease. V4 consumes the additive
+`v0.3.0`. The Stage 1 candidate requires `=0.4.0`; the previous pin used `=0.3.0`. V4 consumes the additive
 `formula-unbounded/v1`, fairness, and infinite trace identities. V1 through
 V3 continue to use the bounded owner vocabulary; the authorship basis above
 does not move.
 The prior pin advance from `8bcbce98` to `fed48a2f` added V4 fuzz evidence.
 The advance to `6d182fa9` made tl-syntax MIT-only. The `9a4316e`
 advance fixes alloc-only test compilation and adds V8 coverage tests. The
-`9de638d` advance adds an alloc-lane wrong-profile test only. The current
-`fca935e` advance refreshes bounded V4 fuzz evidence only. These
+`9de638d` advance adds an alloc-lane wrong-profile test only. The `fca935e` advance refreshed bounded V4 fuzz evidence only. The current
+`b923fd4` revision stages the 0.4.0 package version and release gate. These
 advances do not change the parser-consumed production API or historical
 authorship basis.
 

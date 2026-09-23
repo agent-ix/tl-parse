@@ -10,15 +10,15 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`fca935e00f66f7c5a35ad4e2fde53674786a41ac`, an exact reviewed commit, not a
+`b923fd4fdf2a2bafe66fe7d20f951e50bea2210f`, an exact reviewed commit, not a
 moving branch head. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
 a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
 `Cargo.lock` is what enforces the compiled one. The dependency still resolves by
 exact git revision because
-`tl-syntax` has no registry release, and source release remains blocked while
-that is true.
+`tl-syntax` has no registry release. Git source releases use exact revisions;
+registry publication remains disabled.
 
 The additive `parse_clean_ascii_v2` API accepts bounded derived future
 operators `W` and `M`. The additive `parse_clean_ascii_v3` and
