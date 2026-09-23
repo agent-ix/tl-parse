@@ -40,8 +40,9 @@ text. A malformed input never yields a partial owner graph.
 
 The v4 diagnostic-to-FR-341 mapping is total: syntax, profile and clock
 refusals map to `unsupported` before evaluation; exceeded work limits map to
-`inconclusive` with a resource-incomplete detail; internal parser failures map
-to `failed`. Successful parsing supplies no temporal verdict. The mapping
+`failed` with execution disposition `resource-incomplete`; internal parser
+failures map to `failed` with execution disposition `failed`. Successful
+parsing supplies no temporal verdict. The mapping
 retains original code and locus; it never claims `proved` or `refuted`.
 
 ## Acceptance Criteria
