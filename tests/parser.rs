@@ -100,6 +100,21 @@ fn invalid_characters_and_identifiers_have_utf8_byte_spans() {
     );
 }
 
+// Trace: TC-003, FR-001-AC-2
+#[test]
+fn long_unknown_identifier_keeps_full_span_with_bounded_diagnostic_preview() {
+    let source = "x".repeat(33);
+    let report = parse_closed(&source);
+    assert!(report.document.is_none());
+    let diagnostic = report
+        .diagnostics
+        .iter()
+        .find(|item| item.code == DiagnosticCode::UnknownIdentifier)
+        .expect("unknown identifier diagnostic");
+    assert_eq!((diagnostic.span.start(), diagnostic.span.end()), (0, 33));
+    assert_eq!(diagnostic.found, format!("\"{}…\"", "x".repeat(32)));
+}
+
 // Trace: TC-004, FR-001-AC-2
 #[test]
 fn noncanonical_overflowing_and_inverted_numbers_are_rejected() {
@@ -262,6 +277,12 @@ fn malformed_interval_recovery_has_exact_structured_diagnostics() {
             RecoveryAction::SkippedToken,
         ),
         (
+            "F[",
+            DiagnosticCode::UnexpectedToken,
+            vec![ExpectedToken::Integer],
+            RecoveryAction::SkippedToken,
+        ),
+        (
             "F[0 p0",
             DiagnosticCode::MissingToken,
             vec![ExpectedToken::Comma],
@@ -269,6 +290,12 @@ fn malformed_interval_recovery_has_exact_structured_diagnostics() {
         ),
         (
             "F[0,]p0",
+            DiagnosticCode::UnexpectedToken,
+            vec![ExpectedToken::Integer],
+            RecoveryAction::SkippedToken,
+        ),
+        (
+            "F[0,",
             DiagnosticCode::UnexpectedToken,
             vec![ExpectedToken::Integer],
             RecoveryAction::SkippedToken,
