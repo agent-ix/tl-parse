@@ -23,4 +23,5 @@ are `SR-072` through `SR-079` in `tl-mltl/spec/reviews/`.
 |---|---|---|---|
 | FND-001 | low | The parser's resource failure mapping was corrected to `failed` / `resource-incomplete` at 83f696c; the combined review has no remaining tl-parse-specific finding. | FR-341, TL-208 |
 
-TL-215 is validated but not human-accepted. Its open high finding is in TL-212.
+TL-215 is validated but not human-accepted. The initial high TL-212 finding
+was resolved by aligning that ticket with FR-044.
