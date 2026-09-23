@@ -9,6 +9,7 @@ mod context;
 mod diagnostic;
 mod dialect;
 mod formatter;
+mod infinite;
 mod lexer;
 mod parser;
 
@@ -30,6 +31,10 @@ pub use dialect::v3::{
     PastParseSchemaVersion,
 };
 pub use formatter::{format_clean_ascii_v3, format_document, format_formula};
+pub use infinite::{
+    format_clean_ascii_v4, parse_clean_ascii_v4, InfiniteDialectRevision, InfiniteDisposition,
+    InfiniteParseReport, InfiniteParseSchemaVersion,
+};
 pub use parser::{parse, source_limit_report};
 pub use tl_syntax;
 
@@ -42,6 +47,18 @@ pub const DIALECT_V2_REVISION: &str = "tl-parse.clean-ascii/v2";
 /// Stable identity of the origin-complete past-profile input dialect.
 pub const DIALECT_V3_REVISION: &str = "tl-parse.clean-ascii/v3";
 
+/// Stable identity of the infinite-trace input dialect.
+pub const DIALECT_V4_REVISION: &str = "tl-parse.clean-ascii/v4";
+
+/// Normative v4 dialect document.
+pub const DIALECT_V4_DOCUMENT: &str = include_str!("../docs/DIALECT-004-clean-ascii-v4.md");
+
+/// SHA-256 digest of the complete v4 dialect document.
+pub fn dialect_v4_document_digest() -> String {
+    use sha2::{Digest, Sha256};
+    format!("{:x}", Sha256::digest(DIALECT_V4_DOCUMENT.as_bytes()))
+}
+
 /// Stable identity of serialized v2 derived-operator parse reports.
 pub const DERIVED_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.derived-parse-report/v1";
 
@@ -52,7 +69,7 @@ pub const PAST_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.past-parse-report/v
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
 
 /// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "4a5614193d21e5ae99950ae683b04ba0ec931358";
+pub const TL_SYNTAX_REVISION: &str = "75ebec8ec8d15dcdee3a821119ae3ceb18e61bb3";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";

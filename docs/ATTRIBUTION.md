@@ -27,17 +27,20 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`4a5614193d21e5ae99950ae683b04ba0ec931358`, a commit that was reachable from
-the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
+`75ebec8ec8d15dcdee3a821119ae3ceb18e61bb3`, a commit reachable from
+the tl-syntax Stage 1 integration branch. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
 is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
-`4a561419` is the squash merge of tl-syntax#88 and is the commit tagged
-`v0.3.0`, the tl-syntax 0.3.0 release. `Cargo.toml` pins it by exact revision
-with the version requirement `=0.3.0`.
+The previous `4a561419` pin is the squash merge of tl-syntax#88 and was the commit tagged
+`v0.3.0`. The current pin retains the version requirement
+`=0.3.0` while Stage 1 remains prerelease. V4 consumes the additive
+`formula-unbounded/v1`, fairness, and infinite trace identities. V1 through
+V3 continue to use the bounded owner vocabulary; the authorship basis above
+does not move.
 
 ## Source-inspected 0.3.0 release compiled-pin delta
 

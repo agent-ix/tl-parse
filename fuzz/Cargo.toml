@@ -30,3 +30,17 @@ path = "fuzz_targets/clean_ascii_v2.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "unbounded_parse_roundtrip"
+path = "fuzz_targets/unbounded_parse_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "clean_ascii_v3"
+path = "fuzz_targets/clean_ascii_v3.rs"
+test = false
+doc = false
+bench = false

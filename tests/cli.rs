@@ -54,11 +54,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "e2a23e0465b727011247e0d40c1290c539cdaf0f6726ade4871ba20bc9e516e2"
+        "5a85ddd483f261fc47d77e3e1d87f9d84f5074fb92d55e365075fc8469abf435"
     );
     assert_eq!(
         attribution_document_digest(),
-        "d398e9cdfaec6beeec7322b6601c30ac58c6e87e96fa4049b48ed9e627abc954"
+        "c1133f48eb45960d4625c069b91b6859e73e8bf7d86357ae1c637b34a05872d3"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
@@ -151,7 +151,7 @@ fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
     assert!(dialect.contains("carries no per-file SHA-256 table"));
 
     let deny = fs::read_to_string(format!("{root}/deny.toml")).unwrap();
-    assert!(deny.contains("reviewed commit reachable from tl-syntax `main`"));
+    assert!(deny.contains("tl-syntax Stage 1 integration branch"));
     assert!(!deny.contains("head of tl-syntax `main`"));
 }
 

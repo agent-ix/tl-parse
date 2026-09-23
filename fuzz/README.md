@@ -3,13 +3,15 @@
 This isolated `cargo-fuzz` package exercises UTF-8 dialect parsing, bounded
 statistics, report serialization, and successful canonical round trips. The
 `parser` target covers `tl-parse.clean-ascii/v1`; the `clean_ascii_v2` target
-covers `tl-parse.clean-ascii/v2` lowering and its primitive-only canonical text.
+is the v2 lowering and primitive-text path. `clean_ascii_v3` exercises past-time
+regressions; `unbounded_parse_roundtrip` exercises v4 mixed-time parsing,
+fairness, resource limits, and canonical-text fixed points.
 Their checked seeds are independently authored under `MIT OR Apache-2.0` and are
 protected by `corpus/<target>/SHA256SUMS`.
 
 Seed consumption is part of the normal Rust test suite. `make fuzz-smoke`
-invokes the repository-owned `examples/fuzz_campaign.rs` producer for both
-targets with fixed 64-execution and 300-second bounds, LeakSanitizer enabled,
+invokes the repository-owned `examples/fuzz_campaign.rs` producer for the
+original two targets with fixed 64-execution and 300-second bounds, LeakSanitizer enabled,
 and digest-verified copies of every declared seed. Each run emits a typed
 `tl-parse.fuzz-campaign/v1` result; crash artifacts are represented by bounded
 metadata identities while lossless binary attachment remains tracked by

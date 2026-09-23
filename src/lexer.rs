@@ -27,6 +27,11 @@ pub(crate) enum TokenKind {
     StrongPrevious,
     Since,
     Triggered,
+    Fair,
+    LeftBrace,
+    RightBrace,
+    Semicolon,
+    Colon,
     LeftParenthesis,
     RightParenthesis,
     LeftBracket,
@@ -209,6 +214,10 @@ impl Lexer<'_> {
             b'[' => Some(TokenKind::LeftBracket),
             b']' => Some(TokenKind::RightBracket),
             b',' => Some(TokenKind::Comma),
+            b'{' => Some(TokenKind::LeftBrace),
+            b'}' => Some(TokenKind::RightBrace),
+            b';' => Some(TokenKind::Semicolon),
+            b':' => Some(TokenKind::Colon),
             _ => None,
         };
         if let Some(kind) = single {
@@ -296,6 +305,7 @@ impl Lexer<'_> {
             None => true,
             Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
             Some(b'p' | b'f' | b't' | b'O' | b'H' | b'Y') => true,
+            Some(b'F' | b'G') if self.dialect == Dialect::V4 => true,
             Some(_) => false,
         }
     }
