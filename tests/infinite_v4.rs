@@ -102,6 +102,35 @@ fn v4_report_counter_limits_accept_exact_boundaries_and_refuse_one_over() {
     assert!(strict_read(&unclamped).is_err());
 }
 
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_strict_reader_rejects_conflicting_success_state_and_outside_loci() {
+    let baseline = parse("fair {F[0,)p0}: G[1,)p1");
+    assert!(baseline.document.is_some());
+    assert_eq!(strict_read(&baseline).unwrap(), baseline);
+
+    let mut wrong_profile = baseline.clone();
+    wrong_profile.semantic_profile = SemanticProfile::ClosedTraceV1;
+    assert!(strict_read(&wrong_profile).is_err());
+
+    let mut extra_diagnostic = baseline.clone();
+    extra_diagnostic.diagnostics = parse("!").diagnostics;
+    extra_diagnostic.stats.diagnostics = extra_diagnostic.diagnostics.len();
+    assert!(strict_read(&extra_diagnostic).is_err());
+
+    let mut truncated = baseline.clone();
+    truncated.stats.diagnostics_truncated = true;
+    assert!(strict_read(&truncated).is_err());
+
+    let mut wrong_node_count = baseline.clone();
+    wrong_node_count.stats.nodes += 1;
+    assert!(strict_read(&wrong_node_count).is_err());
+
+    let mut outside_interval = baseline.clone();
+    outside_interval.interval_spans[0] = SourceSpan::new(0, 1000).unwrap();
+    assert!(strict_read(&outside_interval).is_err());
+}
+
 // Trace: TC-058, FR-015-AC-1
 #[test]
 fn admits_all_infinite_future_and_past_forms() {
@@ -386,6 +415,23 @@ fn malformed_loci_use_utf8_byte_offsets_and_stable_codes() {
             "{source}"
         );
         assert_eq!(result.disposition(), InfiniteDisposition::Unsupported);
+    }
+}
+
+// Trace: TC-061, FR-016-AC-1
+#[test]
+fn v4_interval_refusals_cover_missing_and_inverted_bounds() {
+    for (source, code) in [
+        ("F[", DiagnosticCode::UnexpectedToken),
+        ("F[,1]p0", DiagnosticCode::UnexpectedToken),
+        ("F[0,", DiagnosticCode::UnexpectedToken),
+        ("F[0,(p0", DiagnosticCode::UnexpectedToken),
+        ("F[2,1]p0", DiagnosticCode::InvalidInterval),
+    ] {
+        let report = parse(source);
+        assert!(report.document.is_none(), "{source}");
+        assert_eq!(report.diagnostics[0].code, code, "{source}");
+        assert_eq!(report.disposition(), InfiniteDisposition::Unsupported);
     }
 }
 
