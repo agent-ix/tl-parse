@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import re
@@ -100,8 +101,12 @@ def run(output: Path, runs: int, seed: int, seconds: int) -> int:
         except subprocess.TimeoutExpired as error:
             stdout, stderr, exit_code = error.stdout or b"", error.stderr or b"", 124
         elapsed = time.monotonic() - started
-    (output / "stdout.log").write_bytes(stdout)
-    (output / "stderr.log").write_bytes(stderr)
+    compressed = {
+        "stdout.log.gz": gzip.compress(stdout, mtime=0),
+        "stderr.log.gz": gzip.compress(stderr, mtime=0),
+    }
+    for name, data in compressed.items():
+        (output / name).write_bytes(data)
     artifact_paths = sorted(path for path in artifacts_dir.iterdir() if path.is_file())
     status, actual, stop_reason = classify(exit_code, stdout + b"\n" + stderr, runs, artifact_paths)
     report = {
@@ -121,7 +126,8 @@ def run(output: Path, runs: int, seed: int, seconds: int) -> int:
         "budget": {"runs": runs, "seed": seed, "seconds": seconds, "max_len": 4096},
         "observed": {"executions": actual, "exit_code": exit_code,
                      "elapsed_seconds": round(elapsed, 3), "stop_reason": stop_reason},
-        "raw_output_sha256": {"stdout.log": digest(stdout), "stderr.log": digest(stderr)},
+        "raw_output_sha256": {name: digest(data) for name, data in compressed.items()},
+        "raw_stream_sha256": {"stdout": digest(stdout), "stderr": digest(stderr)},
         "crash_artifacts_sha256": {path.name: digest(path.read_bytes()) for path in artifact_paths},
         "replay": {"required": bool(artifact_paths), "confirmed": False,
                    "minimized_artifact_sha256": None},

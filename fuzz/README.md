@@ -34,7 +34,7 @@ python3 fuzz/run_v4_campaign.py --output fuzz/evidence/v4-2026-09-23 \
 
 This drives `unbounded_parse_roundtrip` through the public v4 parser,
 formatter, and second parse. The runner verifies checked seed bytes, copies
-them to scratch, and retains raw engine output, exact source/tool/lock pins,
+them to scratch, and retains lossless gzip engine output, exact source/tool/lock pins,
 budget, actual executions, stop reason, and crash artifact hashes. Any crash
 requires minimization and same-revision replay before the lane can be treated
 as clean. A no-crash result describes only its recorded finite run.
