@@ -555,6 +555,8 @@ pub struct FormatStats {
 pub enum FormatErrorCode {
     /// Input document did not validate through tl-syntax.
     InvalidGraph,
+    /// The validated graph has topology the text dialect cannot preserve.
+    UnrepresentableGraph,
     /// Final or intermediate text exceeds the output-byte boundary.
     OutputLimit,
     /// Total formatter work exceeds the logical-work boundary.
@@ -566,6 +568,7 @@ impl FormatErrorCode {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::InvalidGraph => "invalid_graph",
+            Self::UnrepresentableGraph => "unrepresentable_graph",
             Self::OutputLimit => "output_limit",
             Self::WorkLimit => "work_limit",
         }

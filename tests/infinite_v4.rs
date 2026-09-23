@@ -1,9 +1,13 @@
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
-use tl_parse::tl_syntax::{SemanticProfile, SourceSpan};
+use tl_parse::tl_syntax::{
+    InfiniteClock, InfiniteFormulaDocument, InfiniteNode, InfiniteNodeKind, NodeId, PropositionId,
+    SemanticProfile, SourceSpan,
+};
 use tl_parse::{
-    format_clean_ascii_v4, parse_clean_ascii_v4, DiagnosticCode, FormatLimits, InfiniteDisposition,
-    InfiniteParseReport, ParseArtifactLimits, ParseLimits, DIALECT_V4_REVISION,
+    format_clean_ascii_v4, parse_clean_ascii_v4, DiagnosticCode, FormatErrorCode, FormatLimits,
+    InfiniteDisposition, InfiniteParseReport, ParseArtifactLimits, ParseLimits,
+    DIALECT_V4_REVISION,
 };
 
 const PROFILE: SemanticProfile = SemanticProfile::InfiniteTraceV1;
@@ -243,12 +247,97 @@ fn interval_and_premise_spans_are_bytes_and_text_reaches_fixed_point() {
         "{text}: {:?}",
         second.diagnostics
     );
+    assert_eq!(
+        document.content_identity().unwrap(),
+        second
+            .document
+            .as_ref()
+            .unwrap()
+            .content_identity()
+            .unwrap()
+    );
+    assert_eq!(
+        first.fairness.as_ref().unwrap().roots(),
+        second.fairness.as_ref().unwrap().roots()
+    );
     let again = format_clean_ascii_v4(
         second.document.as_ref().unwrap(),
         second.fairness.as_ref(),
         FormatLimits::default(),
     );
     assert_eq!(again.text.as_deref(), Some(text.as_str()));
+}
+
+// Trace: TC-063; FR-017-AC-1. W/M lowering shares an operand in the owner
+// graph, so formatting the lowered primitives separately changes its identity.
+#[test]
+fn derived_future_text_round_trips_the_exact_lowered_graph() {
+    for source in [" p0 W[0,) p1 ", "p0 M[1,3] p1"] {
+        let first = parse(source);
+        let document = first.document.as_ref().unwrap();
+        let formatted = format_clean_ascii_v4(document, None, FormatLimits::default());
+        let text = formatted.text.expect("derived form must format");
+        let second = parse(&text);
+        assert_eq!(
+            document.content_identity().unwrap(),
+            second
+                .document
+                .as_ref()
+                .unwrap()
+                .content_identity()
+                .unwrap(),
+            "{source} -> {text}"
+        );
+        let again = format_clean_ascii_v4(
+            second.document.as_ref().unwrap(),
+            None,
+            FormatLimits::default(),
+        );
+        assert_eq!(again.text.as_deref(), Some(text.as_str()));
+    }
+}
+
+// Trace: TC-063; FR-017-AC-1. Loci are retained for diagnostics but have no
+// effect on the semantic graph identity used by fairness and round trips.
+#[test]
+fn source_spacing_does_not_change_v4_graph_identity() {
+    let compact = parse("p0 U[1,) p1");
+    let spaced = parse("  p0   U[1,)   p1  ");
+    let compact_graph = compact.document.as_ref().unwrap();
+    let spaced_graph = spaced.document.as_ref().unwrap();
+    assert_ne!(compact_graph.nodes()[0].span, spaced_graph.nodes()[0].span);
+    assert_eq!(
+        compact_graph.content_identity().unwrap(),
+        spaced_graph.content_identity().unwrap()
+    );
+}
+
+// Trace: TC-063; FR-017-AC-1. The text dialect has no general DAG reference
+// syntax; a valid shared graph must receive a typed formatting refusal.
+#[test]
+fn unrepresentable_shared_graph_refuses_before_emitting_text() {
+    let graph = InfiniteFormulaDocument::new(
+        PROFILE,
+        InfiniteClock::EventPosition,
+        NodeId(2),
+        vec![
+            InfiniteNode::new(InfiniteNodeKind::Proposition {
+                proposition: PropositionId(0),
+            }),
+            InfiniteNode::new(InfiniteNodeKind::Not { operand: NodeId(0) }),
+            InfiniteNode::new(InfiniteNodeKind::And {
+                left: NodeId(0),
+                right: NodeId(1),
+            }),
+        ],
+    )
+    .unwrap();
+    let report = format_clean_ascii_v4(&graph, None, FormatLimits::default());
+    assert!(report.text.is_none());
+    assert_eq!(
+        report.error.unwrap().code,
+        FormatErrorCode::UnrepresentableGraph
+    );
 }
 
 // Trace: TC-061, FR-016-AC-1, TC-062, FR-016-AC-2

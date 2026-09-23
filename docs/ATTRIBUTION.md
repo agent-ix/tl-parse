@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`d71d757bf696fa31878392cd1e6854ab4b95e740`, a commit reachable from
+`8bcbce984f7ec3d86a92f90d866e842cc98b39fb`, a commit reachable from
 the tl-syntax Stage 1 integration branch. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin

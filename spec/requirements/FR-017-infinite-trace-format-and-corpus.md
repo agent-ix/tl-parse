@@ -37,6 +37,11 @@ parenthesization and spacing policy, and premise expressions in their declared
 order as `fair { premise; ... } : formula`. It omits the envelope for an empty
 premise set. It refuses foreign/mismatched graph, profile or clock identity,
 and never reconstructs an unbounded interval as a large closed bound.
+It renders owner W/M lowerings with their original text operators. A valid
+graph whose shared nodes or node order cannot be represented in v4 text
+receives `unrepresentable_graph` rather than text with a changed owner
+identity. Diagnostic source spans remain available but do not affect that
+semantic identity.
 
 The parser corpus holds separately digest-pinned malformed-input and
 locus-preservation cases. Each case carries its exact source, selected

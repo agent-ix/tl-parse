@@ -999,6 +999,7 @@ pub fn format_clean_ascii_v4(
         limits,
         stats: FormatStats::default(),
         text: String::new(),
+        next_node: 0,
     };
     let result = (|| {
         if document.semantic_profile() != SemanticProfile::InfiniteTraceV1
@@ -1036,7 +1037,18 @@ pub fn format_clean_ascii_v4(
                 formatter.append("}: ")?;
             }
         }
-        formatter.node(document.root(), 1)
+        formatter.node(document.root(), 1)?;
+        // The parser appends nodes in postorder, with fairness roots before
+        // the claim. Text has no general graph-reference syntax. This exact
+        // postorder check refuses a DAG or foreign node order before any text
+        // can be returned under a false owner identity.
+        if formatter.next_node != document.nodes().len() {
+            return Err(format_error(
+                FormatErrorCode::UnrepresentableGraph,
+                "v4 graph cannot round-trip through canonical text",
+            ));
+        }
+        Ok(())
     })();
     match result {
         Ok(()) => {
@@ -1069,6 +1081,7 @@ struct InfiniteFormatter<'a> {
     limits: FormatLimits,
     stats: FormatStats,
     text: String,
+    next_node: usize,
 }
 
 impl InfiniteFormatter<'_> {
@@ -1117,7 +1130,8 @@ impl InfiniteFormatter<'_> {
                 format_error(FormatErrorCode::InvalidGraph, "v4 graph has missing node")
             })?
             .kind;
-        match kind {
+        let mut derived = false;
+        let rendered = match kind {
             Kind::False => self.append("false"),
             Kind::True => self.append("true"),
             Kind::Proposition { proposition } => self.append(&format!("p{}", proposition.0)),
@@ -1133,8 +1147,22 @@ impl InfiniteFormatter<'_> {
             Kind::Globally { interval, operand } => self.unary("G", interval, operand, depth),
             Kind::Once { interval, operand } => self.unary("O", interval, operand, depth),
             Kind::Historically { interval, operand } => self.unary("H", interval, operand, depth),
-            Kind::And { left, right } => self.binary(left, "&", right, depth),
-            Kind::Or { left, right } => self.binary(left, "|", right, depth),
+            Kind::And { left, right } => {
+                if let Some((operand, interval, target)) = self.derived_temporal(id, false) {
+                    derived = true;
+                    self.temporal(operand, "M", interval, target, depth)
+                } else {
+                    self.binary(left, "&", right, depth)
+                }
+            }
+            Kind::Or { left, right } => {
+                if let Some((operand, interval, target)) = self.derived_temporal(id, true) {
+                    derived = true;
+                    self.temporal(operand, "W", interval, target, depth)
+                } else {
+                    self.binary(left, "|", right, depth)
+                }
+            }
             Kind::Implies { left, right } => self.binary(left, "->", right, depth),
             Kind::Equivalent { left, right } => self.binary(left, "<->", right, depth),
             Kind::Until {
@@ -1157,7 +1185,71 @@ impl InfiniteFormatter<'_> {
                 left,
                 right,
             } => self.temporal(left, "T", interval, right, depth),
+        };
+        rendered?;
+        if derived {
+            let first = id.0.checked_sub(2).ok_or_else(|| {
+                format_error(
+                    FormatErrorCode::InvalidGraph,
+                    "invalid v4 derived node order",
+                )
+            })?;
+            self.charge(2)?;
+            self.stats.nodes += 2;
+            self.finish_node(NodeId(first))?;
+            self.finish_node(NodeId(first + 1))?;
         }
+        self.finish_node(id)
+    }
+    fn finish_node(&mut self, id: NodeId) -> Result<(), FormatError> {
+        if usize::try_from(id.0).ok() != Some(self.next_node) {
+            return Err(format_error(
+                FormatErrorCode::UnrepresentableGraph,
+                "v4 text would change owner node identity",
+            ));
+        }
+        self.next_node += 1;
+        Ok(())
+    }
+    fn derived_temporal(
+        &self,
+        id: NodeId,
+        weak: bool,
+    ) -> Option<(NodeId, TemporalInterval, NodeId)> {
+        let root = self.document.formula().node(id)?;
+        let (first, second) = match root.kind {
+            Kind::Or { left, right } if weak => (left, right),
+            Kind::And { left, right } if !weak => (left, right),
+            _ => return None,
+        };
+        if first.0.checked_add(1) != Some(second.0) || second.0.checked_add(1) != Some(id.0) {
+            return None;
+        }
+        let (interval, operand, target) = match self.document.formula().node(first)?.kind {
+            Kind::Until {
+                interval,
+                left,
+                right,
+            } if weak => (interval, left, right),
+            Kind::Release {
+                interval,
+                left,
+                right,
+            } if !weak => (interval, left, right),
+            _ => return None,
+        };
+        let right_matches = match self.document.formula().node(second)?.kind {
+            Kind::Globally {
+                interval: other,
+                operand: other_operand,
+            } if weak => other == interval && other_operand == operand,
+            Kind::Future {
+                interval: other,
+                operand: other_operand,
+            } if !weak => other == interval && other_operand == operand,
+            _ => false,
+        };
+        right_matches.then_some((operand, interval, target))
     }
     fn unary(
         &mut self,

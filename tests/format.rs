@@ -184,6 +184,7 @@ fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() 
 fn format_error_display_matches_every_wire_spelling() {
     for code in [
         FormatErrorCode::InvalidGraph,
+        FormatErrorCode::UnrepresentableGraph,
         FormatErrorCode::OutputLimit,
         FormatErrorCode::WorkLimit,
     ] {

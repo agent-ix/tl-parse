@@ -54,11 +54,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "be6e6e8a6e9c25dbe310b1f077f9a8b5326dae3afd5bd6059cb5a175229012f0"
+        "35f2160e46b972ef4feec6b2f5c87a33a5f7cfc50c64bab6fbfbdaab4cbe2005"
     );
     assert_eq!(
         attribution_document_digest(),
-        "bf1b37f647fbeb4e9267879556779413c60cdb16c77e002e53009acfa27d636f"
+        "8ea4abc13eaa92978b4f29c31ca5faa0d0249aba7fa9d3d9133e218ebd68b2df"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
