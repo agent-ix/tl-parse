@@ -21,7 +21,7 @@
 #
 # The pin is the accepted release from agent-ix/engineering-assurance#8, which
 # publishes engineering-assurance as a source distribution: the git tag IS the
-# released artifact. It is not a branch head and must not be replaced by one,
-# even though the human acceptance of the FR-012 matrix landed on main after
-# the tag was cut (agent-ix/engineering-assurance#20).
-engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.2.0
+# released artifact. It is not a branch head and must not be replaced by one.
+# v0.2.1 (agent-ix/engineering-assurance#47) is the release that carries the
+# human acceptance of the matrix and re-pins ix-flow to 0.2.3 (TL-192).
+engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.2.1

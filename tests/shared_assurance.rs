@@ -407,7 +407,7 @@ fn hosted_workflow_control_errors(source: &str) -> Vec<String> {
     // These literals are authored independently from the workflow. Review of
     // `.github/workflows/ci.yml` is the second control against a coordinated
     // edit of this census and its expected side.
-    const EXPECTED_PACKAGE: &str = "@agent-ix/ix-flow@0.0.4";
+    const EXPECTED_PACKAGE: &str = "@agent-ix/ix-flow@0.2.3";
     const EXPECTED_TRIGGER: &str = "workflow_dispatch";
 
     let (packages, mut errors) = workflow_ix_flow_packages(source);
@@ -693,8 +693,8 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
     );
 
     // Acceptance is reported and never gated on: the pinned release records
-    // `pending_human_acceptance` and ships no predicate for it
-    // (agent-ix/engineering-assurance#20). Reading an absent field as approval,
+    // `accepted` and ships a predicate for it
+    // (agent-ix/engineering-assurance#47). Reading an absent field as approval,
     // in either direction, is the mistake this asserts against.
     assert_eq!(report["acceptance_recorded_here"], false);
     assert!(report["acceptance_state"].is_string());
@@ -1800,14 +1800,14 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
         );
     }
 
-    let unscoped = workflow.replacen("@agent-ix/ix-flow@0.0.4", "ix-flow@0.0.4", 1);
+    let unscoped = workflow.replacen("@agent-ix/ix-flow@0.2.3", "ix-flow@0.2.3", 1);
     assert!(
         !hosted_workflow_control_errors(&unscoped).is_empty(),
         "an unscoped package replacement was accepted"
     );
     let alias_duplicate = workflow.replacen(
-        "'@agent-ix/ix-flow@0.0.4'",
-        "'@agent-ix/ix-flow@0.0.4' 'ix-flow@npm:@agent-ix/ix-flow@0.0.4'",
+        "'@agent-ix/ix-flow@0.2.3'",
+        "'@agent-ix/ix-flow@0.2.3' 'ix-flow@npm:@agent-ix/ix-flow@0.2.3'",
         1,
     );
     assert!(
@@ -1815,8 +1815,8 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
         "an executable npm-alias duplicate was accepted"
     );
     let unversioned_duplicate = workflow.replacen(
-        "'@agent-ix/ix-flow@0.0.4'",
-        "'@agent-ix/ix-flow@0.0.4' '@agent-ix/ix-flow'",
+        "'@agent-ix/ix-flow@0.2.3'",
+        "'@agent-ix/ix-flow@0.2.3' '@agent-ix/ix-flow'",
         1,
     );
     assert!(
@@ -1846,7 +1846,7 @@ fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
     assert_eq!(code, 0, "ix-flow --version failed: {stderr}");
     assert_eq!(
         stdout.trim(),
-        "0.0.4",
+        "0.2.3",
         "the released local ix-flow executable is not the pinned version"
     );
 }

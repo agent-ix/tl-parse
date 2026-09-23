@@ -9,8 +9,8 @@ anything is correct. It observes what is installed and hands every verdict to
 second authority, and two authorities drift.
 
 It is not an acceptance gate. The pinned release records
-`accepted.state = pending_human_acceptance` and ships no
-`human_acceptance_recorded` predicate (agent-ix/engineering-assurance#20). This
+`accepted.state = accepted` and ships a `human_acceptance_recorded` predicate
+(release: accept ix-flow 0.2.3 matrix, agent-ix/engineering-assurance#47). This
 script reports the acceptance state the installed distribution carries and gates
 only on things that are local and checkable. An absent field is not read as an
 approval, and it is not read as a rejection either.
@@ -242,7 +242,7 @@ def main(argv: list[str]) -> int:
             print(f"upstream pin disagreement: {problem}", file=sys.stderr)
         print(
             f"acceptance state recorded by the pinned release: {report['acceptance_state']} "
-            "(reported, not gated on; see agent-ix/engineering-assurance#20)"
+            "(reported, not gated on; see agent-ix/engineering-assurance#47)"
         )
         print(
             "shared pins accepted" if report["accepted"] else "shared pins NOT accepted",

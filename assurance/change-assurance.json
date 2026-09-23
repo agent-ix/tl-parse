@@ -107,7 +107,7 @@
         },
         {
           "id": "NFR-003-AC-5",
-          "statement": "The manual-only hosted workflow installs exactly one executable ix-flow package identity, @agent-ix/ix-flow@0.0.4, with no unscoped or alias-form duplicate.",
+          "statement": "The manual-only hosted workflow installs exactly one executable ix-flow package identity, @agent-ix/ix-flow@0.2.3, with no unscoped or alias-form duplicate.",
           "source_ids": ["NFR-003", "hosted-workflow", "assurance-pins"]
         }
       ],
@@ -129,7 +129,7 @@
         },
         {
           "id": "PRESERVE-manual-ci",
-          "statement": "Hosted CI remains workflow_dispatch only, installs exactly @agent-ix/ix-flow@0.0.4, and is not dispatched by this change.",
+          "statement": "Hosted CI remains workflow_dispatch only, installs exactly @agent-ix/ix-flow@0.2.3, and is not dispatched by this change.",
           "source_ids": ["NFR-003", "hosted-workflow"]
         }
       ],
@@ -222,8 +222,9 @@
       "unknowns": [
         {
           "id": "UNKNOWN-ea-acceptance-not-in-a-release",
-          "statement": "engineering-assurance v0.2.0 records accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate; the human acceptance exists only on main. This repository reports the state the release records and does not gate on it. Filed as agent-ix/engineering-assurance#20.",
-          "disposition": "open",
+          "statement": "Resolved by the TL-192 bump to engineering-assurance v0.2.1 (release: accept ix-flow 0.2.3 matrix, agent-ix/engineering-assurance#47), which packages accepted.state = accepted with accepted_by and accepted_at populated. The prior gap — v0.2.0 recording accepted.state = pending_human_acceptance with the human acceptance landing only on main (agent-ix/engineering-assurance#20) — no longer applies to the pin this repository carries.",
+          "disposition": "resolved",
+          "resolution": "engineering-assurance pin moved v0.2.0 -> v0.2.1 (agent-ix/engineering-assurance#47), whose packaged matrix records accepted.state = accepted with accepted_by and accepted_at.",
           "owner": "agent-ix/engineering-assurance"
         },
         {
