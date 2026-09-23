@@ -153,8 +153,7 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
 // Trace: TC-017, TC-046, FR-004-AC-3, FR-009-AC-4, NFR-001-AC-2
 #[test]
 fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() {
-    let source = std::iter::repeat("p0")
-        .take(4_096)
+    let source = std::iter::repeat_n("p0", 4_096)
         .collect::<Vec<_>>()
         .join("&");
     let document = parse_closed(&source);
@@ -165,8 +164,7 @@ fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() 
     assert_eq!(report.stats.work, 20_478);
     assert_eq!(report.text.as_deref(), Some(source.as_str()));
 
-    let one_over = std::iter::repeat("p0")
-        .take(4_097)
+    let one_over = std::iter::repeat_n("p0", 4_097)
         .collect::<Vec<_>>()
         .join("&");
     let refused = parse(

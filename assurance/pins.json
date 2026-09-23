@@ -4,9 +4,9 @@
   "matrix_authority": "engineering_assurance/compatibility-matrix.json in the installed distribution. scripts/check_shared_pins.py observes the local toolchain and delegates every verdict to engineering_assurance.compatibility.",
   "registry": "Every npm component resolves from the public npm registry (registry.npmjs.org). The internal npm.ix mirror must not appear in any requirement, pin, lockfile, or .npmrc, and is not an oracle for whether a release landed. Querying an @agent-ix package needs --@agent-ix:registry=https://registry.npmjs.org; a bare --registry does not override the scoped .npmrc entry.",
   "engineering_assurance": {
-    "version": "0.2.0",
-    "requirement": "engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.2.0",
-    "release_form": "git tag v0.2.0, a source distribution; the tag is the released artifact",
+    "version": "0.2.1",
+    "requirement": "engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.2.1",
+    "release_form": "git tag v0.2.1, a source distribution; the tag is the released artifact",
     "declared_in": "requirements-assurance.txt"
   },
   "repinned_workflow_component": {
@@ -14,6 +14,12 @@
     "was": "0.22.5",
     "now": "0.23.1",
     "why": "The hosted workflow pinned @agent-ix/quoin@0.22.5, which the packaged compatibility matrix names explicitly incompatible: it 'predates the `quoin change-assurance` surface; seal, intake, and receipt commands do not exist'. Every command this migration's chain runs is on that surface, so the old pin could not have worked. @agent-ix/ix-flow@0.0.4 was absent from the workflow entirely and is now installed."
+  },
+  "repinned_ix_flow": {
+    "component": "ix-flow",
+    "was": "0.0.4",
+    "now": "0.2.3",
+    "why": "TL-192 (mirrored from tl-mltl and tl-syntax): the packaged compatibility matrix authoritative for this repository's pin (matrix_authority above) classifies ix-flow strictly at the exact pinned version, so a locally-installed 0.2.3 against a v0.2.0 matrix pinning 0.0.4 classified as unknown, not compatible, and failed the local qualification gate. engineering-assurance v0.2.1 (release: accept ix-flow 0.2.3 matrix, agent-ix/engineering-assurance#47) re-pins the matrix to ix-flow 0.2.3 with human acceptance recorded (accepted_by Peter Krenesky, accepted_at 2026-09-10). This repository's engineering_assurance pin above moved from v0.2.0 to v0.2.1 in the same change so the workflow literal and the matrix authority agree; quire-cli and quoin stay at their already-accepted versions."
   },
   "consumed_artifacts": [
     {
@@ -25,7 +31,7 @@
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
-    "compiled_revision": "d52d89549b0a6c0c429261bab912cd5396c4a19e",
+    "compiled_revision": "4a5614193d21e5ae99950ae683b04ba0ec931358",
     "superseded_compiled_revisions": [
       "953ee825e5060335b4c79682f5f41a78c5a1bfae",
       "26b801d4a68ebfe720062cfdb3c66b070ab60e92",
@@ -33,12 +39,13 @@
       "e3651cde5524c61cb9623ce39fcc9f0b90b99317",
       "8dc18eec5af227f484170362c9e8894b8531a27d",
       "e70f2379a752117c79603bc399a86c26feed7716",
-      "842d82553f045eb69a7f38745756d968254fc25e"
+      "842d82553f045eb69a7f38745756d968254fc25e",
+      "d52d89549b0a6c0c429261bab912cd5396c4a19e"
     ],
-    "why": "The compiled pin is an exact commit reachable from the reviewed tl-syntax main history when admitted; it is not a moving branch head. The parser consumes its shared catalog and requirement-context types for the additive context-bound report, its future-operator lowering API for the clean-ascii v2 dialect, and its exported CORPUS_DIR constant to read the shared past-history corpus in place instead of vendoring a copy, while leaving the span-free semantic-identity family unconsumed. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both facts and the consumed/unconsumed delta separately. This pin field was last synchronized with Cargo.toml at agent-ix/tl-parse#32 (compiled_revision 8dc18eec) and silently drifted two pin bumps behind (#36 to e70f2379, #39 to 842d8255) before agent-ix/tl-parse TL-205/TL-204 caught and closed the gap. scripts/check_shared_pins.py (make pins) already cross-checks this field against Cargo.toml, Cargo.lock, fuzz/Cargo.lock and src/lib.rs and would have failed loudly on that drift had it been run against it; TL-205 found the drift by git-history inspection instead."
+    "why": "The compiled pin is an exact commit reachable from the reviewed tl-syntax main history when admitted; it is not a moving branch head. It is the commit tagged v0.3.0 (the tl-syntax 0.3.0 release, agent-ix/tl-syntax#88); Cargo.toml pins it by rev, not by tag, so scripts/check_shared_pins.py can cross-check one literal across every file that names it, and the tl-syntax version requirement is =0.3.0 to match. The parser consumes its shared catalog and requirement-context types for the additive context-bound report, its future-operator lowering API for the clean-ascii v2 dialect, and its exported CORPUS_DIR constant to read the shared past-history corpus in place instead of vendoring a copy, while leaving the span-free semantic-identity family unconsumed. The authorship basis does not move: it is the revision whose bytes were read when this dialect was authored, and docs/ATTRIBUTION.md records both facts and the consumed/unconsumed delta separately. This pin field was last synchronized with Cargo.toml at agent-ix/tl-parse#32 (compiled_revision 8dc18eec) and silently drifted two pin bumps behind (#36 to e70f2379, #39 to 842d8255) before agent-ix/tl-parse TL-205/TL-204 caught and closed the gap. scripts/check_shared_pins.py (make pins) already cross-checks this field against Cargo.toml, Cargo.lock, fuzz/Cargo.lock and src/lib.rs and would have failed loudly on that drift had it been run against it; TL-205 found the drift by git-history inspection instead."
   },
   "known_drift": [
-    "engineering-assurance v0.2.0 packages compatibility-matrix.json with accepted.state = pending_human_acceptance and ships no human_acceptance_recorded predicate. Both landed on main after the tag and no v0.2.1 was cut. Filed as agent-ix/engineering-assurance#20. scripts/check_shared_pins.py reports the acceptance state the installed package records and gates only on the local toolchain, so an absent field is never read as an approval in either direction.",
-    "The human acceptance itself is not in doubt: Peter Krenesky accepted the FR-012 matrix on 2026-09-01 and it is attributed on engineering-assurance main as ae50e13. What is missing is a release carrying it. Pinning a branch head to obtain it is exactly what FR-012-AC-1 forbids, so this repository does not."
+    "Resolved by the TL-192 bump to v0.2.1: engineering-assurance v0.2.0 packaged compatibility-matrix.json with accepted.state = pending_human_acceptance and shipped no human_acceptance_recorded predicate (agent-ix/engineering-assurance#20). v0.2.1 (release: accept ix-flow 0.2.3 matrix, #47) carries accepted.state = accepted with accepted_by and accepted_at populated, so the record this repository now reads is a real release carrying the acceptance rather than a branch head.",
+    "Historical: the human acceptance itself was never in doubt: Peter Krenesky accepted the FR-012 matrix on 2026-09-01, attributed on engineering-assurance main as ae50e13, and the pinned release now carries it (see above)."
   ]
 }

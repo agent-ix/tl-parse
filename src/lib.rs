@@ -52,7 +52,7 @@ pub const PAST_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.past-parse-report/v
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
 
 /// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "d52d89549b0a6c0c429261bab912cd5396c4a19e";
+pub const TL_SYNTAX_REVISION: &str = "4a5614193d21e5ae99950ae683b04ba0ec931358";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";

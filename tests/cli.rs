@@ -54,11 +54,11 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     );
     assert_eq!(
         dialect_document_digest(),
-        "2d5bb2c977cea087891d227e2708855ac9ddcc2c0e22ea35183452da648c9213"
+        "e2a23e0465b727011247e0d40c1290c539cdaf0f6726ade4871ba20bc9e516e2"
     );
     assert_eq!(
         attribution_document_digest(),
-        "cd941e2ba096dc1360d983319cf32d61d7f3cc56d92b519199048b25b78dfb52"
+        "d398e9cdfaec6beeec7322b6601c30ac58c6e87e96fa4049b48ed9e627abc954"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
@@ -106,6 +106,10 @@ fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
     let root = env!("CARGO_MANIFEST_DIR");
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     for required in [
+        "d52d89549b0a6c0c429261bab912cd5396c4a19e..4a5614193d21e5ae99950ae683b04ba0ec931358",
+        "commit tagged\n`v0.3.0`",
+        "found no change under `src/`",
+        "tl-parse consumes nothing new from this range",
         "842d82553f045eb69a7f38745756d968254fc25e..d52d89549b0a6c0c429261bab912cd5396c4a19e",
         "CORPUS_DIR",
         "tl-parse consumes only the new `CORPUS_DIR` constant",

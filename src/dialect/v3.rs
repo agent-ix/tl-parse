@@ -228,9 +228,8 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
                 return Err("strictly admitted document differs from the parse report");
             }
             if document.nodes().iter().any(|node| {
-                node.span.map_or(true, |span| {
-                    !span_is_source_bounded(span, wire.stats.source_bytes)
-                })
+                node.span
+                    .is_none_or(|span| !span_is_source_bounded(span, wire.stats.source_bytes))
             }) {
                 return Err("document nodes require source-bounded spans");
             }
