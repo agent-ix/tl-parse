@@ -1,9 +1,9 @@
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
-use tl_parse::tl_syntax::SemanticProfile;
+use tl_parse::tl_syntax::{SemanticProfile, SourceSpan};
 use tl_parse::{
     format_clean_ascii_v4, parse_clean_ascii_v4, DiagnosticCode, FormatLimits, InfiniteDisposition,
-    ParseArtifactLimits, ParseLimits, DIALECT_V4_REVISION,
+    InfiniteParseReport, ParseArtifactLimits, ParseLimits, DIALECT_V4_REVISION,
 };
 
 const PROFILE: SemanticProfile = SemanticProfile::InfiniteTraceV1;
@@ -12,83 +12,89 @@ fn parse(source: &str) -> tl_parse::InfiniteParseReport {
     parse_clean_ascii_v4(source, PROFILE, "event_position", ParseLimits::default())
 }
 
+fn strict_read(
+    report: &InfiniteParseReport,
+) -> Result<InfiniteParseReport, tl_parse::StrictParseArtifactReadError> {
+    InfiniteParseReport::from_json_bytes(
+        &serde_json::to_vec(report).unwrap(),
+        ParseArtifactLimits::default(),
+    )
+}
+
 // Trace: TC-062, FR-016-AC-2, TC-064, FR-017-AC-2
 #[test]
 fn v4_report_strict_reader_rejects_identity_and_locus_mutations() {
     let report = parse("fair {F[0,)p0}: G[1,)p1");
-    let bytes = serde_json::to_vec(&report).unwrap();
-    assert_eq!(
-        tl_parse::InfiniteParseReport::from_json_bytes(&bytes, ParseArtifactLimits::default())
-            .unwrap(),
-        report
-    );
+    assert_eq!(strict_read(&report).unwrap(), report);
 
-    let mut foreign = serde_json::to_value(&report).unwrap();
-    foreign["clock"] = serde_json::json!("wall_clock");
-    assert!(tl_parse::InfiniteParseReport::from_json_bytes(
-        &serde_json::to_vec(&foreign).unwrap(),
+    let mut foreign_clock = report.clone();
+    foreign_clock.clock = "wall_clock".to_owned();
+    assert!(strict_read(&foreign_clock).is_err());
+
+    let mut outside = report.clone();
+    outside.premise_spans[0] = SourceSpan::new(0, 1000).unwrap();
+    assert!(strict_read(&outside).is_err());
+
+    let mut stale_owner = report.clone();
+    stale_owner.tl_syntax_revision = "stale-owner".to_owned();
+    assert!(strict_read(&stale_owner).is_err());
+
+    let mut missing_graph = report.clone();
+    missing_graph.document = None;
+    missing_graph.fairness = None;
+    assert!(strict_read(&missing_graph).is_err());
+
+    let mut missing_fairness = report.clone();
+    missing_fairness.fairness = None;
+    assert!(strict_read(&missing_fairness).is_err());
+
+    let identity = report.fairness.as_ref().unwrap().graph_identity();
+    let original = String::from_utf8(serde_json::to_vec(&report).unwrap()).unwrap();
+    let foreign = original.replacen(identity, "foreign-graph", 1);
+    assert_ne!(foreign, original);
+    assert!(InfiniteParseReport::from_json_bytes(
+        foreign.as_bytes(),
         ParseArtifactLimits::default()
     )
     .is_err());
+}
 
-    let mut outside = serde_json::to_value(&report).unwrap();
-    outside["premise_spans"][0]["end"] = serde_json::json!(1000);
-    assert!(tl_parse::InfiniteParseReport::from_json_bytes(
-        &serde_json::to_vec(&outside).unwrap(),
-        ParseArtifactLimits::default()
-    )
-    .is_err());
+// Trace: TC-062, FR-016-AC-2. Each counter and limit is checked independently;
+// one bad counter cannot hide behind another valid field in the report wire.
+#[test]
+fn v4_report_counter_limits_accept_exact_boundaries_and_refuse_one_over() {
+    let refused = parse("!");
+    assert!(refused.document.is_none());
+    assert!(!refused.diagnostics.is_empty());
+    assert_eq!(strict_read(&refused).unwrap(), refused);
 
-    for (axis, mutate) in [
-        (
-            "compiled owner revision",
-            Box::new(|wire: &mut serde_json::Value| {
-                wire["tl_syntax_revision"] = serde_json::json!("stale-owner");
-            }) as Box<dyn Fn(&mut serde_json::Value)>,
-        ),
-        (
-            "work counter",
-            Box::new(|wire: &mut serde_json::Value| {
-                wire["stats"]["work"] = serde_json::json!(u64::MAX);
-            }),
-        ),
-        (
-            "node counter",
-            Box::new(|wire: &mut serde_json::Value| {
-                wire["stats"]["nodes"] = serde_json::json!(0);
-            }),
-        ),
-        (
-            "missing graph",
-            Box::new(|wire: &mut serde_json::Value| {
-                wire["document"] = serde_json::Value::Null;
-                wire["fairness"] = serde_json::Value::Null;
-            }),
-        ),
-        (
-            "missing fairness binding",
-            Box::new(|wire: &mut serde_json::Value| {
-                wire["fairness"] = serde_json::Value::Null;
-            }),
-        ),
-        (
-            "foreign fairness graph",
-            Box::new(|wire: &mut serde_json::Value| {
-                wire["fairness"]["graph_identity"] = serde_json::json!("foreign-graph");
-            }),
-        ),
-    ] {
-        let mut wire = serde_json::to_value(&report).unwrap();
-        mutate(&mut wire);
-        assert!(
-            tl_parse::InfiniteParseReport::from_json_bytes(
-                &serde_json::to_vec(&wire).unwrap(),
-                ParseArtifactLimits::default()
-            )
-            .is_err(),
-            "{axis}"
-        );
-    }
+    let mut tokens = refused.clone();
+    tokens.limits.max_tokens = tokens.stats.tokens;
+    assert!(strict_read(&tokens).is_ok());
+    tokens.stats.tokens += 1;
+    assert!(strict_read(&tokens).is_err());
+
+    let mut nodes = refused.clone();
+    nodes.limits.max_nodes = nodes.stats.nodes;
+    assert!(strict_read(&nodes).is_ok());
+    nodes.stats.nodes += 1;
+    assert!(strict_read(&nodes).is_err());
+
+    let mut work = refused.clone();
+    work.limits.max_work = work.stats.work;
+    assert!(strict_read(&work).is_ok());
+    work.stats.work += 1;
+    assert!(strict_read(&work).is_err());
+
+    let mut diagnostics = refused.clone();
+    diagnostics.limits.max_diagnostics = diagnostics.stats.diagnostics;
+    assert!(strict_read(&diagnostics).is_ok());
+    diagnostics.limits.max_diagnostics = 0;
+    assert!(strict_read(&diagnostics).is_err());
+
+    let mut unclamped = refused;
+    unclamped.limits.max_tokens = usize::MAX;
+    assert!(strict_read(&unclamped).is_err());
 }
 
 // Trace: TC-058, FR-015-AC-1
