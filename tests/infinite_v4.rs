@@ -1,13 +1,14 @@
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
 use tl_parse::tl_syntax::{
-    InfiniteClock, InfiniteFormulaDocument, InfiniteNode, InfiniteNodeKind, NodeId, PropositionId,
-    SemanticProfile, SourceSpan,
+    FairnessPremisesDocument, InfiniteClock, InfiniteFormulaDocument, InfiniteNode,
+    InfiniteNodeKind, NodeId, PropositionId, SemanticProfile, SourceSpan, TemporalInterval,
+    UnboundedInterval,
 };
 use tl_parse::{
     format_clean_ascii_v4, parse_clean_ascii_v4, DiagnosticCode, FormatErrorCode, FormatLimits,
     InfiniteDisposition, InfiniteParseReport, ParseArtifactLimits, ParseLimits,
-    DIALECT_V4_REVISION,
+    StrictParseArtifactReadError, DIALECT_V4_REVISION,
 };
 
 const PROFILE: SemanticProfile = SemanticProfile::InfiniteTraceV1;
@@ -148,6 +149,98 @@ fn v4_strict_reader_rejects_conflicting_success_state_and_outside_loci() {
     missing_graph.diagnostics = parse("!").diagnostics;
     missing_graph.stats.diagnostics = missing_graph.diagnostics.len();
     assert!(strict_read(&missing_graph).is_err());
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_strict_reader_checks_canonical_bytes_diagnostic_loci_and_owner_nodes() {
+    let successful = parse("p0");
+    assert_eq!(strict_read(&successful).unwrap(), successful);
+    let mut noncanonical = serde_json::to_vec(&successful).unwrap();
+    noncanonical.push(b' ');
+    assert!(matches!(
+        InfiniteParseReport::from_json_bytes(&noncanonical, ParseArtifactLimits::default()),
+        Err(StrictParseArtifactReadError::NonCanonicalDocument)
+    ));
+
+    let mut wrong_count = successful.clone();
+    wrong_count.stats.diagnostics = 1;
+    assert!(strict_read(&wrong_count).is_err());
+
+    let mut outside_node = successful;
+    outside_node.document = Some(
+        InfiniteFormulaDocument::new(
+            PROFILE,
+            InfiniteClock::EventPosition,
+            NodeId(0),
+            vec![InfiniteNode::with_span(
+                InfiniteNodeKind::Proposition {
+                    proposition: PropositionId(0),
+                },
+                SourceSpan::new(0, 1000).unwrap(),
+            )],
+        )
+        .unwrap(),
+    );
+    assert!(strict_read(&outside_node).is_err());
+
+    let mut outside_diagnostic = parse("!");
+    outside_diagnostic.diagnostics[0].span = SourceSpan::new(0, 1000).unwrap();
+    assert!(strict_read(&outside_diagnostic).is_err());
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_fairness_report_rejects_unbound_roots_and_missing_loci() {
+    let baseline = parse("fair {F[0,)p0}: p1");
+    assert_eq!(strict_read(&baseline).unwrap(), baseline);
+
+    let mut missing_locus = baseline.clone();
+    missing_locus.premise_spans.clear();
+    assert!(strict_read(&missing_locus).is_err());
+
+    let mut fairness_wire = serde_json::to_value(baseline.fairness.as_ref().unwrap()).unwrap();
+    fairness_wire["roots"][0] = serde_json::json!(999);
+    let invalid_roots: FairnessPremisesDocument = serde_json::from_value(fairness_wire).unwrap();
+    let mut foreign_root = baseline.clone();
+    foreign_root.fairness = Some(invalid_roots.clone());
+    assert!(strict_read(&foreign_root).is_err());
+
+    let formatted = format_clean_ascii_v4(
+        baseline.document.as_ref().unwrap(),
+        Some(&invalid_roots),
+        FormatLimits::default(),
+    );
+    assert!(formatted.text.is_none());
+    assert_eq!(formatted.error.unwrap().code, FormatErrorCode::InvalidGraph);
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_disposition_distinguishes_invalid_identity_from_truncated_resources() {
+    let valid = parse("p0");
+    assert_eq!(valid.disposition(), InfiniteDisposition::NoTemporalVerdict);
+    let mut wrong_clock = valid;
+    wrong_clock.clock = "wall_clock".to_owned();
+    assert_eq!(wrong_clock.disposition(), InfiniteDisposition::Unsupported);
+
+    let truncated = parse_clean_ascii_v4(
+        "!",
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_diagnostics: 0,
+            ..ParseLimits::default()
+        },
+    );
+    assert!(truncated.document.is_none());
+    assert!(truncated.diagnostics.is_empty());
+    assert!(truncated.stats.diagnostics_truncated);
+    assert_eq!(strict_read(&truncated).unwrap(), truncated);
+    assert_eq!(
+        truncated.disposition(),
+        InfiniteDisposition::ResourceIncomplete
+    );
 }
 
 // Trace: TC-058, FR-015-AC-1
@@ -366,6 +459,77 @@ fn ordinary_boolean_roots_do_not_masquerade_as_derived_temporal_forms() {
                 .content_identity()
                 .unwrap(),
             "{source} -> {text}"
+        );
+    }
+}
+
+// A near match to W or M has valid owner topology but cannot be abbreviated
+// without changing its interval. The formatter must refuse any text that
+// would silently change the graph.
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn derived_temporal_near_matches_do_not_emit_a_false_canonical_text() {
+    let interval = TemporalInterval::Unbounded(UnboundedInterval::new(0));
+    let other_interval = TemporalInterval::Unbounded(UnboundedInterval::new(1));
+    for weak in [true, false] {
+        let first = if weak {
+            InfiniteNodeKind::Until {
+                interval,
+                left: NodeId(0),
+                right: NodeId(1),
+            }
+        } else {
+            InfiniteNodeKind::Release {
+                interval,
+                left: NodeId(0),
+                right: NodeId(1),
+            }
+        };
+        let second = if weak {
+            InfiniteNodeKind::Globally {
+                interval: other_interval,
+                operand: NodeId(0),
+            }
+        } else {
+            InfiniteNodeKind::Future {
+                interval: other_interval,
+                operand: NodeId(0),
+            }
+        };
+        let root = if weak {
+            InfiniteNodeKind::Or {
+                left: NodeId(2),
+                right: NodeId(3),
+            }
+        } else {
+            InfiniteNodeKind::And {
+                left: NodeId(2),
+                right: NodeId(3),
+            }
+        };
+        let document = InfiniteFormulaDocument::new(
+            PROFILE,
+            InfiniteClock::EventPosition,
+            NodeId(4),
+            vec![
+                InfiniteNode::new(InfiniteNodeKind::Proposition {
+                    proposition: PropositionId(0),
+                }),
+                InfiniteNode::new(InfiniteNodeKind::Proposition {
+                    proposition: PropositionId(1),
+                }),
+                InfiniteNode::new(first),
+                InfiniteNode::new(second),
+                InfiniteNode::new(root),
+            ],
+        )
+        .unwrap();
+        let result = format_clean_ascii_v4(&document, None, FormatLimits::default());
+        assert!(result.text.is_none(), "weak={weak}");
+        assert_eq!(
+            result.error.unwrap().code,
+            FormatErrorCode::UnrepresentableGraph,
+            "weak={weak}"
         );
     }
 }
