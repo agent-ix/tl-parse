@@ -115,6 +115,23 @@ fn long_unknown_identifier_keeps_full_span_with_bounded_diagnostic_preview() {
     assert_eq!(diagnostic.found, format!("\"{}…\"", "x".repeat(32)));
 }
 
+// Trace: TC-003, FR-001-AC-2
+#[test]
+fn keyword_and_number_boundaries_do_not_split_unknown_tokens() {
+    for source in ["truex", "false_value", "p", "123"] {
+        let report = parse_closed(source);
+        assert!(report.document.is_none(), "{source}");
+        assert!(
+            report.diagnostics.iter().any(|diagnostic| matches!(
+                diagnostic.code,
+                DiagnosticCode::UnknownIdentifier | DiagnosticCode::UnexpectedToken
+            )),
+            "{source}: {:?}",
+            report.diagnostics
+        );
+    }
+}
+
 // Trace: TC-004, FR-001-AC-2
 #[test]
 fn noncanonical_overflowing_and_inverted_numbers_are_rejected() {

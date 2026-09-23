@@ -129,6 +129,25 @@ fn v4_strict_reader_rejects_conflicting_success_state_and_outside_loci() {
     let mut outside_interval = baseline.clone();
     outside_interval.interval_spans[0] = SourceSpan::new(0, 1000).unwrap();
     assert!(strict_read(&outside_interval).is_err());
+
+    let mut source_limit = baseline.clone();
+    source_limit.limits.max_source_bytes = source_limit.stats.source_bytes - 1;
+    assert!(strict_read(&source_limit).is_err());
+
+    let mut depth_limit = baseline.clone();
+    depth_limit.limits.max_depth = depth_limit.stats.max_depth - 1;
+    assert!(strict_read(&depth_limit).is_err());
+
+    let foreign = parse("fair {O[0,)p2}: p3");
+    let mut foreign_fairness = baseline.clone();
+    foreign_fairness.fairness = foreign.fairness.clone();
+    assert!(strict_read(&foreign_fairness).is_err());
+
+    let mut missing_graph = baseline;
+    missing_graph.document = None;
+    missing_graph.diagnostics = parse("!").diagnostics;
+    missing_graph.stats.diagnostics = missing_graph.diagnostics.len();
+    assert!(strict_read(&missing_graph).is_err());
 }
 
 // Trace: TC-058, FR-015-AC-1
@@ -328,6 +347,43 @@ fn derived_future_text_round_trips_the_exact_lowered_graph() {
     }
 }
 
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn ordinary_boolean_roots_do_not_masquerade_as_derived_temporal_forms() {
+    for source in ["p0 | p1", "p0 & p1", "(p0 U[0,)p1) | G[0,)p2"] {
+        let first = parse(source);
+        let document = first.document.as_ref().expect("valid boolean graph");
+        let text = format_clean_ascii_v4(document, None, FormatLimits::default())
+            .text
+            .expect("boolean graph has canonical text");
+        let second = parse(&text);
+        assert_eq!(
+            document.content_identity().unwrap(),
+            second
+                .document
+                .as_ref()
+                .unwrap()
+                .content_identity()
+                .unwrap(),
+            "{source} -> {text}"
+        );
+    }
+}
+
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn formatter_refuses_fairness_from_a_different_owner_graph() {
+    let owner = parse("fair {F[0,)p0}: G[0,)p1");
+    let foreign = parse("fair {O[0,)p2}: G[0,)p1");
+    let report = format_clean_ascii_v4(
+        owner.document.as_ref().unwrap(),
+        foreign.fairness.as_ref(),
+        FormatLimits::default(),
+    );
+    assert!(report.text.is_none());
+    assert_eq!(report.error.unwrap().code, FormatErrorCode::InvalidGraph);
+}
+
 // Loci are retained for diagnostics but have no effect on the semantic graph
 // identity used by fairness and round trips.
 // Trace: TC-063, FR-017-AC-1
@@ -416,6 +472,19 @@ fn malformed_loci_use_utf8_byte_offsets_and_stable_codes() {
         );
         assert_eq!(result.disposition(), InfiniteDisposition::Unsupported);
     }
+}
+
+// Trace: TC-058, FR-015-AC-1
+#[test]
+fn compact_previous_future_is_specific_to_the_v4_lexical_policy() {
+    let v4 = parse("YF[0,)p0");
+    assert!(v4.document.is_some(), "{:?}", v4.diagnostics);
+    let v3 = tl_parse::parse_clean_ascii_v3("YF[0,1]p0", ParseLimits::default());
+    assert!(v3.document.is_none());
+    assert!(v3
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code == DiagnosticCode::UnknownIdentifier));
 }
 
 // Trace: TC-061, FR-016-AC-1
