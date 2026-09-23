@@ -22,19 +22,9 @@ fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
-/// The interpreter `make assurance-env` builds. Its absence is an error.
-fn assurance_python() -> PathBuf {
-    let path = std::env::var_os("ASSURANCE_PYTHON")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| root().join(".venv-assurance/bin/python"));
-    assert!(
-        path.is_file(),
-        "the pinned assurance interpreter is missing at {}. Run `make assurance-env`. \
-         This is a failure and not a skip: a gate that stands down when its dependency \
-         is absent reports the same green as one that ran.",
-        path.display()
-    );
-    path
+/// Python runs repository-local scripts; EA classification is a native CLI call.
+fn script_python() -> PathBuf {
+    PathBuf::from("python3")
 }
 
 fn run(program: &Path, arguments: &[&str]) -> (i32, String, String) {
@@ -663,7 +653,7 @@ fn chain_report() -> &'static Value {
 #[test]
 fn every_shared_pin_is_classified_by_the_packaged_matrix() {
     let _shared_inputs = shared_pin_inputs();
-    let python = assurance_python();
+    let python = script_python();
     let report = json_gate(&python, &["scripts/check_shared_pins.py", "--json"]);
 
     let components = report["components"].as_array().expect("components array");
@@ -683,7 +673,6 @@ fn every_shared_pin_is_classified_by_the_packaged_matrix() {
     assert_eq!(report["accepted"], true);
     assert_eq!(report["gate_satisfied"], true);
     assert_eq!(report["human_acceptance_recorded"], true);
-    assert!(report["artifact_mismatches"].as_array().unwrap().is_empty());
     assert!(report["mirror_references"].as_array().unwrap().is_empty());
     assert!(
         report["upstream_pin_mismatches"]
@@ -1237,8 +1226,6 @@ fn malformed_input_is_reported_as_malformed_and_never_as_a_pass() {
     // And it is not a silent pass either: the producer's own rows say
     // `malformed`, and the adapter carries that word alongside Quoin's
     // three-valued entry outcome rather than discarding it.
-    let python = std::env::var_os("ASSURANCE_PYTHON").is_some();
-    let _ = python;
     let (code, stdout, stderr) = run(
         Path::new("python3"),
         &[
@@ -1480,7 +1467,7 @@ fn a_control_naming_a_scenario_that_does_not_exist_is_refused() {
 // Trace: TC-022, FR-006-AC-1
 #[test]
 fn mirror_mutation_restores_on_unwind_and_a_poisoned_lock_recovers() {
-    let mirror = root().join("requirements-assurance.txt");
+    let mirror = root().join(".github/workflows/ci.yml");
     let original = fs::read(&mirror).expect("read shared mirror before unwind probe");
     let unwind = std::panic::catch_unwind(|| {
         let _shared_inputs = shared_pin_inputs();
@@ -1498,7 +1485,7 @@ fn mirror_mutation_restores_on_unwind_and_a_poisoned_lock_recovers() {
     assert_eq!(
         fs::read(&mirror).expect("read shared mirror after unwind probe"),
         original,
-        "the RAII guard did not restore requirements-assurance.txt while unwinding"
+        "the RAII guard did not restore .github/workflows/ci.yml while unwinding"
     );
 }
 
@@ -1509,8 +1496,8 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     // control. The file-scan branch did not: it was never observed to fire, so
     // it was indistinguishable from a loop over files that never match.
     let _shared_inputs = shared_pin_inputs();
-    let python = assurance_python();
-    let mirror = root().join("requirements-assurance.txt");
+    let python = script_python();
+    let mirror = root().join(".github/workflows/ci.yml");
     let mut restoration = TrackedFileRestore::new(mirror.clone());
     fs::write(
         &mirror,
@@ -1534,7 +1521,7 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     assert!(
         offenders
             .iter()
-            .any(|entry| entry.starts_with("requirements-assurance.txt:")),
+            .any(|entry| entry.starts_with(".github/workflows/ci.yml:")),
         "a mirror reference written into a scanned FILE was not detected; the \
          file-scan branch matches nothing. Detected: {offenders:?}"
     );
@@ -1543,7 +1530,7 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
     assert_eq!(
         fs::read(&mirror).expect("re-read restored shared mirror"),
         restoration.original(),
-        "the probe left requirements-assurance.txt changed"
+        "the probe left .github/workflows/ci.yml changed"
     );
 }
 

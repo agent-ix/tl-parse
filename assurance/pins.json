@@ -5,10 +5,10 @@
   "registry": "Every npm component resolves from the public npm registry (registry.npmjs.org). The internal npm.ix mirror must not appear in any requirement, pin, lockfile, or .npmrc, and is not an oracle for whether a release landed. Querying an @agent-ix package needs --@agent-ix:registry=https://registry.npmjs.org; a bare --registry does not override the scoped .npmrc entry.",
   "engineering_assurance": {
     "version": "0.3.2",
-    "requirement": "engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.3.2",
-    "cli_install": "cargo +1.98.1 install --git https://github.com/agent-ix/engineering-assurance --tag v0.3.2 --locked --bin engineering-assurance",
+    "requirement": "cargo +1.98.1 install --git https://github.com/agent-ix/engineering-assurance --tag v0.3.2 --locked --bin engineering-assurance",
     "release_form": "planned immutable git tag v0.3.2; candidate is not accepted or released",
-    "declared_in": "requirements-assurance.txt and .github/workflows/ci.yml"
+    "declared_in": ".github/workflows/ci.yml",
+    "module_install": "quoin module install github:agent-ix/engineering-assurance//engineering_assurance@v0.3.2"
   },
   "repinned_workflow_component": {
     "component": "quoin",
@@ -28,7 +28,7 @@
       "why": "Embedded in the exact native CLI. The CLI classifies its own reviewed matrix and reports human acceptance; no local version or digest rule is duplicated."
     }
   ],
-  "consumed_artifacts_note": "Historical evidence artifacts remain deleted. The current classifier consumes the matrix embedded in the native EA CLI; local artifact_digest_mismatches has no digest to re-hash and reports an empty list for that reason.",
+  "consumed_artifacts_note": "Historical evidence artifacts remain deleted. Current classification uses the matrix embedded in the exact native EA CLI. This repository consumes no separate EA Python artifact.",
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",

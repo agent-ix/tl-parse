@@ -24,7 +24,6 @@ make rustdoc        # build warning-free public docs
 make ci             # complete local iteration gate
 
 # shared assurance
-make assurance-env     # build EA v0.3.2 module environment; install native CLI separately
 make assurance-inputs  # the ONLY target that runs a producer
 make pins              # classify the toolchain through the packaged matrix
 make assurance-chain   # seal, retain, and verify through Quoin

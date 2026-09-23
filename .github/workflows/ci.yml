@@ -62,13 +62,6 @@ jobs:
           npm install --global '@agent-ix/quire-cli@0.33.0' '@agent-ix/quoin@0.24.1' '@agent-ix/ix-flow@0.2.3'
           quoin module ensure-defaults
 
-      # The shared-assurance lane is its own interpreter, built by
-      # `make assurance-env` from requirements-assurance.txt. There is no second
-      # Python lane: the three scripts that imported jsonschema were part of the
-      # local evidence machinery this migration removed.
-      - name: Build the pinned assurance environment
-        run: make assurance-env
-
       - name: Install Engineering Assurance native CLI and Quire module
         run: |
           cargo +1.98.1 install --git https://github.com/agent-ix/engineering-assurance --tag v0.3.2 --locked --bin engineering-assurance

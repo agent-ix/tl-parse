@@ -1,5 +1,0 @@
-# Exact Engineering Assurance Python distribution source pin. This is installed in an
-# isolated interpreter for local assurance scripts. The native classifier and
-# Quire module are installed separately from the same immutable tag.
-# This candidate tag is not available until EA v0.3.2 is accepted and released.
-engineering-assurance @ git+https://github.com/agent-ix/engineering-assurance@v0.3.2

@@ -42,7 +42,6 @@ FORBIDDEN_REGISTRY = "npm.ix"
 # than grepped as a blob, so that pins.json's own prose about the mirror does not
 # match itself and report a violation that is actually the rule being written down.
 MIRROR_SCAN_FILES = (
-    "requirements-assurance.txt",
     ".npmrc",
     "Cargo.toml",
     "Cargo.lock",
@@ -115,30 +114,6 @@ def classify_with_ea(observed: dict[str, str | None]) -> dict[str, Any]:
     return report
 
 
-def artifact_digest_mismatches(pins: dict[str, Any]) -> list[str]:
-    """Re-hash every artifact this repository reads out of the pinned release."""
-    if not any(artifact.get("sha256") for artifact in pins["consumed_artifacts"]):
-        return []
-
-    import hashlib
-    import engineering_assurance
-
-    package_root = Path(engineering_assurance.__file__).resolve().parent
-    mismatches: list[str] = []
-    for artifact in pins["consumed_artifacts"]:
-        expected = artifact.get("sha256")
-        if expected is None:
-            continue
-        path = package_root / artifact["path"]
-        if not path.is_file():
-            mismatches.append(f"{artifact['path']}: absent from the installed release")
-            continue
-        actual = hashlib.sha256(path.read_bytes()).hexdigest()
-        if actual != expected:
-            mismatches.append(f"{artifact['path']}: {actual}, pins record {expected}")
-    return mismatches
-
-
 def mirror_references(pins: dict[str, Any]) -> list[str]:
     """Find any place this repository would resolve a component from the mirror."""
     offenders: list[str] = []
@@ -205,7 +180,6 @@ def build_report() -> dict[str, Any]:
         "engineering-assurance": observe_engineering_assurance(),
     }
     classification = classify_with_ea(observed)
-    mismatches = artifact_digest_mismatches(pins)
     offenders = mirror_references(pins)
     upstream = upstream_pin_mismatches(pins)
     versions_ok = classification["versions_compatible"]
@@ -222,10 +196,9 @@ def build_report() -> dict[str, Any]:
         "versions_compatible": versions_ok,
         "human_acceptance_recorded": classification["human_acceptance_recorded"],
         "gate_satisfied": gate_satisfied,
-        "artifact_mismatches": mismatches,
         "mirror_references": offenders,
         "upstream_pin_mismatches": upstream,
-        "accepted": gate_satisfied and not mismatches and not offenders and not upstream,
+        "accepted": gate_satisfied and not offenders and not upstream,
         "components": classification["components"],
     }
 
@@ -246,8 +219,6 @@ def main(argv: list[str]) -> int:
         for item in report["components"]:
             observed = item["observed"] if item["observed"] is not None else "not observed"
             print(f"{item['component']}: {observed} -> {item['verdict']} ({item['reason']})")
-        for mismatch in report["artifact_mismatches"]:
-            print(f"consumed artifact digest mismatch: {mismatch}", file=sys.stderr)
         for offender in report["mirror_references"]:
             print(f"mirror registry reference: {offender}", file=sys.stderr)
         for problem in report["upstream_pin_mismatches"]:
