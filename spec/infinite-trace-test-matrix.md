@@ -1,0 +1,46 @@
+---
+id: TM-002
+title: Infinite-trace parser test matrix
+type: TestMatrix
+relationships:
+  - target: ix://agent-ix/tl-parse/MRS-001
+    type: covers
+---
+
+# Infinite-trace parser test matrix
+
+## Functional Requirement Coverage
+
+| Functional Req | Acceptance Criteria | Test Cases | Coverage Status |
+|---|---|---|---|
+| FR-015 | FR-015-AC-1 through FR-015-AC-3 | TC-058 through TC-060 | 🚧 planned |
+| FR-016 | FR-016-AC-1 through FR-016-AC-2 | TC-061, TC-062 | 🚧 planned |
+| FR-017 | FR-017-AC-1 through FR-017-AC-3 | TC-063 through TC-065 | 🚧 planned |
+| NFR-004 | NFR-004-AC-1 | TC-066 | 🚧 planned |
+
+The deliberately red `spec/stubs/v1_spec_stubs.rs` lane names these cases but
+supplies no implementation coverage. It is compiled and run explicitly with
+`rustc --test` because the normal Cargo census rejects ignored tests. TL-14
+replaces each placeholder with an executing assertion in `tests/` against the
+real public API and fuzz targets.
+
+## Test Case Summary
+
+| Test ID | Title | Type | Priority | Traces To | Status |
+|---|---|---|---|---|---|
+| TC-058 | Parse all admitted future/past forms into strict owner graph | Property | P0 | FR-015-AC-1 | 🚧 planned |
+| TC-059 | Bind ordered fairness premises to the same graph without a verdict | Property | P0 | FR-015-AC-2 | 🚧 planned |
+| TC-060 | Cross-refuse v1/v2/v3/v4 dialect, profile and clock mismatches | Integration | P0 | FR-015-AC-3 | 🚧 planned |
+| TC-061 | Preserve byte-exact interval and premise loci through nesting and UTF-8 | Property | P0 | FR-016-AC-1 | 🚧 planned |
+| TC-062 | Replay malformed inputs and map diagnostic codes without message parsing | Integration | P0 | FR-016-AC-2 | 🚧 planned |
+| TC-063 | Prove parse-format-parse fixed point and exact fairness order | Property | P0 | FR-017-AC-1 | 🚧 planned |
+| TC-064 | Digest-check malformed/locus fixtures and fail on one-axis mutation | Integration | P0 | FR-017-AC-2 | 🚧 planned |
+| TC-065 | Execute both named fuzz targets with checked seeds | Fuzz | P1 | FR-017-AC-3 | 🚧 planned |
+| TC-066 | Repeat deterministic reports and test every exact/one-over limit | Property | P0 | NFR-004-AC-1 | 🚧 planned |
+
+## Integration Test Matrix
+
+| Purpose | Target | Type | Test Cases |
+|---|---|---|---|
+| Parse against pinned owner graph and corpus | tl-syntax | service | TC-058 through TC-064 |
+| Keep v3 past regression while fuzzing v4 | cargo-fuzz | workspace | TC-065, TC-066 |

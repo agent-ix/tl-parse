@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "tl-parse.infinite-trace-corpus/v1",
+  "profile": "mltl.infinite-trace/v1",
+  "clock": "event_position",
+  "dialect": "tl-parse.clean-ascii/v4",
+  "cases": [
+    {
+      "id": "v4-valid-unbounded",
+      "path": "valid-unbounded.txt",
+      "expectedCanonical": "F[2,)p0",
+      "intervalSpans": [[1, 5]],
+      "premiseSpans": [],
+      "reason": "The future operator starts at zero; the complete unbounded interval occupies bytes 1 through 4."
+    },
+    {
+      "id": "v4-valid-fairness",
+      "path": "valid-fairness.txt",
+      "expectedCanonical": "fair {G[0,)p0; O[1,)p1}: F[0,)p2",
+      "intervalSpans": [[8, 12], [17, 21], [29, 33]],
+      "premiseSpans": [[7, 14], [16, 23]],
+      "reason": "Two premise roots occupy bytes 7..14 and 16..23; their intervals and the result interval are separate loci in one graph."
+    },
+    {
+      "id": "v4-leading-zero",
+      "path": "malformed-leading-zero.txt",
+      "expectedCode": "non_canonical_number",
+      "expectedSpan": [2, 4],
+      "reason": "The two-byte lower bound 01 is not the canonical decimal spelling of one."
+    },
+    {
+      "id": "v4-missing-upper-marker",
+      "path": "malformed-missing-upper.txt",
+      "expectedCode": "missing_token",
+      "expectedSpan": [4, 5],
+      "reason": "After the comma, a closing bracket cannot stand for the open-upper ')' marker or a numeric upper bound."
+    }
+  ]
+}
