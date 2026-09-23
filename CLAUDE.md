@@ -99,7 +99,7 @@ The constraint re-applies when this repository moves toward stable releases.
 
 Two different facts, and they no longer coincide.
 
-The crate **compiles against** `5ced12e22917c56bb2ebd161a3e519cddf7a668a`, an
+The crate **compiles against** `de37776a565d79bb4369956647026bd849908999`, an
 exact commit on the tl-syntax Stage 1 integration branch. The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
 move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and

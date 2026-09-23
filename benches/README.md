@@ -40,3 +40,9 @@ change confidence interval is entirely above 20%. A single paired run above
 that threshold requires repetition; unmatched hardware or noisy overlapping
 intervals remain inconclusive. Timing is separate from functional resource
 limit and correctness gates.
+
+The retained 2026-09-22 report measured parser commit
+`462374f6bc7419b227ed10596cf903177f5da728` against
+`976050cfb10df05ac263be581d02f2b64c6cce74`, with both builds pinned to
+tl-syntax `5ced12e22917c56bb2ebd161a3e519cddf7a668a`. A later exact
+tl-syntax repin is a separate candidate and is not covered by those timings.
