@@ -45,6 +45,24 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def hardware_model() -> dict[str, str | None]:
+    raw = optional_command("system_profiler", "SPHardwareDataType", "-json")
+    if raw is None:
+        return {"chip": None, "model": None, "memory": None, "processor_layout": None}
+    try:
+        overview = json.loads(raw)["SPHardwareDataType"][0]
+    except (ValueError, KeyError, IndexError, TypeError):
+        return {"chip": None, "model": None, "memory": None, "processor_layout": None}
+    # Keep only performance-relevant fields; hardware serials and device IDs
+    # in the unfiltered system report must not enter a retained artifact.
+    return {
+        "chip": overview.get("chip_type"),
+        "model": overview.get("machine_model"),
+        "memory": overview.get("physical_memory"),
+        "processor_layout": overview.get("number_processors"),
+    }
+
+
 def checked_inputs() -> dict[str, str]:
     expected = {}
     for line in (INPUTS / "SHA256SUMS").read_text().splitlines():
@@ -156,6 +174,7 @@ def main() -> None:
                 "cpu": optional_command("sysctl", "-n", "machdep.cpu.brand_string"),
                 "logical_cpus": optional_command("sysctl", "-n", "hw.logicalcpu"),
                 "memory_bytes": optional_command("sysctl", "-n", "hw.memsize"),
+                "hardware_model": hardware_model(),
                 "rustc": command("rustc", "-Vv"),
                 "cargo": command("cargo", "-V"),
             },
