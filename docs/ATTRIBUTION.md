@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`9de638dc4d14d0ae62a6825473a3a9bb6a9e57ac`, an exact reviewed commit.
+`fca935e00f66f7c5a35ad4e2fde53674786a41ac`, an exact reviewed commit.
 It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -44,7 +44,8 @@ does not move.
 The prior pin advance from `8bcbce98` to `fed48a2f` added V4 fuzz evidence.
 The advance to `6d182fa9` made tl-syntax MIT-only. The `9a4316e`
 advance fixes alloc-only test compilation and adds V8 coverage tests. The
-current `9de638d` advance adds an alloc-lane wrong-profile test only. These
+`9de638d` advance adds an alloc-lane wrong-profile test only. The current
+`fca935e` advance refreshes bounded V4 fuzz evidence only. These
 advances do not change the parser-consumed production API or historical
 authorship basis.
 
