@@ -861,7 +861,7 @@ fn both_fuzz_campaign_results_are_retained_byte_identically_and_drive_attestatio
 /// anything. Every such invocation is logged and the log must be empty.
 ///
 /// `--version` is matched anywhere in the argv, not just in `$1`, because the
-/// MSRV attestation observes `rustup run 1.75.0 cargo --version`: its declared
+/// MSRV attestation observes `rustup run 1.98.1 cargo --version`: its declared
 /// command runs cargo through the pinned toolchain, so the version sealed into
 /// the attestation has to come from that toolchain rather than from ambient
 /// cargo. That is still a version observation. Anything without a version flag

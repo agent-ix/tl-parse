@@ -15,7 +15,7 @@ type: SuiteRegistry
 | SUITE-003 | Requirement coverage | `quire coverage --scope . --strict` | Quire 0.31.0 | Analysis |
 | SUITE-004 | Rustdoc warnings | `RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features` | rustdoc | Analysis |
 | SUITE-005 | Corpus integrity | `make check-corpus` | sha256sum | Static |
-| SUITE-006 | Minimum supported Rust boundary | `rustup run 1.75.0 cargo check --locked --all-targets --all-features` | Rust 1.75.0 | Analysis |
+| SUITE-006 | Minimum supported Rust boundary | `rustup run 1.98.1 cargo check --locked --all-targets --all-features` | Rust 1.98.1 | Analysis |
 | SUITE-007 | Shared assurance intake | `make assurance` | quire-cli 0.31.0, Quoin 0.23.1, engineering-assurance 0.2.0 | Integration |
 | SUITE-008 | Hosted candidate confirmation | Manual `workflow_dispatch` once for a finalized PR revision | GitHub Actions | Integration |
 | SUITE-009 | Parser conformance and round-trip | `make conformance roundtrip` | tl-parse corpus runner and round-trip sweep | Integration |

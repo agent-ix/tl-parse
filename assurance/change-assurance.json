@@ -212,7 +212,7 @@
           "obligation_ids": ["FR-006-AC-2"],
           "evidence_kind": "Static",
           "command": {
-            "argv": ["rustup", "run", "1.75.0", "cargo", "check", "--locked", "--all-targets", "--all-features", "--message-format=json"],
+            "argv": ["rustup", "run", "1.98.1", "cargo", "check", "--locked", "--all-targets", "--all-features", "--message-format=json"],
             "working_directory": "."
           },
           "tool_identity": "cargo",

@@ -279,7 +279,7 @@ class Chain:
             # that toolchain's. Observing ambient `cargo --version` named a
             # version that did not produce the bytes being attested.
             "cargo": lambda: semantic_version(
-                tool_version(["rustup", "run", "1.75.0", "cargo", "--version"])
+                tool_version(["rustup", "run", "1.98.1", "cargo", "--version"])
             ),
             "quire": lambda: semantic_version(
                 (self.environment.get("quire") or "").split(" ")[0] or None

@@ -102,7 +102,7 @@ help:
 	@echo "  make audit-unsafe     - Enforce // SAFETY: comments on unsafe blocks"
 	@echo "  make test-execution-control-guard - Self-test the Make execution-control guard"
 	@echo "  make spec             - Validate specification and coverage with Quire"
-	@echo "  make msrv             - Check all targets and features with Rust 1.75"
+	@echo "  make msrv             - Check all targets and features with Rust 1.98.1"
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make build            - Release build"
 	@echo "  make clean            - cargo clean and drop the assurance environment"
@@ -210,7 +210,7 @@ spec:
 
 .PHONY: msrv
 msrv:
-	rustup run 1.75.0 $(CARGO) check --locked --all-targets --all-features
+	rustup run 1.98.1 $(CARGO) check --locked --all-targets --all-features
 
 .PHONY: rustdoc
 rustdoc:
@@ -242,7 +242,7 @@ assurance-inputs: assurance-env fuzz-smoke
 	$(CARGO) run --quiet --release --example roundtrip_sweep > $(ROUNDTRIP_RESULT)
 	$(PYTHON) scripts/rust_test_census.py --json > $(CENSUS_RESULT)
 	$(QUIRE) coverage --scope . --json > $(QUIRE_EXPORT)
-	rustup run 1.75.0 $(CARGO) check --locked --all-targets --all-features \
+	rustup run 1.98.1 $(CARGO) check --locked --all-targets --all-features \
 		--message-format=json > $(MSRV_RESULT)
 
 .PHONY: pins
