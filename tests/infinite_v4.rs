@@ -619,6 +619,56 @@ fn unrepresentable_shared_graph_refuses_before_emitting_text() {
     );
 }
 
+// The owner permits graphs deeper than canonical text's 256-node rendering
+// boundary. Formatting must refuse that valid graph without emitting a prefix.
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn formatter_refuses_an_owner_graph_beyond_its_text_depth() {
+    let mut nodes = vec![InfiniteNode::new(InfiniteNodeKind::Proposition {
+        proposition: PropositionId(0),
+    })];
+    for index in 0..256 {
+        nodes.push(InfiniteNode::new(InfiniteNodeKind::Not {
+            operand: NodeId(index),
+        }));
+    }
+    let document =
+        InfiniteFormulaDocument::new(PROFILE, InfiniteClock::EventPosition, NodeId(256), nodes)
+            .expect("257-deep graph is within owner limits");
+
+    let report = format_clean_ascii_v4(&document, None, FormatLimits::default());
+    assert!(report.text.is_none());
+    assert_eq!(report.error.unwrap().code, FormatErrorCode::InvalidGraph);
+}
+
+// The owner can carry a disconnected node, while canonical text must account
+// for the exact node sequence before it claims to represent the graph.
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn formatter_refuses_a_disconnected_owner_node() {
+    let document = InfiniteFormulaDocument::new(
+        PROFILE,
+        InfiniteClock::EventPosition,
+        NodeId(0),
+        vec![
+            InfiniteNode::new(InfiniteNodeKind::Proposition {
+                proposition: PropositionId(0),
+            }),
+            InfiniteNode::new(InfiniteNodeKind::Proposition {
+                proposition: PropositionId(1),
+            }),
+        ],
+    )
+    .expect("disconnected owner node is a valid graph");
+
+    let report = format_clean_ascii_v4(&document, None, FormatLimits::default());
+    assert!(report.text.is_none());
+    assert_eq!(
+        report.error.unwrap().code,
+        FormatErrorCode::UnrepresentableGraph
+    );
+}
+
 // Trace: TC-061, FR-016-AC-1, TC-062, FR-016-AC-2
 #[test]
 fn malformed_loci_use_utf8_byte_offsets_and_stable_codes() {
