@@ -63,8 +63,9 @@ fn v4_report_strict_reader_rejects_identity_and_locus_mutations() {
     .is_err());
 }
 
-// Trace: TC-062, FR-016-AC-2. Each counter and limit is checked independently;
-// one bad counter cannot hide behind another valid field in the report wire.
+// Each counter and limit is checked independently; one bad counter cannot hide
+// behind another valid field in the report wire.
+// Trace: TC-062, FR-016-AC-2
 #[test]
 fn v4_report_counter_limits_accept_exact_boundaries_and_refuse_one_over() {
     let refused = parse("!");
@@ -268,8 +269,9 @@ fn interval_and_premise_spans_are_bytes_and_text_reaches_fixed_point() {
     assert_eq!(again.text.as_deref(), Some(text.as_str()));
 }
 
-// Trace: TC-063; FR-017-AC-1. W/M lowering shares an operand in the owner
-// graph, so formatting the lowered primitives separately changes its identity.
+// W/M lowering shares an operand in the owner graph, so formatting the lowered
+// primitives separately changes its identity.
+// Trace: TC-063, FR-017-AC-1
 #[test]
 fn derived_future_text_round_trips_the_exact_lowered_graph() {
     for source in [" p0 W[0,) p1 ", "p0 M[1,3] p1"] {
@@ -297,8 +299,9 @@ fn derived_future_text_round_trips_the_exact_lowered_graph() {
     }
 }
 
-// Trace: TC-063; FR-017-AC-1. Loci are retained for diagnostics but have no
-// effect on the semantic graph identity used by fairness and round trips.
+// Loci are retained for diagnostics but have no effect on the semantic graph
+// identity used by fairness and round trips.
+// Trace: TC-063, FR-017-AC-1
 #[test]
 fn source_spacing_does_not_change_v4_graph_identity() {
     let compact = parse("p0 U[1,) p1");
@@ -312,8 +315,9 @@ fn source_spacing_does_not_change_v4_graph_identity() {
     );
 }
 
-// Trace: TC-063; FR-017-AC-1. The text dialect has no general DAG reference
-// syntax; a valid shared graph must receive a typed formatting refusal.
+// The text dialect has no general DAG reference syntax; a valid shared graph
+// must receive a typed formatting refusal.
+// Trace: TC-063, FR-017-AC-1
 #[test]
 fn unrepresentable_shared_graph_refuses_before_emitting_text() {
     let graph = InfiniteFormulaDocument::new(
