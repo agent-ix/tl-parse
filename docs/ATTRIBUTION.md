@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`d52d89549b0a6c0c429261bab912cd5396c4a19e`, a commit that was reachable from
+`4a5614193d21e5ae99950ae683b04ba0ec931358`, a commit that was reachable from
 the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -35,11 +35,41 @@ is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
+`4a561419` is the squash merge of tl-syntax#88 and is the commit tagged
+`v0.3.0`, the tl-syntax 0.3.0 release. `Cargo.toml` pins it by exact revision
+with the version requirement `=0.3.0`.
+
+## Source-inspected 0.3.0 release compiled-pin delta
+
+The immediately preceding compiled pin was
+`d52d89549b0a6c0c429261bab912cd5396c4a19e`. Source inspection of the exact
+range
+`d52d89549b0a6c0c429261bab912cd5396c4a19e..4a5614193d21e5ae99950ae683b04ba0ec931358`
+found no change under `src/`: the public API tl-parse compiles against is
+unchanged. The package metadata moves `version` from `0.1.0` to `0.3.0` and
+`rust-version` from `1.75` to `1.98.1`, which is why this crate's MSRV moves to
+1.98.1 in the same release. The only corpus change is a correction of stale
+vendoring language in `corpus/past-history/README.md`, which changes that
+file's recorded digest in `corpus/past-history/manifest.json` and
+`SHA256SUMS`; `cases.json` and `schema.json` are byte-identical across the
+range. The remainder of the range is tl-syntax's own tooling and records: its
+MSRV and toolchain pin, the engineering-assurance v0.2.1 / ix-flow 0.2.3
+repin, a cross-document spec-id uniqueness check, a test-matrix column rename,
+review renumbering, the PLAN-007 source-qualification-readiness specification
+(prose and plan records only), and the 0.3.0 CHANGELOG.
+
+tl-parse consumes nothing new from this range. It reads the corrected
+past-history manifest through `tl_syntax::CORPUS_DIR` exactly as before, and
+the manifest digest it asserts moves with the README correction. It introduces
+no new dependency on any other file this range touches.
+
+Both licence files are byte-identical across `d52d8954` and `4a561419`.
+
+## Earlier source-inspected CORPUS_DIR compiled-pin delta
+
 `d52d8954` is the squash merge of tl-syntax#82 and exports `tl_syntax::CORPUS_DIR`
 so dependents can read the shared `corpus/` tree through the compiled
 dependency instead of vendoring a copy of it.
-
-## Source-inspected CORPUS_DIR compiled-pin delta
 
 The immediately preceding compiled pin was
 `842d82553f045eb69a7f38745756d968254fc25e`. Source inspection of the exact

@@ -9,7 +9,7 @@ use tl_parse::{
 use tl_syntax::{FormulaDocument, SemanticProfile};
 
 const DIRECTORY: &str = "past-history";
-const MANIFEST_SHA256: &str = "59b86e7c888bf850cdd4e49cf86b01ffb64a99887d7fd051dca6a7d9f0a56393";
+const MANIFEST_SHA256: &str = "0bb497481a08d82ae74db794657eb6e7c57e6d1e5b5a8471b3559f82f405afd1";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
