@@ -1537,6 +1537,7 @@ fn the_mirror_scan_refuses_a_registry_reference_in_a_real_file() {
 // Trace: TC-032, NFR-003-AC-5
 #[test]
 fn hosted_ix_flow_identity_and_manual_trigger_are_exact() {
+    let _shared_inputs = shared_pin_inputs();
     let workflow = fs::read_to_string(root().join(".github/workflows/ci.yml"))
         .expect("read hosted CI workflow");
     let errors = hosted_workflow_control_errors(&workflow);
