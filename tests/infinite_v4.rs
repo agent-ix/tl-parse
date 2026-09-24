@@ -215,6 +215,26 @@ fn v4_fairness_report_rejects_unbound_roots_and_missing_loci() {
     assert_eq!(formatted.error.unwrap().code, FormatErrorCode::InvalidGraph);
 }
 
+// The fairness object itself is valid and bound to the exact owner graph, but
+// the report's one source locus cannot describe zero premise roots.
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_strict_reader_rejects_premise_locus_without_a_fairness_root() {
+    let mut report = parse("fair {F[0,)p0}: p1");
+    let document = report.document.as_ref().expect("valid graph");
+    report.fairness = Some(
+        FairnessPremisesDocument::new(
+            document,
+            document.content_identity().unwrap(),
+            InfiniteClock::EventPosition,
+            vec![],
+        )
+        .expect("valid empty fairness on the same graph"),
+    );
+    assert_eq!(report.premise_spans.len(), 1);
+    assert!(strict_read(&report).is_err());
+}
+
 // Trace: TC-062, FR-016-AC-2
 #[test]
 fn v4_disposition_distinguishes_invalid_identity_from_truncated_resources() {
@@ -630,6 +650,30 @@ fn formatter_refuses_fairness_from_a_different_owner_graph() {
     );
     assert!(report.text.is_none());
     assert_eq!(report.error.unwrap().code, FormatErrorCode::InvalidGraph);
+}
+
+// A fairness root can be a valid node of the exact graph and still be an
+// invalid source-order claim. Reusing the claim as a premise would require
+// printing the same owner node twice, which clean-ascii/v4 cannot express.
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn formatter_refuses_fairness_that_reuses_the_claim_node() {
+    let report = parse("p0");
+    let document = report.document.as_ref().expect("valid graph");
+    let fairness = FairnessPremisesDocument::new(
+        document,
+        document.content_identity().unwrap(),
+        InfiniteClock::EventPosition,
+        vec![document.root()],
+    )
+    .expect("fairness binds to a real node of this graph");
+
+    let formatted = format_clean_ascii_v4(document, Some(&fairness), FormatLimits::default());
+    assert!(formatted.text.is_none());
+    assert_eq!(
+        formatted.error.expect("typed refusal").code,
+        FormatErrorCode::UnrepresentableGraph
+    );
 }
 
 // Trace: TC-063, FR-017-AC-1
