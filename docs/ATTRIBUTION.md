@@ -27,7 +27,7 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`87a5024c81caceb131806004e73234143c2ce257`, an exact reviewed commit.
+`6e2fc17fcfba60c33ab264772bb25550a9c81853`, an exact reviewed commit.
 It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
@@ -47,9 +47,10 @@ advance fixes alloc-only test compilation and adds V8 coverage tests. The
 `b923fd4` revision stages the 0.4.0 package version and release gate. The
 `66d012c` revision refreshes the syntax V4 fuzz lock and bounded receipt only. The
 `43dcd36` revision corrects syntax assurance source census only. The
-`08c23fa` revision updates syntax EA v0.4.1 tooling pins only. These
-advances do not change the parser-consumed production API or historical
-authorship basis.
+`08c23fa` revision updates syntax EA v0.4.1 tooling pins only. The
+`87a5024..6e2fc17` advance changes only `tests/shared_assurance.rs`, adding
+`MP-003` to the counted source census. These advances do not change the
+parser-consumed production API or historical authorship basis.
 
 ## Source-inspected 0.3.0 release compiled-pin delta
 
