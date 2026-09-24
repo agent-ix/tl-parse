@@ -332,12 +332,9 @@ impl Lexer<'_> {
             self.push_token(kind, start);
             return;
         }
-        if let Some(digits) = lexeme.strip_prefix('p') {
-            if !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit()) {
-                self.finish_numeric_token(start, digits, true);
-                return;
-            }
-        }
+        // Every all-digit `p` atom is consumed by scan_token's numeric fast
+        // path. Reaching identifier scanning means a tail made the entire
+        // lexeme malformed; accepting a second numeric path here is redundant.
         let found = Token {
             kind: TokenKind::Invalid,
             start,
