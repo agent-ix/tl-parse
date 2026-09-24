@@ -1,5 +1,7 @@
-use tl_parse::{format_document, parse, FormatErrorCode, FormatLimits, ParseLimits};
-use tl_syntax::{FormulaDocument, Node, NodeId, NodeKind, SemanticProfile};
+use tl_parse::{
+    format_document, format_formula, parse, FormatErrorCode, FormatLimits, ParseLimits,
+};
+use tl_syntax::{Formula, FormulaDocument, Interval, Node, NodeId, NodeKind, SemanticProfile};
 
 fn parse_closed(source: &str) -> FormulaDocument {
     let report = parse(
@@ -148,6 +150,25 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
         assert_eq!(error.code.as_str(), error.code.to_string());
         assert!(error.to_string().contains(&expected.to_string()));
     }
+}
+
+// A validated borrowed graph can carry the infinite profile and a past node,
+// but the bounded formatter has no canonical spelling for that combination.
+// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+#[test]
+fn bounded_formatter_refuses_an_infinite_profile_past_node_without_partial_text() {
+    let nodes = [
+        Node::new(NodeKind::True),
+        Node::new(NodeKind::Once {
+            interval: Interval::new(0, 1).unwrap(),
+            operand: NodeId(0),
+        }),
+    ];
+    let formula = Formula::new(SemanticProfile::InfiniteTraceV1, NodeId(1), &nodes).unwrap();
+    let report = format_formula(formula, FormatLimits::default());
+    assert_eq!(report.error.unwrap().code, FormatErrorCode::InvalidGraph);
+    assert!(report.text.is_none());
+    assert_eq!(report.stats.output_bytes, 0);
 }
 
 // Trace: TC-017, FR-004-AC-3, NFR-001-AC-2

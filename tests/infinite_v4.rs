@@ -803,6 +803,22 @@ fn compact_previous_future_is_specific_to_the_v4_lexical_policy() {
         .any(|diagnostic| diagnostic.code == DiagnosticCode::UnknownIdentifier));
 }
 
+// An underscore after Y keeps the whole spelling one unknown identifier in
+// both past and infinite dialects; it is not a previous operator plus an atom.
+// Trace: TC-058, FR-015-AC-1
+#[test]
+fn underscore_after_previous_is_one_unknown_identifier() {
+    let v3 = tl_parse::parse_clean_ascii_v3("Y_", ParseLimits::default());
+    let v4 = parse("Y_");
+    for report in [v3.diagnostics.as_slice(), v4.diagnostics.as_slice()] {
+        assert_eq!(report.len(), 1);
+        assert_eq!(report[0].code, DiagnosticCode::UnknownIdentifier);
+        assert_eq!((report[0].span.start(), report[0].span.end()), (0, 2));
+    }
+    assert!(v3.document.is_none());
+    assert!(v4.document.is_none());
+}
+
 // Trace: TC-061, FR-016-AC-1
 #[test]
 fn v4_interval_refusals_cover_missing_and_inverted_bounds() {
