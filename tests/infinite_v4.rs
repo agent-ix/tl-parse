@@ -542,6 +542,82 @@ fn derived_temporal_near_matches_do_not_emit_a_false_canonical_text() {
     }
 }
 
+// W and M abbreviations require the two Boolean children and their parent to
+// be adjacent in the owner's postorder. A valid graph with an inserted node
+// at either boundary cannot be rendered as the same graph by the text dialect.
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn nonadjacent_derived_temporal_nodes_refuse_canonical_text() {
+    let interval = TemporalInterval::Unbounded(UnboundedInterval::new(0));
+    for (weak, gap_after_first) in [(true, true), (false, true), (true, false), (false, false)] {
+        let first = if weak {
+            InfiniteNodeKind::Until {
+                interval,
+                left: NodeId(0),
+                right: NodeId(1),
+            }
+        } else {
+            InfiniteNodeKind::Release {
+                interval,
+                left: NodeId(0),
+                right: NodeId(1),
+            }
+        };
+        let second = if weak {
+            InfiniteNodeKind::Globally {
+                interval,
+                operand: NodeId(0),
+            }
+        } else {
+            InfiniteNodeKind::Future {
+                interval,
+                operand: NodeId(0),
+            }
+        };
+        let filler = InfiniteNode::new(InfiniteNodeKind::Not { operand: NodeId(1) });
+        let (second_id, remaining) = if gap_after_first {
+            (NodeId(4), vec![filler, InfiniteNode::new(second)])
+        } else {
+            (NodeId(3), vec![InfiniteNode::new(second), filler])
+        };
+        let root = if weak {
+            InfiniteNodeKind::Or {
+                left: NodeId(2),
+                right: second_id,
+            }
+        } else {
+            InfiniteNodeKind::And {
+                left: NodeId(2),
+                right: second_id,
+            }
+        };
+        let mut nodes = vec![
+            InfiniteNode::new(InfiniteNodeKind::Proposition {
+                proposition: PropositionId(0),
+            }),
+            InfiniteNode::new(InfiniteNodeKind::Proposition {
+                proposition: PropositionId(1),
+            }),
+            InfiniteNode::new(first),
+        ];
+        nodes.extend(remaining);
+        nodes.push(InfiniteNode::new(root));
+        let document =
+            InfiniteFormulaDocument::new(PROFILE, InfiniteClock::EventPosition, NodeId(5), nodes)
+                .expect("nonadjacent owner topology is valid");
+        let report = format_clean_ascii_v4(&document, None, FormatLimits::default());
+        assert!(
+            report.text.is_none(),
+            "weak={weak}, gap_after_first={gap_after_first}"
+        );
+        assert_eq!(
+            report.error.expect("typed refusal").code,
+            FormatErrorCode::UnrepresentableGraph,
+            "weak={weak}, gap_after_first={gap_after_first}"
+        );
+    }
+}
+
 // Trace: TC-063, FR-017-AC-1
 #[test]
 fn formatter_refuses_fairness_from_a_different_owner_graph() {

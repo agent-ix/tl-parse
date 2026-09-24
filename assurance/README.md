@@ -5,7 +5,7 @@ manifest, no verdict, and no store.
 
 | File | What it is |
 |---|---|
-| `pins.json` | The Engineering Assurance release this repository adopts, and the digests of the artifacts it reads from that release. Component versions are deliberately not restated: the matrix embedded in the exact native EA CLI is their authority. The v0.4.1 candidate remains withheld until the matrix records attributed human acceptance. |
+| `pins.json` | The Engineering Assurance release this repository adopts, and the digests of the artifacts it reads from that release. Component versions are deliberately not restated: the matrix embedded in the exact native EA CLI is their authority. The accepted v0.4.1 tag records Peter Krenesky's attributed human acceptance on 2026-09-23. |
 | `change-assurance.json` | The author's statement about the change under issue #13, in the shape Quoin's FR-063 record requires. |
 
 ## How the pieces relate

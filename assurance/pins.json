@@ -1,12 +1,12 @@
 {
   "schema_version": "tl-parse.assurance-pins/v1",
-  "purpose": "Candidate Engineering Assurance v0.4.1 adoption and the artifacts this repository consumes. Component versions are owned by its embedded matrix, not repeated here. The candidate remains withheld until the matrix has human acceptance and v0.4.1 is tagged.",
+  "purpose": "Engineering Assurance v0.4.1 adoption and the artifacts this repository consumes. Component versions are owned by its embedded matrix, not repeated here. The tagged release carries Peter Krenesky's named matrix acceptance of 2026-09-23.",
   "matrix_authority": "engineering-assurance compatibility native CLI at the exact v0.4.1 tag; scripts/check_shared_pins.py observes local tools and sends a versioned request. The CLI owns classification and the human-acceptance gate.",
   "registry": "Every npm component resolves from the public npm registry (registry.npmjs.org). The internal npm.ix mirror must not appear in any requirement, pin, lockfile, or .npmrc, and is not an oracle for whether a release landed. Querying an @agent-ix package needs --@agent-ix:registry=https://registry.npmjs.org; a bare --registry does not override the scoped .npmrc entry.",
   "engineering_assurance": {
     "version": "0.4.1",
     "requirement": "cargo +1.98.1 install --git https://github.com/agent-ix/engineering-assurance --tag v0.4.1 --locked --bin engineering-assurance",
-    "release_form": "planned immutable git tag v0.4.1; candidate is not accepted or released",
+    "release_form": "immutable git tag v0.4.1 at 2fd04e6bf47727cb91b7d39daaedfd1a1051d238; matrix accepted by Peter Krenesky on 2026-09-23",
     "declared_in": ".github/workflows/ci.yml",
     "module_install": "quoin module install github:agent-ix/engineering-assurance//engineering_assurance@v0.4.1"
   },
@@ -32,7 +32,7 @@
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",
-    "compiled_revision": "08c23fa319a0ed2cf4535367b3670aa1f2033acd",
+    "compiled_revision": "87a5024c81caceb131806004e73234143c2ce257",
     "superseded_compiled_revisions": [
       "43dcd3646d14922e20dee1be17b258be00ebf027",
       "66d012cb37508d9ed9e8a91b5b92ef440cbe81a7",
@@ -51,7 +51,8 @@
       "8dc18eec5af227f484170362c9e8894b8531a27d",
       "e70f2379a752117c79603bc399a86c26feed7716",
       "842d82553f045eb69a7f38745756d968254fc25e",
-      "d52d89549b0a6c0c429261bab912cd5396c4a19e"
+      "d52d89549b0a6c0c429261bab912cd5396c4a19e",
+      "08c23fa319a0ed2cf4535367b3670aa1f2033acd"
     ],
     "why": "The compiled pin is the Stage 1 0.4.0 syntax candidate at an exact Git revision. Cargo.toml, Cargo.lock, fuzz/Cargo.lock, src/lib.rs, and this record use the same revision and =0.4.0 version requirement. The parser consumes the syntax graph, contextual contracts, and shared corpus; the historical clean-room authorship basis remains 740182f1 and is documented separately in docs/ATTRIBUTION.md."
   },
@@ -60,13 +61,13 @@
     "Historical: the human acceptance itself was never in doubt: Peter Krenesky accepted the FR-012 matrix on 2026-09-01, attributed on engineering-assurance main as ae50e13, and the pinned release now carries it (see above)."
   ],
   "current_migration": {
-    "state": "prepared_not_accepted",
+    "state": "accepted_tagged",
     "toolchain": {
       "quire-cli": "0.33.0",
       "quoin": "0.24.1",
       "ix-flow": "0.2.3",
       "engineering-assurance": "0.4.1"
     },
-    "note": "Exact candidate pins for release prep. EA compatibility withholds until the named matrix acceptance is recorded and the immutable v0.4.1 tag exists. Historical migration records elsewhere in this file describe earlier releases."
+    "note": "Exact pins for the accepted EA v0.4.1 release. The tagged matrix records Peter Krenesky's acceptance on 2026-09-23; the native compatibility CLI still classifies the observed installed toolchain. Historical migration records elsewhere in this file describe earlier releases."
   }
 }

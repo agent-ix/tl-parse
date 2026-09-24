@@ -56,7 +56,7 @@ jobs:
         with:
           node-version: '22'
 
-      # Candidate v0.4.1 matrix pins; human acceptance and tag are release gates.
+      # Accepted v0.4.1 matrix pins at the immutable release tag.
       - name: Install specification tools and modules
         run: |
           npm install --global '@agent-ix/quire-cli@0.33.0' '@agent-ix/quoin@0.24.1' '@agent-ix/ix-flow@0.2.3'
