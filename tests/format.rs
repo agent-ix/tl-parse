@@ -150,6 +150,40 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     }
 }
 
+// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+#[test]
+fn grouped_expression_refuses_every_truncated_output_budget() {
+    let document = parse_closed("p0&(p1|p2)");
+    let expected = "p0&(p1|p2)";
+    for maximum in 0..expected.len() {
+        let report = format_document(
+            &document,
+            FormatLimits {
+                max_output_bytes: maximum,
+                ..FormatLimits::default()
+            },
+        );
+        assert_eq!(
+            report.error.unwrap().code,
+            FormatErrorCode::OutputLimit,
+            "{maximum}"
+        );
+        assert!(report.text.is_none(), "{maximum}");
+    }
+    assert_eq!(
+        format_document(
+            &document,
+            FormatLimits {
+                max_output_bytes: expected.len(),
+                ..FormatLimits::default()
+            },
+        )
+        .text
+        .as_deref(),
+        Some(expected)
+    );
+}
+
 // Trace: TC-017, TC-046, FR-004-AC-3, FR-009-AC-4, NFR-001-AC-2
 #[test]
 fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() {

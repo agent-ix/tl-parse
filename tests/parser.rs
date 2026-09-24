@@ -118,7 +118,7 @@ fn long_unknown_identifier_keeps_full_span_with_bounded_diagnostic_preview() {
 // Trace: TC-003, FR-001-AC-2
 #[test]
 fn keyword_and_number_boundaries_do_not_split_unknown_tokens() {
-    for source in ["truex", "false_value", "p", "123"] {
+    for source in ["truex", "false_value", "p", "p12x", "p_0", "123"] {
         let report = parse_closed(source);
         assert!(report.document.is_none(), "{source}");
         assert!(
@@ -129,6 +129,18 @@ fn keyword_and_number_boundaries_do_not_split_unknown_tokens() {
             "{source}: {:?}",
             report.diagnostics
         );
+        if source.starts_with('p') {
+            let diagnostic = &report.diagnostics[0];
+            assert_eq!(
+                diagnostic.code,
+                DiagnosticCode::UnknownIdentifier,
+                "{source}"
+            );
+            assert_eq!(
+                (diagnostic.span.start(), diagnostic.span.end()),
+                (0, u32::try_from(source.len()).unwrap())
+            );
+        }
     }
 }
 

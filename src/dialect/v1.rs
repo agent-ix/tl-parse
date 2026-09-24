@@ -27,7 +27,9 @@ pub(crate) const fn unsupported_operator_profile(_lexeme: &str) -> Option<&'stat
 }
 
 pub(crate) const fn atom_keyword_boundary(next: u8, followed_by_bracket: bool) -> bool {
-    matches!(next, b'U' | b'R') && followed_by_bracket
+    // Keep recognized binary spellings separate even when this dialect will
+    // reject them, so a compact `p0S[0,1]p1` points at `S`, not at `p0S`.
+    matches!(next, b'U' | b'R' | b'W' | b'M' | b'S' | b'T') && followed_by_bracket
 }
 
 pub(crate) const fn binary_binding_power(token: TokenKind) -> Option<(u8, u8)> {

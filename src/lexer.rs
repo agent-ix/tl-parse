@@ -253,8 +253,15 @@ impl Lexer<'_> {
             {
                 self.offset += 1;
             }
-            let digits = &self.source[digit_start..self.offset];
-            self.finish_numeric_token(start, digits, true);
+            if self.atom_keyword_boundary(self.offset) {
+                let digits = &self.source[digit_start..self.offset];
+                self.finish_numeric_token(start, digits, true);
+            } else {
+                // An identifier tail belongs to the same malformed token.
+                // The dialect boundary still permits compact binary forms
+                // such as `p0U[1,2]p1`.
+                self.scan_identifier(start);
+            }
             return;
         }
         for (keyword, kind) in [("false", TokenKind::False), ("true", TokenKind::True)] {
