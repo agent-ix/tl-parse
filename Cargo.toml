@@ -1,11 +1,11 @@
 [package]
 name = "tl-parse"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.98.1"
 description = "Parsing, formatting, and diagnostics for Mission-time Linear Temporal Logic."
 authors = ["Peter Krenesky <kreneskyp@gmail.com>"]
-license = "MIT OR Apache-2.0"
+license = "MIT"
 publish = false
 repository = "https://github.com/agent-ix/tl-parse"
 
@@ -20,13 +20,18 @@ path = "src/lib.rs"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
-tl-syntax = { version = "=0.3.0", git = "https://github.com/agent-ix/tl-syntax.git", rev = "4a5614193d21e5ae99950ae683b04ba0ec931358", features = ["serde"] }
+tl-syntax = { version = "=0.4.0", git = "https://github.com/agent-ix/tl-syntax.git", rev = "6e2fc17fcfba60c33ab264772bb25550a9c81853", features = ["serde"] }
 
 [dev-dependencies]
 command-group = "=5.0.1"
+criterion = { version = "=0.5.1", default-features = false }
 proptest = "=1.5.0"
 serde_yaml_ng = "0.10"
 tempfile = "=3.10.1"
+
+[[bench]]
+name = "parser_roundtrip"
+harness = false
 
 [profile.release]
 lto = "thin"

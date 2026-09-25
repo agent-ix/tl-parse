@@ -1,5 +1,7 @@
-use tl_parse::{format_document, parse, FormatErrorCode, FormatLimits, ParseLimits};
-use tl_syntax::{FormulaDocument, Node, NodeId, NodeKind, SemanticProfile};
+use tl_parse::{
+    format_document, format_formula, parse, FormatErrorCode, FormatLimits, ParseLimits,
+};
+use tl_syntax::{Formula, FormulaDocument, Interval, Node, NodeId, NodeKind, SemanticProfile};
 
 fn parse_closed(source: &str) -> FormulaDocument {
     let report = parse(
@@ -150,6 +152,59 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     }
 }
 
+// A validated borrowed graph can carry the infinite profile and a past node,
+// but the bounded formatter has no canonical spelling for that combination.
+// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+#[test]
+fn bounded_formatter_refuses_an_infinite_profile_past_node_without_partial_text() {
+    let nodes = [
+        Node::new(NodeKind::True),
+        Node::new(NodeKind::Once {
+            interval: Interval::new(0, 1).unwrap(),
+            operand: NodeId(0),
+        }),
+    ];
+    let formula = Formula::new(SemanticProfile::InfiniteTraceV1, NodeId(1), &nodes).unwrap();
+    let report = format_formula(formula, FormatLimits::default());
+    assert_eq!(report.error.unwrap().code, FormatErrorCode::InvalidGraph);
+    assert!(report.text.is_none());
+    assert_eq!(report.stats.output_bytes, 0);
+}
+
+// Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
+#[test]
+fn grouped_expression_refuses_every_truncated_output_budget() {
+    let document = parse_closed("p0&(p1|p2)");
+    let expected = "p0&(p1|p2)";
+    for maximum in 0..expected.len() {
+        let report = format_document(
+            &document,
+            FormatLimits {
+                max_output_bytes: maximum,
+                ..FormatLimits::default()
+            },
+        );
+        assert_eq!(
+            report.error.unwrap().code,
+            FormatErrorCode::OutputLimit,
+            "{maximum}"
+        );
+        assert!(report.text.is_none(), "{maximum}");
+    }
+    assert_eq!(
+        format_document(
+            &document,
+            FormatLimits {
+                max_output_bytes: expected.len(),
+                ..FormatLimits::default()
+            },
+        )
+        .text
+        .as_deref(),
+        Some(expected)
+    );
+}
+
 // Trace: TC-017, TC-046, FR-004-AC-3, FR-009-AC-4, NFR-001-AC-2
 #[test]
 fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() {
@@ -184,6 +239,7 @@ fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() 
 fn format_error_display_matches_every_wire_spelling() {
     for code in [
         FormatErrorCode::InvalidGraph,
+        FormatErrorCode::UnrepresentableGraph,
         FormatErrorCode::OutputLimit,
         FormatErrorCode::WorkLimit,
     ] {

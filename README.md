@@ -10,15 +10,15 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`4a5614193d21e5ae99950ae683b04ba0ec931358`, an exact commit reachable from the
-reviewed `main` history when admitted, not a moving branch head. That revision
+`6e2fc17fcfba60c33ab264772bb25550a9c81853`, an exact reviewed commit, not a
+moving branch head. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
 a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
 `Cargo.lock` is what enforces the compiled one. The dependency still resolves by
 exact git revision because
-`tl-syntax` has no registry release, and source release remains blocked while
-that is true.
+`tl-syntax` has no registry release. Git source releases use exact revisions;
+registry publication remains disabled.
 
 The additive `parse_clean_ascii_v2` API accepts bounded derived future
 operators `W` and `M`. The additive `parse_clean_ascii_v3` and
@@ -28,9 +28,17 @@ origin-complete past profile with `O`, `H`, strong `Y`, `S`, and `T`. See
 [`docs/DIALECT-003-clean-ascii-v3.md`](docs/DIALECT-003-clean-ascii-v3.md) for
 their closed grammars and wire identities. The v1 API and CLI remain unchanged.
 
-The implementation is organized around closed `dialect::{v1,v2,v3}` policies.
-The lexer, parser, formatter, and diagnostic layers share traversal and resource
-accounting, while each dialect owns its accepted spellings, precedence,
+The additive `parse_clean_ascii_v4(source, profile, clock, limits)` API requires
+`mltl.infinite-trace/v1` and `event_position`. It builds the distinct
+`tl-syntax.formula-unbounded/v1` graph, including bounded and unbounded future
+and past operators and optional ordered fairness premises. Use
+`format_clean_ascii_v4` for canonical text and
+`InfiniteParseReport::from_json_bytes` for strict report admission. See
+[`docs/DIALECT-004-clean-ascii-v4.md`](docs/DIALECT-004-clean-ascii-v4.md).
+
+The implementation is organized around closed `dialect::{v1,v2,v3,v4}` policies.
+The lexer and diagnostics share resource accounting; v4 traverses the distinct
+unbounded owner graph. Each dialect owns its accepted spellings, precedence,
 associativity, semantic profile, owner schema, and lowering permission. Every
 successful parse is re-admitted from canonical bytes by the pinned
 `tl-syntax::FormulaDocument::from_json_bytes` boundary.
@@ -88,5 +96,4 @@ testing, provenance, and human release gates as every other contribution.
 
 ## License
 
-Licensed under either of Apache License, Version 2.0 or MIT license at your
-option.
+Licensed under the MIT license. See [LICENSE](LICENSE).

@@ -56,6 +56,49 @@ fn every_entry_point_selects_one_closed_dialect_without_fallback() {
     }
 }
 
+// The `p` numeric fast path may split at an explicitly permitted operator
+// boundary, but an ordinary identifier tail belongs to one malformed token
+// in every finite dialect. This guards the lexer fallback after the fast path.
+// Trace: TC-003, TC-046, FR-001-AC-2, FR-009-AC-1
+#[test]
+fn numeric_atom_identifier_tails_refuse_as_one_token_across_dialects() {
+    for source in ["p0x", "p12_3", "p0U", "p7false"] {
+        let v1_report = v1(source);
+        let v2_report = parse_clean_ascii_v2(
+            source,
+            SemanticProfile::ClosedTraceV1,
+            ParseLimits::default(),
+        );
+        let v3_report = parse_clean_ascii_v3(source, ParseLimits::default());
+        for diagnostics in [
+            &v1_report.diagnostics,
+            &v2_report.diagnostics,
+            &v3_report.diagnostics,
+        ] {
+            assert_eq!(
+                diagnostics[0].code,
+                DiagnosticCode::UnknownIdentifier,
+                "{source}"
+            );
+            assert_eq!(diagnostics[0].span.start(), 0, "{source}");
+            assert_eq!(diagnostics[0].span.end() as usize, source.len(), "{source}");
+        }
+        assert!(v1_report.document.is_none(), "{source}");
+        assert!(v2_report.document.is_none(), "{source}");
+        assert!(v3_report.document.is_none(), "{source}");
+    }
+
+    assert!(v1("p7").document.is_some());
+    assert!(
+        parse_clean_ascii_v2("p7", SemanticProfile::ClosedTraceV1, ParseLimits::default(),)
+            .document
+            .is_some()
+    );
+    assert!(parse_clean_ascii_v3("p7", ParseLimits::default())
+        .document
+        .is_some());
+}
+
 // Trace: TC-046, FR-009-AC-2, FR-009-AC-3
 #[test]
 fn past_policy_owns_exact_graph_precedence_spans_and_canonical_text() {

@@ -3,6 +3,29 @@
 All notable user-visible changes to `tl-parse` are recorded here. The crate is
 distributed as a git source release (`publish = false`); versions are git tags.
 
+## 0.4.0
+
+Stage 1 candidate. The clean-ascii v4 parser adds infinite-trace syntax and
+fairness reports. This section records the public API migrations measured
+against the immutable 0.3.0 tag; the coordinated release tag is still pending.
+
+### API migration inventory
+
+- `enum_variant_added` `ExpectedToken:LeftBrace`: Migration: handle `{` explicitly in exhaustive expected-token matches, including diagnostic renderers.
+- `enum_variant_added` `ExpectedToken:RightBrace`: Migration: handle `}` explicitly in exhaustive expected-token matches, including diagnostic renderers.
+- `enum_variant_added` `ExpectedToken:Semicolon`: Migration: handle `;` explicitly in exhaustive expected-token matches, including diagnostic renderers.
+- `enum_variant_added` `ExpectedToken:Colon`: Migration: handle `:` explicitly in exhaustive expected-token matches, including diagnostic renderers.
+- `enum_variant_added` `DiagnosticCode:InfiniteProfileMismatch`: Migration: handle an unsupported infinite semantic profile as a typed parse refusal.
+- `enum_variant_added` `DiagnosticCode:InfiniteClockMismatch`: Migration: handle an unsupported infinite clock as a typed parse refusal.
+- `enum_variant_added` `DiagnosticCode:DuplicateFairnessPremise`: Migration: handle duplicate fairness premises as a typed parse refusal.
+- `enum_variant_added` `FormatErrorCode:UnrepresentableGraph`: Migration: handle a valid graph that cannot be represented in the selected text dialect without emitting partial text.
+- `enum_no_repr_variant_discriminant_changed` `ExpectedToken::Comma`: Migration: do not persist or compare numeric casts of `ExpectedToken`; match variants or use an application-owned stable code. Its implicit discriminant shifts from 5 to 9.
+- `enum_no_repr_variant_discriminant_changed` `ExpectedToken::EndOfInput`: Migration: do not persist or compare numeric casts of `ExpectedToken`; match variants or use an application-owned stable code. Its implicit discriminant shifts from 6 to 10.
+- `enum_no_repr_variant_discriminant_changed` `FormatErrorCode::OutputLimit`: Migration: match `FormatErrorCode` variants directly or assign an application-owned code; its implicit discriminant shifts from 1 to 2.
+- `enum_no_repr_variant_discriminant_changed` `FormatErrorCode::WorkLimit`: Migration: match `FormatErrorCode` variants directly or assign an application-owned code; its implicit discriminant shifts from 2 to 3.
+- `partial_ord_enum_variants_reordered` `ExpectedToken::Comma`: Migration: replace derived `ExpectedToken` ordering in persisted or protocol decisions with an explicit key. Its position shifts from 6 to 10.
+- `partial_ord_enum_variants_reordered` `ExpectedToken::EndOfInput`: Migration: replace derived `ExpectedToken` ordering in persisted or protocol decisions with an explicit key. Its position shifts from 7 to 11.
+
 ## 0.3.0
 
 Part of the first coordinated release of the MLTL crates (`tl-syntax`,

@@ -215,6 +215,8 @@ fn v3_refuses_future_weak_previous_long_names_and_malformed_intervals() {
         ("X p0", DiagnosticCode::UnsupportedOperator, span(0, 1)),
         ("Previous p0", DiagnosticCode::UnknownIdentifier, span(0, 8)),
         ("Yesterday", DiagnosticCode::UnknownIdentifier, span(0, 9)),
+        ("YF[0,1]p0", DiagnosticCode::UnknownIdentifier, span(0, 2)),
+        ("YG[0,1]p0", DiagnosticCode::UnknownIdentifier, span(0, 2)),
         (
             "Once[0,1] p0",
             DiagnosticCode::UnknownIdentifier,

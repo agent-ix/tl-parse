@@ -340,6 +340,12 @@ pub enum DiagnosticCode {
     ValidationFailure,
     /// A recognized operator outside the explicitly selected operator profile.
     UnsupportedOperator,
+    /// Infinite dialect requires the exact infinite-trace profile.
+    InfiniteProfileMismatch,
+    /// Infinite dialect requires the event-position clock.
+    InfiniteClockMismatch,
+    /// Two fairness premises identify the same formula.
+    DuplicateFairnessPremise,
 }
 
 impl DiagnosticCode {
@@ -361,6 +367,9 @@ impl DiagnosticCode {
             Self::TrailingInput => "trailing_input",
             Self::ValidationFailure => "validation_failure",
             Self::UnsupportedOperator => "unsupported_operator",
+            Self::InfiniteProfileMismatch => "infinite_profile_mismatch",
+            Self::InfiniteClockMismatch => "infinite_clock_mismatch",
+            Self::DuplicateFairnessPremise => "duplicate_fairness_premise",
         }
     }
 }
@@ -393,6 +402,14 @@ pub enum ExpectedToken {
     RightBracket,
     /// Closing grouping parenthesis.
     RightParenthesis,
+    /// Opening fairness envelope brace.
+    LeftBrace,
+    /// Closing fairness envelope brace.
+    RightBrace,
+    /// Fairness premise separator.
+    Semicolon,
+    /// Fairness envelope/formula delimiter.
+    Colon,
     /// Interval comma.
     Comma,
     /// End of source.
@@ -538,6 +555,8 @@ pub struct FormatStats {
 pub enum FormatErrorCode {
     /// Input document did not validate through tl-syntax.
     InvalidGraph,
+    /// The validated graph has topology the text dialect cannot preserve.
+    UnrepresentableGraph,
     /// Final or intermediate text exceeds the output-byte boundary.
     OutputLimit,
     /// Total formatter work exceeds the logical-work boundary.
@@ -549,6 +568,7 @@ impl FormatErrorCode {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::InvalidGraph => "invalid_graph",
+            Self::UnrepresentableGraph => "unrepresentable_graph",
             Self::OutputLimit => "output_limit",
             Self::WorkLimit => "work_limit",
         }

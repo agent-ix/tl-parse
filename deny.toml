@@ -18,12 +18,11 @@ version = 2
 unknown-registry = "deny"
 unknown-git = "deny"
 # tl-syntax is not published to a registry, so it resolves by exact git
-# revision. The pin is 4a5614193d21e5ae99950ae683b04ba0ec931358, which is the
-# reviewed commit reachable from tl-syntax `main` when this pin was admitted,
-# not a moving branch head or a commit reachable only from an open pull request.
+# revision. The pin is 6e2fc17fcfba60c33ab264772bb25550a9c81853, an exact
+# reviewed commit, not a moving branch head.
 # The earlier form of this exception was scoped to
 # "until tl-syntax PR #6 merges or 2026-09-07"; that merge has happened (as
 # PR #10, which superseded #6), so the revision moved onto `main` and the
-# expiry no longer applies. AA-001 still blocks source release while tl-syntax
-# has no registry release.
+# expiry no longer applies. Registry publication remains disabled while
+# tl-syntax has no registry release.
 allow-git = ["https://github.com/agent-ix/tl-syntax.git"]

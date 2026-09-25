@@ -27,6 +27,11 @@ pub(crate) enum TokenKind {
     StrongPrevious,
     Since,
     Triggered,
+    Fair,
+    LeftBrace,
+    RightBrace,
+    Semicolon,
+    Colon,
     LeftParenthesis,
     RightParenthesis,
     LeftBracket,
@@ -209,6 +214,10 @@ impl Lexer<'_> {
             b'[' => Some(TokenKind::LeftBracket),
             b']' => Some(TokenKind::RightBracket),
             b',' => Some(TokenKind::Comma),
+            b'{' => Some(TokenKind::LeftBrace),
+            b'}' => Some(TokenKind::RightBrace),
+            b';' => Some(TokenKind::Semicolon),
+            b':' => Some(TokenKind::Colon),
             _ => None,
         };
         if let Some(kind) = single {
@@ -244,8 +253,15 @@ impl Lexer<'_> {
             {
                 self.offset += 1;
             }
-            let digits = &self.source[digit_start..self.offset];
-            self.finish_numeric_token(start, digits, true);
+            if self.atom_keyword_boundary(self.offset) {
+                let digits = &self.source[digit_start..self.offset];
+                self.finish_numeric_token(start, digits, true);
+            } else {
+                // An identifier tail belongs to the same malformed token.
+                // The dialect boundary still permits compact binary forms
+                // such as `p0U[1,2]p1`.
+                self.scan_identifier(start);
+            }
             return;
         }
         for (keyword, kind) in [("false", TokenKind::False), ("true", TokenKind::True)] {
@@ -296,6 +312,7 @@ impl Lexer<'_> {
             None => true,
             Some(byte) if !byte.is_ascii_alphanumeric() && *byte != b'_' => true,
             Some(b'p' | b'f' | b't' | b'O' | b'H' | b'Y') => true,
+            Some(b'F' | b'G') if self.dialect == Dialect::V4 => true,
             Some(_) => false,
         }
     }
@@ -315,12 +332,9 @@ impl Lexer<'_> {
             self.push_token(kind, start);
             return;
         }
-        if let Some(digits) = lexeme.strip_prefix('p') {
-            if !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit()) {
-                self.finish_numeric_token(start, digits, true);
-                return;
-            }
-        }
+        // Every all-digit `p` atom is consumed by scan_token's numeric fast
+        // path. Reaching identifier scanning means a tail made the entire
+        // lexeme malformed; accepting a second numeric path here is redundant.
         let found = Token {
             kind: TokenKind::Invalid,
             start,

@@ -27,17 +27,30 @@ that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
 The compiled revision is
-`4a5614193d21e5ae99950ae683b04ba0ec931358`, a commit that was reachable from
-the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
+`6e2fc17fcfba60c33ab264772bb25550a9c81853`, an exact reviewed commit.
+It is not a
 moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
 is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
-`4a561419` is the squash merge of tl-syntax#88 and is the commit tagged
-`v0.3.0`, the tl-syntax 0.3.0 release. `Cargo.toml` pins it by exact revision
-with the version requirement `=0.3.0`.
+The previous `4a561419` pin is the squash merge of tl-syntax#88 and was the commit tagged
+`v0.3.0`. The Stage 1 candidate requires `=0.4.0`; the previous pin used `=0.3.0`. V4 consumes the additive
+`formula-unbounded/v1`, fairness, and infinite trace identities. V1 through
+V3 continue to use the bounded owner vocabulary; the authorship basis above
+does not move.
+The prior pin advance from `8bcbce98` to `fed48a2f` added V4 fuzz evidence.
+The advance to `6d182fa9` made tl-syntax MIT-only. The `9a4316e`
+advance fixes alloc-only test compilation and adds V8 coverage tests. The
+`9de638d` advance adds an alloc-lane wrong-profile test only. The `fca935e` advance refreshed bounded V4 fuzz evidence only. The current
+`b923fd4` revision stages the 0.4.0 package version and release gate. The
+`66d012c` revision refreshes the syntax V4 fuzz lock and bounded receipt only. The
+`43dcd36` revision corrects syntax assurance source census only. The
+`08c23fa` revision updates syntax EA v0.4.1 tooling pins only. The
+`87a5024..6e2fc17` advance changes only `tests/shared_assurance.rs`, adding
+`MP-003` to the counted source census. These advances do not change the
+parser-consumed production API or historical authorship basis.
 
 ## Source-inspected 0.3.0 release compiled-pin delta
 

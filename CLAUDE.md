@@ -24,7 +24,6 @@ make rustdoc        # build warning-free public docs
 make ci             # complete local iteration gate
 
 # shared assurance
-make assurance-env     # build .venv-assurance from requirements-assurance.txt
 make assurance-inputs  # the ONLY target that runs a producer
 make pins              # classify the toolchain through the packaged matrix
 make assurance-chain   # seal, retain, and verify through Quoin
@@ -99,8 +98,8 @@ The constraint re-applies when this repository moves toward stable releases.
 
 Two different facts, and they no longer coincide.
 
-The crate **compiles against** `4a5614193d21e5ae99950ae683b04ba0ec931358`, an
-exact commit in reviewed tl-syntax `main` history. The dialect was **authored from**
+The crate **compiles against** `6e2fc17fcfba60c33ab264772bb25550a9c81853`, an
+exact reviewed tl-syntax commit. The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
 move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and
 `Cargo.lock` enforce the compiled pin; there is no local digest table and no
