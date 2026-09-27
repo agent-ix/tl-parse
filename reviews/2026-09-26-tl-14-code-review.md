@@ -35,3 +35,16 @@ Scoped checks at this head: `cargo fmt --check` passed; `cargo clippy --all-targ
 ## Assurance Context
 
 AP-001 (`spec/assurance/AP-001.md`) applies to this exact source/dialect/dependency/corpus candidate: silent reinterpretation and hostile input growth are its material impact scenarios. Evaluated `origin/main` f8ce56211c83eb98a24bd3fdc31792f569da3aa3 against reviewed source e7fe85f506ccfad2eb7835a7a8485505ff04619d and the changed production, test, corpus, documentation and spec paths in scope. The profile's release-owner approval is unavailable and outside this feature review; no exception was claimed. Architecture, measurement, independent assurance, and evidence-producer decisions were not supplied for this candidate. Focused tests and source inspection do not constitute release assurance or a merge gate.
+
+## Dispositions
+
+| FND | outcome | sha/reason |
+| --- | --- | --- |
+| FND-001 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+| FND-002 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+
+Round 1 reviewed `26ada2912baa10d4060143d950545bfbbec1d6b9`. FND-001 after excerpt: `src/lexer.rs:221-224`: `b'{' if self.dialect == Dialect::V4 => Some(TokenKind::LeftBrace),` (and corresponding `}`, `;`, `:` guards); v1/v2/v3 `p` tails use their prior lexical path.
+
+FND-002 after excerpt: `src/infinite.rs:230-232`: `match self.refusal.map(|refusal| refusal.code) { None if self.document.is_some() => InfiniteDisposition::NoTemporalVerdict, None => InfiniteDisposition::Failed, ... }`; typed cause and locus survive zero diagnostic retention.
+
+Round 1 verdict: PASS for the reviewed TL-14 feature fixes at `26ada2912baa10d4060143d950545bfbbec1d6b9`. All substantive code findings are fixed. The unmerged TL-15 dependency remains a separate hold.

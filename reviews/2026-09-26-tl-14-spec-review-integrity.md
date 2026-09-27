@@ -24,3 +24,13 @@ FAIL: FR-017-AC-1 is contradictory as written. Dependency and profile boundaries
 ## Coverage
 
 FR-015/016/017 and NFR-004 each have concrete verification methods and TM-002 trace. The selected requirement documents separate parser syntax, diagnostics, formatting and resource determinism from owner graph identity and fairness; no cycle exists among their changed relationships. The behavior's typed `unrepresentable_graph` is appropriate, but it must be reflected in the criterion so a valid graph is not simultaneously required to format and required to refuse. No new external CLI, paginated API, authenticated API, or generation mode assumption applies.
+
+## Dispositions
+
+| FND | outcome | sha/reason |
+| --- | --- | --- |
+| FND-001 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+
+Round 1 reviewed `26ada2912baa10d4060143d950545bfbbec1d6b9`. FND-001 after excerpt: `FR-017:18-21`: `emit canonical text for graphs representable in the v4 dialect ... or return a typed `unrepresentable_graph` refusal.`
+
+Round 1 verdict: PASS for this method at `26ada2912baa10d4060143d950545bfbbec1d6b9`; no substantive finding remains open.

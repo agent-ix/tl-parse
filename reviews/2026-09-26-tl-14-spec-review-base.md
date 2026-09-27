@@ -24,3 +24,13 @@ FAIL: the acceptance criterion needs a representability condition or a separatel
 ## Coverage
 
 FR-015, FR-016 and FR-017 have complete input, output, behavior, error and dependency sections; NFR-004 names bounded resource axes and deterministic measurement. TM-002 maps all nine ACs to TC-058 through TC-066. Error paths, invalid profile/clock, malformed intervals, fairness uniqueness, source loci, canonical output, checked corpus and limit boundaries are represented. Exact legacy byte preservation lacks a test assertion; the separate gap-analysis artifact records it. No duplicate or malformed FR/NFR/TC IDs were found in this selected scope. Targeted `quire validate --scope .` reported 5/5 changed spec docs grammar-clean.
+
+## Dispositions
+
+| FND | outcome | sha/reason |
+| --- | --- | --- |
+| FND-001 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+
+Round 1 reviewed `26ada2912baa10d4060143d950545bfbbec1d6b9`. FND-001 after excerpt: `FR-017-AC-1`: `Every admitted v4 graph and fairness set representable in v4 text formats to text ...; a valid shared or non-textual owner topology returns `unrepresentable_graph` and no text.`
+
+Round 1 verdict: PASS for this method at `26ada2912baa10d4060143d950545bfbbec1d6b9`; no substantive finding remains open.

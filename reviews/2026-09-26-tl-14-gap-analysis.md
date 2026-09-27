@@ -28,3 +28,16 @@ FAIL: current tests do not establish the complete promised legacy behavior or th
 ## Coverage
 
 TC-058 covers future/past primitive admission and lowered W/M; TC-059 covers same-graph ordered fairness, duplicates and empty envelope; TC-060 covers profile/clock cross-refusal but not legacy bytes; TC-061 covers interval and premise spans plus malformed UTF-8 prefix loci; TC-062 covers typed diagnostics and strict report read but codifies the wrong zero-budget disposition; TC-063 covers fixed points, owner identities, derived forms and unrepresentable graph refusals; TC-064 checks corpus IDs, human reasons, digests, canonical text and exact spans; TC-065's two fuzz targets call real parsers and have checked seeds, with 64-run evidence in the PR description; TC-066 covers repeated report bytes and exact/one-under parse and format limits. `tests/owner_infinite_corpus.rs` reads the pinned owner's corpus through its dependency, not a local copy. Reverse code-to-spec tracing found v4 parser, formatter, diagnostic, corpus and fuzz paths owned by these FR/NFRs. The new `dialect_v4_document_digest` API in `src/lib.rs` is supported by the dialect document and is not a duplicate of the owner graph contract.
+
+## Dispositions
+
+| FND | outcome | sha/reason |
+| --- | --- | --- |
+| FND-001 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+| FND-002 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+
+Round 1 reviewed `26ada2912baa10d4060143d950545bfbbec1d6b9`. FND-001 after excerpt: `tests/infinite_v4.rs:470-478`: `assert_eq!(normalized, expected_report, "{dialect} report for {source:?}")` and `assert_eq!(canonical.as_deref().unwrap_or("<none>"), expected_text, "{dialect} canonical text for {source:?}")`; 21 fixture rows cover all three legacy dialects.
+
+FND-002 after excerpt: `tests/infinite_v4.rs:260`: `assert_eq!(truncated.disposition(), InfiniteDisposition::Unsupported);` with following typed `UnexpectedToken` and exact `1..1` span assertions.
+
+Round 1 verdict: PASS for this method at `26ada2912baa10d4060143d950545bfbbec1d6b9`; no substantive finding remains open.

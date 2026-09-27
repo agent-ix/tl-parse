@@ -25,3 +25,16 @@ FAIL for evidence alignment until FR-015-AC-3 receives exact legacy byte compari
 ## Coverage
 
 TC-058/059/060 and TC-061/062/063/064/065/066 all carry real tracking tags in executing test or fuzz target code. The two targets call the v3 and v4 parsers, bound input and parser work, and have checked seed files. Scoped Rust tests at the reviewed head passed 69/69; this is evidence for those assertions only. No aggregate, campaign or release-assurance verification was run.
+
+## Dispositions
+
+| FND | outcome | sha/reason |
+| --- | --- | --- |
+| FND-001 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+| FND-002 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+
+Round 1 reviewed `26ada2912baa10d4060143d950545bfbbec1d6b9`. FND-001 after excerpt: `tests/infinite_v4.rs:470-478`: `assert_eq!(normalized, expected_report, "{dialect} report for {source:?}")` and the corresponding canonical text byte assertion.
+
+FND-002 after excerpt: `TM-002 TC-063`: `Prove representable fixed points, exact fairness order and typed refusal of unrepresentable owner graphs`.
+
+Round 1 verdict: PASS for this method at `26ada2912baa10d4060143d950545bfbbec1d6b9`; no substantive finding remains open.
