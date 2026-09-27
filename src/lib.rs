@@ -19,8 +19,8 @@ pub use context::{
 };
 pub use diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
-    FormatLimits, FormatReport, FormatStats, ParseArtifactLimits, ParseLimits, ParseReport,
-    ParseStats, RecoveryAction, StrictParseArtifactReadError,
+    FormatLimits, FormatReport, FormatStats, InfiniteRefusal, ParseArtifactLimits, ParseLimits,
+    ParseReport, ParseStats, RecoveryAction, StrictParseArtifactReadError,
 };
 pub use dialect::v2::{
     parse_clean_ascii_v2, DerivedDialectRevision, DerivedOperator, DerivedOperatorProfile,

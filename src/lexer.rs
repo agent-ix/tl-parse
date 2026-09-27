@@ -1,8 +1,8 @@
 use tl_syntax::SourceSpan;
 
 use crate::{
-    dialect::Dialect, Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, ParseLimits,
-    RecoveryAction,
+    dialect::Dialect, Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken,
+    InfiniteRefusal, ParseLimits, RecoveryAction,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -74,6 +74,7 @@ pub(crate) struct LexResult {
     pub(crate) diagnostics: Vec<Diagnostic>,
     pub(crate) diagnostics_truncated: bool,
     pub(crate) had_error: bool,
+    pub(crate) refusal: Option<InfiniteRefusal>,
     pub(crate) work: usize,
 }
 
@@ -86,6 +87,7 @@ struct Lexer<'a> {
     diagnostics: Vec<Diagnostic>,
     diagnostics_truncated: bool,
     had_error: bool,
+    refusal: Option<InfiniteRefusal>,
     work: usize,
     stopped: bool,
 }
@@ -100,6 +102,7 @@ pub(crate) fn lex(source: &str, limits: ParseLimits, dialect: Dialect) -> LexRes
         diagnostics: Vec::new(),
         diagnostics_truncated: false,
         had_error: false,
+        refusal: None,
         work: 0,
         stopped: false,
     };
@@ -161,6 +164,7 @@ pub(crate) fn lex(source: &str, limits: ParseLimits, dialect: Dialect) -> LexRes
         diagnostics: lexer.diagnostics,
         diagnostics_truncated: lexer.diagnostics_truncated,
         had_error: lexer.had_error,
+        refusal: lexer.refusal,
         work: lexer.work,
     }
 }
@@ -214,10 +218,10 @@ impl Lexer<'_> {
             b'[' => Some(TokenKind::LeftBracket),
             b']' => Some(TokenKind::RightBracket),
             b',' => Some(TokenKind::Comma),
-            b'{' => Some(TokenKind::LeftBrace),
-            b'}' => Some(TokenKind::RightBrace),
-            b';' => Some(TokenKind::Semicolon),
-            b':' => Some(TokenKind::Colon),
+            b'{' if self.dialect == Dialect::V4 => Some(TokenKind::LeftBrace),
+            b'}' if self.dialect == Dialect::V4 => Some(TokenKind::RightBrace),
+            b';' if self.dialect == Dialect::V4 => Some(TokenKind::Semicolon),
+            b':' if self.dialect == Dialect::V4 => Some(TokenKind::Colon),
             _ => None,
         };
         if let Some(kind) = single {
@@ -253,7 +257,7 @@ impl Lexer<'_> {
             {
                 self.offset += 1;
             }
-            if self.atom_keyword_boundary(self.offset) {
+            if self.dialect != Dialect::V4 || self.atom_keyword_boundary(self.offset) {
                 let digits = &self.source[digit_start..self.offset];
                 self.finish_numeric_token(start, digits, true);
             } else {
@@ -332,9 +336,12 @@ impl Lexer<'_> {
             self.push_token(kind, start);
             return;
         }
-        // Every all-digit `p` atom is consumed by scan_token's numeric fast
-        // path. Reaching identifier scanning means a tail made the entire
-        // lexeme malformed; accepting a second numeric path here is redundant.
+        if let Some(digits) = lexeme.strip_prefix('p') {
+            if !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                self.finish_numeric_token(start, digits, true);
+                return;
+            }
+        }
         let found = Token {
             kind: TokenKind::Invalid,
             start,
@@ -446,6 +453,10 @@ impl Lexer<'_> {
         message: String,
     ) {
         self.had_error = true;
+        if self.dialect == Dialect::V4 {
+            self.refusal =
+                InfiniteRefusal::accumulate(self.refusal, code, checked_span(start, end));
+        }
         if self.diagnostics.len() >= self.limits.max_diagnostics {
             self.diagnostics_truncated = true;
             return;

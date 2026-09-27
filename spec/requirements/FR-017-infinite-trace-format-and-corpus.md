@@ -16,8 +16,9 @@ relationships:
 ## Description
 
 When a validated v4 graph and fairness document are formatted, tl-parse shall
-emit one canonical text form that reaches a parse-format-parse fixed point and
-preserves graph, profile, clock and premise-root identity.
+emit canonical text for graphs representable in the v4 dialect, reaching a
+parse-format-parse fixed point that preserves graph, profile, clock and
+premise-root identity, or return a typed `unrepresentable_graph` refusal.
 
 ## Inputs
 
@@ -54,7 +55,7 @@ executing targets. Corpus expectations are independent of parser output.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-017-AC-1 | Every admitted v4 graph and fairness set formats to text that re-parses to the same owner identities and is byte-stable at the next formatting step. | Test (TC-063) |
+| FR-017-AC-1 | Every admitted v4 graph and fairness set representable in v4 text formats to text that re-parses to the same owner identities and is byte-stable at the next formatting step; a valid shared or non-textual owner topology returns `unrepresentable_graph` and no text. | Test (TC-063) |
 | FR-017-AC-2 | Malformed and locus corpus fixtures have unique identities, human expectations and verified digests; changing a source, locus, expected code or digest fails replay. | Test (TC-064) |
 | FR-017-AC-3 | Both named fuzz targets exercise real parser paths with checked seeds, bounded outcomes and no panic, including past-time v3 regression. | Test (TC-065) |
 

@@ -37,6 +37,9 @@ finite-profile unbounded interval, misplaced fairness delimiter, duplicate
 premise, unknown proposition and resource overrun have distinct stable codes
 or typed refusal details. No parse error is relabeled by comparing message
 text. A malformed input never yields a partial owner graph.
+The decisive typed refusal retains its code and byte locus even when the
+diagnostic retention limit is zero; a later resource limit takes precedence
+over an earlier syntax diagnostic in the FR-341 disposition.
 
 The v4 diagnostic-to-FR-341 mapping is total: syntax, profile and clock
 refusals map to `unsupported` before evaluation; exceeded work limits map to

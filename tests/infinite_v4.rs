@@ -257,10 +257,48 @@ fn v4_disposition_distinguishes_invalid_identity_from_truncated_resources() {
     assert!(truncated.diagnostics.is_empty());
     assert!(truncated.stats.diagnostics_truncated);
     assert_eq!(strict_read(&truncated).unwrap(), truncated);
+    assert_eq!(truncated.disposition(), InfiniteDisposition::Unsupported);
     assert_eq!(
-        truncated.disposition(),
+        truncated.refusal.map(|refusal| refusal.code),
+        Some(DiagnosticCode::UnexpectedToken)
+    );
+    assert_eq!(
+        truncated.refusal.unwrap().span,
+        SourceSpan::new(1, 1).unwrap()
+    );
+
+    let later_limit = parse_clean_ascii_v4(
+        "@p0",
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_diagnostics: 1,
+            max_work: 1,
+            ..ParseLimits::default()
+        },
+    );
+    assert_eq!(
+        later_limit.diagnostics[0].code,
+        DiagnosticCode::UnexpectedCharacter
+    );
+    assert_eq!(
+        later_limit.refusal.map(|refusal| refusal.code),
+        Some(DiagnosticCode::WorkLimit)
+    );
+    assert_eq!(
+        later_limit.refusal.unwrap().span,
+        SourceSpan::new(1, 2).unwrap()
+    );
+    assert_eq!(
+        later_limit.disposition(),
         InfiniteDisposition::ResourceIncomplete
     );
+    assert_eq!(strict_read(&later_limit).unwrap(), later_limit);
+
+    let mut visible = parse("!");
+    assert_eq!(strict_read(&visible).unwrap(), visible);
+    visible.refusal.as_mut().unwrap().span = SourceSpan::new(0, 1).unwrap();
+    assert!(strict_read(&visible).is_err());
 }
 
 // Trace: TC-058, FR-015-AC-1
@@ -383,6 +421,65 @@ fn mismatched_profile_and_clock_are_typed_refusals() {
         let v3 = tl_parse::parse_clean_ascii_v3(source, ParseLimits::default());
         assert!(v3.document.is_none(), "v3 admitted {source}");
     }
+}
+
+// Trace: TC-060, FR-015-AC-3
+#[test]
+fn legacy_reports_and_canonical_text_match_the_pre_v4_base_bytes() {
+    // Captured by executing the three public entry points at origin/main f8ce562.
+    // The compiled-owner revision is the sole intentional report field change.
+    let mut cases = 0;
+    for line in include_str!("fixtures/legacy-v1-v2-v3-f8ce562.tsv").lines() {
+        let mut fields = line.splitn(4, '\t');
+        let dialect = fields.next().expect("dialect");
+        let source = fields.next().expect("source");
+        let expected_report = fields.next().expect("base report bytes");
+        let expected_text = fields.next().expect("base canonical bytes");
+        let (report, canonical) = match dialect {
+            "v1" => {
+                let value = tl_parse::parse(
+                    source,
+                    SemanticProfile::ClosedTraceV1,
+                    ParseLimits::default(),
+                );
+                let canonical = value.document.as_ref().and_then(|document| {
+                    tl_parse::format_document(document, FormatLimits::default()).text
+                });
+                (serde_json::to_string(&value).unwrap(), canonical)
+            }
+            "v2" => {
+                let value = tl_parse::parse_clean_ascii_v2(
+                    source,
+                    SemanticProfile::ClosedTraceV1,
+                    ParseLimits::default(),
+                );
+                let canonical = value.document.as_ref().and_then(|document| {
+                    tl_parse::format_document(document, FormatLimits::default()).text
+                });
+                (serde_json::to_string(&value).unwrap(), canonical)
+            }
+            "v3" => {
+                let value = tl_parse::parse_clean_ascii_v3(source, ParseLimits::default());
+                let canonical = value.document.as_ref().and_then(|document| {
+                    tl_parse::format_clean_ascii_v3(document, FormatLimits::default()).text
+                });
+                (serde_json::to_string(&value).unwrap(), canonical)
+            }
+            other => panic!("unexpected base dialect {other}"),
+        };
+        let normalized = report.replace(tl_parse::TL_SYNTAX_REVISION, "<compiled-owner-revision>");
+        assert_eq!(
+            normalized, expected_report,
+            "{dialect} report for {source:?}"
+        );
+        assert_eq!(
+            canonical.as_deref().unwrap_or("<none>"),
+            expected_text,
+            "{dialect} canonical text for {source:?}"
+        );
+        cases += 1;
+    }
+    assert_eq!(cases, 21);
 }
 
 // Trace: TC-061, FR-016-AC-1, TC-063, FR-017-AC-1

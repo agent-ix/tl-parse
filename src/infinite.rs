@@ -14,8 +14,8 @@ use crate::{
     dialect::Dialect,
     lexer::{checked_span, lex, Token, TokenKind},
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
-    FormatLimits, FormatReport, FormatStats, ParseArtifactLimits, ParseLimits, ParseStats,
-    RecoveryAction, StrictParseArtifactReadError, TL_SYNTAX_REVISION,
+    FormatLimits, FormatReport, FormatStats, InfiniteRefusal, ParseArtifactLimits, ParseLimits,
+    ParseStats, RecoveryAction, StrictParseArtifactReadError, TL_SYNTAX_REVISION,
 };
 
 /// Wire identity of a v4 parse attempt.
@@ -75,6 +75,8 @@ pub struct InfiniteParseReport {
     pub premise_spans: Vec<SourceSpan>,
     /// Typed source-located refusals.
     pub diagnostics: Vec<Diagnostic>,
+    /// Decisive typed refusal and locus, retained even when diagnostics are suppressed.
+    pub refusal: Option<InfiniteRefusal>,
 }
 
 #[derive(Deserialize)]
@@ -92,6 +94,7 @@ struct InfiniteParseReportWire {
     interval_spans: Vec<SourceSpan>,
     premise_spans: Vec<SourceSpan>,
     diagnostics: Vec<Diagnostic>,
+    refusal: Option<InfiniteRefusal>,
 }
 
 impl TryFrom<InfiniteParseReportWire> for InfiniteParseReport {
@@ -125,11 +128,24 @@ impl TryFrom<InfiniteParseReportWire> for InfiniteParseReport {
         {
             return Err("v4 report span exceeds source bytes");
         }
-        if wire.document.is_none()
-            && wire.diagnostics.is_empty()
-            && !wire.stats.diagnostics_truncated
-        {
+        if wire.document.is_some() == wire.refusal.is_some() {
+            return Err("v4 refusal code must occur exactly when the graph is absent");
+        }
+        let retained = wire.diagnostics.iter().fold(None, |current, diagnostic| {
+            InfiniteRefusal::accumulate(current, diagnostic.code, diagnostic.span)
+        });
+        if let Some(retained) = retained {
+            let refusal = wire.refusal.ok_or("v4 diagnostic lacks refusal")?;
+            if (!wire.stats.diagnostics_truncated && refusal != retained)
+                || refusal.code.v4_refusal_priority() < retained.code.v4_refusal_priority()
+            {
+                return Err("v4 refusal conflicts with retained diagnostics");
+            }
+        } else if wire.document.is_none() && !wire.stats.diagnostics_truncated {
             return Err("failed v4 report requires a diagnostic or truncated diagnostics");
+        }
+        if wire.refusal.is_some_and(|refusal| !bounded(&refusal.span)) {
+            return Err("v4 refusal locus exceeds source bytes");
         }
         if let Some(document) = wire.document.as_ref() {
             if wire.semantic_profile != SemanticProfile::InfiniteTraceV1
@@ -182,6 +198,7 @@ impl TryFrom<InfiniteParseReportWire> for InfiniteParseReport {
             interval_spans: wire.interval_spans,
             premise_spans: wire.premise_spans,
             diagnostics: wire.diagnostics,
+            refusal: wire.refusal,
         })
     }
 }
@@ -203,16 +220,16 @@ impl InfiniteParseReport {
         Ok(report)
     }
 
-    /// Maps a diagnostic code to FR-341 without inspecting message text.
+    /// Maps the retained typed refusal to FR-341 without inspecting message text.
     pub fn disposition(&self) -> InfiniteDisposition {
         if self.semantic_profile != SemanticProfile::InfiniteTraceV1
             || self.clock != InfiniteClock::EventPosition.as_str()
         {
             return InfiniteDisposition::Unsupported;
         }
-        match self.diagnostics.first().map(|d| d.code) {
+        match self.refusal.map(|refusal| refusal.code) {
             None if self.document.is_some() => InfiniteDisposition::NoTemporalVerdict,
-            None => InfiniteDisposition::ResourceIncomplete,
+            None => InfiniteDisposition::Failed,
             Some(
                 DiagnosticCode::SourceLimit
                 | DiagnosticCode::TokenLimit
@@ -258,6 +275,7 @@ struct Parser<'a> {
     max_depth: usize,
     diagnostics: Vec<Diagnostic>,
     diagnostics_truncated: bool,
+    refusal: Option<InfiniteRefusal>,
     premise_roots: Vec<NodeId>,
     premise_spans: Vec<SourceSpan>,
     interval_spans: Vec<SourceSpan>,
@@ -290,8 +308,14 @@ pub fn parse_clean_ascii_v4(
         interval_spans: Vec::new(),
         premise_spans: Vec::new(),
         diagnostics: Vec::new(),
+        refusal: None,
     };
     if profile != SemanticProfile::InfiniteTraceV1 {
+        report.refusal = InfiniteRefusal::accumulate(
+            None,
+            DiagnosticCode::InfiniteProfileMismatch,
+            checked_span(0, 0),
+        );
         let refusal = diagnostic(
             source,
             DiagnosticCode::InfiniteProfileMismatch,
@@ -309,6 +333,11 @@ pub fn parse_clean_ascii_v4(
         return report;
     }
     if clock != InfiniteClock::EventPosition.as_str() {
+        report.refusal = InfiniteRefusal::accumulate(
+            None,
+            DiagnosticCode::InfiniteClockMismatch,
+            checked_span(0, 0),
+        );
         let refusal = diagnostic(
             source,
             DiagnosticCode::InfiniteClockMismatch,
@@ -329,6 +358,7 @@ pub fn parse_clean_ascii_v4(
     report.stats.tokens = lexed.tokens.len().saturating_sub(1);
     report.stats.work = lexed.work;
     report.stats.diagnostics_truncated = lexed.diagnostics_truncated;
+    report.refusal = lexed.refusal;
     if lexed.had_error {
         report.diagnostics = lexed.diagnostics;
         report.stats.diagnostics = report.diagnostics.len();
@@ -346,6 +376,7 @@ pub fn parse_clean_ascii_v4(
         max_depth: 0,
         diagnostics: Vec::new(),
         diagnostics_truncated: false,
+        refusal: None,
         premise_roots: Vec::new(),
         premise_spans: Vec::new(),
         interval_spans: Vec::new(),
@@ -358,6 +389,7 @@ pub fn parse_clean_ascii_v4(
     report.premise_spans = parser.premise_spans;
     report.diagnostics = parser.diagnostics;
     report.stats.diagnostics_truncated = parser.diagnostics_truncated;
+    report.refusal = parser.refusal;
     if let Some(root) =
         root.filter(|_| report.diagnostics.is_empty() && !report.stats.diagnostics_truncated)
     {
@@ -371,6 +403,11 @@ pub fn parse_clean_ascii_v4(
                 let document = match strictly_admit_document(document) {
                     Ok(document) => document,
                     Err(message) => {
+                        report.refusal = InfiniteRefusal::accumulate(
+                            report.refusal,
+                            DiagnosticCode::ValidationFailure,
+                            checked_span(root.start, root.end),
+                        );
                         report.diagnostics.push(diagnostic(
                             source,
                             DiagnosticCode::ValidationFailure,
@@ -419,16 +456,48 @@ pub fn parse_clean_ascii_v4(
                 }
                 if report.diagnostics.is_empty() {
                     report.document = Some(document);
+                } else {
+                    report.refusal = InfiniteRefusal::accumulate(
+                        report.refusal,
+                        DiagnosticCode::ValidationFailure,
+                        checked_span(root.start, root.end),
+                    );
                 }
             }
-            Err(error) => report.diagnostics.push(diagnostic(
+            Err(error) => {
+                report.refusal = InfiniteRefusal::accumulate(
+                    report.refusal,
+                    DiagnosticCode::ValidationFailure,
+                    checked_span(root.start, root.end),
+                );
+                report.diagnostics.push(diagnostic(
+                    source,
+                    DiagnosticCode::ValidationFailure,
+                    root.start,
+                    root.end,
+                    vec![],
+                    &error.to_string(),
+                ));
+            }
+        }
+    }
+    if report.document.is_none() && report.refusal.is_none() {
+        report.refusal = InfiniteRefusal::accumulate(
+            None,
+            DiagnosticCode::ValidationFailure,
+            checked_span(0, 0),
+        );
+        if report.diagnostics.len() < limits.max_diagnostics {
+            report.diagnostics.push(diagnostic(
                 source,
                 DiagnosticCode::ValidationFailure,
-                root.start,
-                root.end,
+                0,
+                0,
                 vec![],
-                &error.to_string(),
-            )),
+                "v4 parser stopped without a typed refusal",
+            ));
+        } else {
+            report.stats.diagnostics_truncated = true;
         }
     }
     report.stats.diagnostics = report.diagnostics.len();
@@ -522,6 +591,7 @@ impl Parser<'_> {
         expected: Vec<ExpectedToken>,
         message: &str,
     ) {
+        self.refusal = InfiniteRefusal::accumulate(self.refusal, code, token.span());
         if self.diagnostics.len() < self.limits.max_diagnostics {
             self.diagnostics.push(diagnostic(
                 self.source,

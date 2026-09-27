@@ -349,6 +349,30 @@ pub enum DiagnosticCode {
 }
 
 impl DiagnosticCode {
+    /// Priority for the v4 refusal class when a later limit hides a syntax diagnostic.
+    pub(crate) const fn v4_refusal_priority(self) -> u8 {
+        match self {
+            Self::ValidationFailure => 2,
+            Self::SourceLimit
+            | Self::TokenLimit
+            | Self::NodeLimit
+            | Self::DepthLimit
+            | Self::WorkLimit => 1,
+            Self::UnexpectedCharacter
+            | Self::UnknownIdentifier
+            | Self::NonCanonicalNumber
+            | Self::IntegerOverflow
+            | Self::UnexpectedToken
+            | Self::MissingToken
+            | Self::InvalidInterval
+            | Self::TrailingInput
+            | Self::UnsupportedOperator
+            | Self::InfiniteProfileMismatch
+            | Self::InfiniteClockMismatch
+            | Self::DuplicateFairnessPremise => 0,
+        }
+    }
+
     /// Returns the stable wire spelling.
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -370,6 +394,32 @@ impl DiagnosticCode {
             Self::InfiniteProfileMismatch => "infinite_profile_mismatch",
             Self::InfiniteClockMismatch => "infinite_clock_mismatch",
             Self::DuplicateFairnessPremise => "duplicate_fairness_premise",
+        }
+    }
+}
+
+/// Decisive v4 refusal and exact byte locus, retained when diagnostics are capped.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct InfiniteRefusal {
+    /// Stable typed reason for refusal.
+    pub code: DiagnosticCode,
+    /// Smallest source locus for that reason.
+    pub span: SourceSpan,
+}
+
+impl InfiniteRefusal {
+    /// Keeps the first cause within a class and a later resource or internal cause.
+    pub(crate) const fn accumulate(
+        current: Option<Self>,
+        code: DiagnosticCode,
+        span: SourceSpan,
+    ) -> Option<Self> {
+        match current {
+            Some(previous) if previous.code.v4_refusal_priority() >= code.v4_refusal_priority() => {
+                Some(previous)
+            }
+            _ => Some(Self { code, span }),
         }
     }
 }
