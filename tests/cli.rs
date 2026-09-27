@@ -48,22 +48,25 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     ] {
         assert!(dialect.contains(required), "dialect omits {required}");
     }
+    let dialect_v4 =
+        fs::read_to_string(format!("{root}/docs/DIALECT-004-clean-ascii-v4.md")).unwrap();
+    assert!(dialect_v4.contains(TL_SYNTAX_REVISION));
     assert_eq!(
         dialect_digest(),
         "22959d4df6c7a1230172289903f1c31f36859b6f2a0e4556e886bdb7ebc9ae11"
     );
     assert_eq!(
         dialect_document_digest(),
-        "e2a23e0465b727011247e0d40c1290c539cdaf0f6726ade4871ba20bc9e516e2"
+        "c628018e7d3c56ee75f1b25c759fc03006aa838430a655dc12bc33906474de72"
     );
     assert_eq!(
         attribution_document_digest(),
-        "d398e9cdfaec6beeec7322b6601c30ac58c6e87e96fa4049b48ed9e627abc954"
+        "102534c834ece329a61154d50510cc64925ebe775c70b3baebafb27f4211dc43"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
-    // and the exact compiled revision reachable from reviewed tl-syntax main
-    // when admitted, which is a different fact. The per-file digest tables
+    // and the exact provisional TL-15 draft revision, which is a different
+    // fact. The per-file digest tables
     // that used to be asserted here were dropped under
     // issue #15: 740182f1 is on a deleted branch, so half of them could never be
     // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.

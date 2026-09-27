@@ -36,7 +36,8 @@ graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
 The previous `4a561419` pin is the squash merge of tl-syntax#88 and is the
-commit tagged `v0.3.0`. The TL-15 draft adds the infinite formula, fairness,
+commit tagged
+`v0.3.0`. The TL-15 draft adds the infinite formula, fairness,
 clock, and unbounded interval contracts consumed only by v4. V1 through v3
 retain their bounded owner vocabulary. The package version remains `0.3.0`.
 

@@ -21,9 +21,10 @@ reviewable artifact. It deliberately carries no per-file SHA-256 table because
 the historical authorship revision is no longer reachable from an upstream ref.
 
 The revision above is the authorship basis and is historical. The revision this
-crate compiles against is `4a5614193d21e5ae99950ae683b04ba0ec931358`, an exact
-commit reachable from the reviewed `tl-syntax` `main` history when the pin was
-admitted, not a moving branch head. `ATTRIBUTION.md` enumerates the
+crate compiles against is provisionally
+`cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, the exact head of draft
+tl-syntax PR #93 for TL-15, not a moving branch head. TL-14 must repin to the
+landed TL-15 revision before it merges. `ATTRIBUTION.md` enumerates the
 source-inspected delta from the prior compiled pin and the API families this
 crate does and does not consume. Later implementation and assurance changes do
 not move the historical authorship basis: no operator, interval, span, or
