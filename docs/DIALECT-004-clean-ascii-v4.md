@@ -15,9 +15,9 @@ status: active
 when premises are present, a same-graph fairness document. It does not
 evaluate formulas or decide fairness.
 
-The compiled tl-syntax revision is provisionally
-`cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, the exact head of draft
-TL-15 PR #93. TL-14 must repin to the landed TL-15 revision before it merges.
+The compiled tl-syntax revision is the landed TL-15 commit selected by
+`Cargo.toml` and recorded in `Cargo.lock`. `ATTRIBUTION.md` records its
+provenance.
 
 ## Grammar
 
