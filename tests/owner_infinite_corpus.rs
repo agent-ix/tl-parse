@@ -30,7 +30,7 @@ fn pinned_owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
     }
     let cases: Value =
         serde_json::from_slice(&fs::read(directory.join("cases.json")).unwrap()).unwrap();
-    assert_eq!(cases["cases"].as_array().unwrap().len(), 13);
+    assert_eq!(cases["cases"].as_array().unwrap().len(), 15);
     let mut admitted = 0;
     let mut unrepresentable = 0;
     for case in cases["cases"].as_array().unwrap() {
@@ -68,7 +68,9 @@ fn pinned_owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
             assert!(
                 matches!(
                     id,
-                    "fair-loop-satisfies-premise" | "fairness-on-non-lasso-refuses"
+                    "fair-loop-satisfies-premise"
+                        | "fairness-on-non-lasso-refuses"
+                        | "unfair-loop-has-no-admitted-trace"
                 ),
                 "unexpected unrepresentable owner case {id}: {:?}",
                 first.error
@@ -105,6 +107,6 @@ fn pinned_owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
         assert_eq!(again.text.as_deref(), Some(text.as_str()), "{id}");
         admitted += 1;
     }
-    assert_eq!(admitted, 9);
-    assert_eq!(unrepresentable, 2);
+    assert_eq!(admitted, 10);
+    assert_eq!(unrepresentable, 3);
 }

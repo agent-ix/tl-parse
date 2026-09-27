@@ -221,7 +221,20 @@ impl InfiniteParseReport {
                 | DiagnosticCode::WorkLimit,
             ) => InfiniteDisposition::ResourceIncomplete,
             Some(DiagnosticCode::ValidationFailure) => InfiniteDisposition::Failed,
-            Some(_) => InfiniteDisposition::Unsupported,
+            Some(
+                DiagnosticCode::UnexpectedCharacter
+                | DiagnosticCode::UnknownIdentifier
+                | DiagnosticCode::NonCanonicalNumber
+                | DiagnosticCode::IntegerOverflow
+                | DiagnosticCode::UnexpectedToken
+                | DiagnosticCode::MissingToken
+                | DiagnosticCode::InvalidInterval
+                | DiagnosticCode::TrailingInput
+                | DiagnosticCode::UnsupportedOperator
+                | DiagnosticCode::InfiniteProfileMismatch
+                | DiagnosticCode::InfiniteClockMismatch
+                | DiagnosticCode::DuplicateFairnessPremise,
+            ) => InfiniteDisposition::Unsupported,
         }
     }
 }

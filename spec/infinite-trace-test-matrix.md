@@ -21,8 +21,7 @@ relationships:
 Executing assertions in `tests/infinite_v4.rs` and
 `tests/infinite_trace_corpus.rs` cover the public API and checked seeds. The
 `clean_ascii_v3` and `unbounded_parse_roundtrip` fuzz targets each completed
-64 libFuzzer runs; their seeds are SHA-256 pinned. The original red stubs
-remain as the V1 spec-cycle record and are outside the Cargo test census.
+64 local libFuzzer runs at the TL-14 candidate; their seeds are SHA-256 pinned.
 
 ## Test Case Summary
 

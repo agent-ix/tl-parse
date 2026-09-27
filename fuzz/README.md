@@ -3,7 +3,9 @@
 This isolated `cargo-fuzz` package exercises UTF-8 dialect parsing, bounded
 statistics, report serialization, and successful canonical round trips. The
 `parser` target covers `tl-parse.clean-ascii/v1`; the `clean_ascii_v2` target
-covers `tl-parse.clean-ascii/v2` lowering and its primitive-only canonical text.
+is the v2 lowering and primitive-text path. `clean_ascii_v3` exercises the
+past-time regression, and `unbounded_parse_roundtrip` exercises the v4 parser,
+formatter, and canonical fixed point. Both new targets have checked seeds.
 Their checked seeds are independently authored under `MIT OR Apache-2.0` and are
 protected by `corpus/<target>/SHA256SUMS`.
 
