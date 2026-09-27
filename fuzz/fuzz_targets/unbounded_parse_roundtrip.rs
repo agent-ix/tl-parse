@@ -1,0 +1,33 @@
+#![no_main]
+#![forbid(unsafe_code)]
+
+use libfuzzer_sys::fuzz_target;
+use tl_parse::tl_syntax::SemanticProfile;
+use tl_parse::{format_clean_ascii_v4, parse_clean_ascii_v4, FormatLimits, ParseLimits};
+
+// Trace: TC-065, FR-017-AC-3
+fuzz_target!(|data: &[u8]| {
+    let Ok(source) = std::str::from_utf8(data) else { return; };
+    let limits = ParseLimits {
+        max_source_bytes: 4096, max_tokens: 512, max_nodes: 256,
+        max_depth: 64, max_diagnostics: 16, max_work: 16384,
+    };
+    let report = parse_clean_ascii_v4(source, SemanticProfile::InfiniteTraceV1,
+        "event_position", limits);
+    assert!(report.stats.tokens <= limits.max_tokens);
+    assert!(report.stats.nodes <= limits.max_nodes);
+    assert!(report.stats.work <= limits.max_work);
+    assert!(report.stats.diagnostics <= limits.max_diagnostics);
+    if let Some(document) = report.document.as_ref() {
+        let formatted = format_clean_ascii_v4(document, report.fairness.as_ref(),
+            FormatLimits { max_output_bytes: 16384, max_work: 65536 });
+        if let Some(text) = formatted.text {
+            let reparsed = parse_clean_ascii_v4(&text, SemanticProfile::InfiniteTraceV1,
+                "event_position", ParseLimits::default());
+            assert!(reparsed.document.is_some(), "{text}: {:?}", reparsed.diagnostics);
+            let again = format_clean_ascii_v4(reparsed.document.as_ref().unwrap(),
+                reparsed.fairness.as_ref(), FormatLimits::default());
+            assert_eq!(again.text.as_deref(), Some(text.as_str()));
+        }
+    }
+});

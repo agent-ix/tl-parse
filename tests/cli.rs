@@ -39,8 +39,8 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     for required in [
         "independently authored",
         "MIT OR Apache-2.0",
-        // The compiled revision, which moves when the crate repins.
-        TL_SYNTAX_REVISION,
+        // The compiled revision is selected by Cargo rather than restated here.
+        "Cargo.toml",
         // The authorship basis, which is historical and must not be silently
         // rewritten to match the compiled revision when the two diverge.
         "740182f13b84858008d6f176f75136737d405c1b",
@@ -48,29 +48,40 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     ] {
         assert!(dialect.contains(required), "dialect omits {required}");
     }
+    let dialect_v4 =
+        fs::read_to_string(format!("{root}/docs/DIALECT-004-clean-ascii-v4.md")).unwrap();
+    assert!(dialect_v4.contains("Cargo.toml"));
+    assert!(!dialect.contains(TL_SYNTAX_REVISION));
+    assert!(!dialect_v4.contains(TL_SYNTAX_REVISION));
+    let manifest = fs::read_to_string(format!("{root}/Cargo.toml")).unwrap();
+    assert!(manifest.contains(&format!("rev = \"{TL_SYNTAX_REVISION}\"")));
+    for lockfile in ["Cargo.lock", "fuzz/Cargo.lock"] {
+        let lock = fs::read_to_string(format!("{root}/{lockfile}")).unwrap();
+        assert!(lock.contains(TL_SYNTAX_REVISION));
+    }
     assert_eq!(
         dialect_digest(),
         "22959d4df6c7a1230172289903f1c31f36859b6f2a0e4556e886bdb7ebc9ae11"
     );
     assert_eq!(
         dialect_document_digest(),
-        "e2a23e0465b727011247e0d40c1290c539cdaf0f6726ade4871ba20bc9e516e2"
+        "c7549b44694e3a5f0fa4334bd11664dbec24c1f7c599e9773671e7e0ade1fb62"
     );
     assert_eq!(
         attribution_document_digest(),
-        "d398e9cdfaec6beeec7322b6601c30ac58c6e87e96fa4049b48ed9e627abc954"
+        "67d7601a39cc4385c16318801ce3153b4a0074ce9323644d9e66118973aaca7f"
     );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     // The authorship basis at 740182f1, which is historical and does not move,
-    // and the exact compiled revision reachable from reviewed tl-syntax main
-    // when admitted, which is a different fact. The per-file digest tables
+    // and the exact provisional TL-15 draft revision, which is a different
+    // fact. The per-file digest tables
     // that used to be asserted here were dropped under
     // issue #15: 740182f1 is on a deleted branch, so half of them could never be
     // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.
     for required in [
         "independently authored",
         "MIT OR Apache-2.0",
-        TL_SYNTAX_REVISION,
+        "TL_SYNTAX_REVISION",
         "740182f13b84858008d6f176f75136737d405c1b",
     ] {
         assert!(
@@ -78,6 +89,7 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
             "attribution omits {required}"
         );
     }
+    assert!(!attribution.contains(TL_SYNTAX_REVISION));
 
     let mut file = NamedTempFile::new().unwrap();
     write!(file, "G[0,1]p0").unwrap();

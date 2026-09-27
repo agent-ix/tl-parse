@@ -340,9 +340,39 @@ pub enum DiagnosticCode {
     ValidationFailure,
     /// A recognized operator outside the explicitly selected operator profile.
     UnsupportedOperator,
+    /// Infinite dialect requires the exact infinite-trace profile.
+    InfiniteProfileMismatch,
+    /// Infinite dialect requires the event-position clock.
+    InfiniteClockMismatch,
+    /// Two fairness premises identify the same formula.
+    DuplicateFairnessPremise,
 }
 
 impl DiagnosticCode {
+    /// Priority for the v4 refusal class when a later limit hides a syntax diagnostic.
+    pub(crate) const fn v4_refusal_priority(self) -> u8 {
+        match self {
+            Self::ValidationFailure => 2,
+            Self::SourceLimit
+            | Self::TokenLimit
+            | Self::NodeLimit
+            | Self::DepthLimit
+            | Self::WorkLimit => 1,
+            Self::UnexpectedCharacter
+            | Self::UnknownIdentifier
+            | Self::NonCanonicalNumber
+            | Self::IntegerOverflow
+            | Self::UnexpectedToken
+            | Self::MissingToken
+            | Self::InvalidInterval
+            | Self::TrailingInput
+            | Self::UnsupportedOperator
+            | Self::InfiniteProfileMismatch
+            | Self::InfiniteClockMismatch
+            | Self::DuplicateFairnessPremise => 0,
+        }
+    }
+
     /// Returns the stable wire spelling.
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -361,6 +391,35 @@ impl DiagnosticCode {
             Self::TrailingInput => "trailing_input",
             Self::ValidationFailure => "validation_failure",
             Self::UnsupportedOperator => "unsupported_operator",
+            Self::InfiniteProfileMismatch => "infinite_profile_mismatch",
+            Self::InfiniteClockMismatch => "infinite_clock_mismatch",
+            Self::DuplicateFairnessPremise => "duplicate_fairness_premise",
+        }
+    }
+}
+
+/// Decisive v4 refusal and exact byte locus, retained when diagnostics are capped.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct InfiniteRefusal {
+    /// Stable typed reason for refusal.
+    pub code: DiagnosticCode,
+    /// Smallest source locus for that reason.
+    pub span: SourceSpan,
+}
+
+impl InfiniteRefusal {
+    /// Keeps the first cause within a class and a later resource or internal cause.
+    pub(crate) const fn accumulate(
+        current: Option<Self>,
+        code: DiagnosticCode,
+        span: SourceSpan,
+    ) -> Option<Self> {
+        match current {
+            Some(previous) if previous.code.v4_refusal_priority() >= code.v4_refusal_priority() => {
+                Some(previous)
+            }
+            _ => Some(Self { code, span }),
         }
     }
 }
@@ -393,6 +452,14 @@ pub enum ExpectedToken {
     RightBracket,
     /// Closing grouping parenthesis.
     RightParenthesis,
+    /// Opening fairness envelope brace.
+    LeftBrace,
+    /// Closing fairness envelope brace.
+    RightBrace,
+    /// Fairness premise separator.
+    Semicolon,
+    /// Fairness envelope/formula delimiter.
+    Colon,
     /// Interval comma.
     Comma,
     /// End of source.
@@ -538,6 +605,8 @@ pub struct FormatStats {
 pub enum FormatErrorCode {
     /// Input document did not validate through tl-syntax.
     InvalidGraph,
+    /// The validated graph has topology the text dialect cannot preserve.
+    UnrepresentableGraph,
     /// Final or intermediate text exceeds the output-byte boundary.
     OutputLimit,
     /// Total formatter work exceeds the logical-work boundary.
@@ -549,6 +618,7 @@ impl FormatErrorCode {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::InvalidGraph => "invalid_graph",
+            Self::UnrepresentableGraph => "unrepresentable_graph",
             Self::OutputLimit => "output_limit",
             Self::WorkLimit => "work_limit",
         }

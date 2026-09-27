@@ -21,13 +21,13 @@ reviewable artifact. It deliberately carries no per-file SHA-256 table because
 the historical authorship revision is no longer reachable from an upstream ref.
 
 The revision above is the authorship basis and is historical. The revision this
-crate compiles against is `4a5614193d21e5ae99950ae683b04ba0ec931358`, an exact
-commit reachable from the reviewed `tl-syntax` `main` history when the pin was
-admitted, not a moving branch head. `ATTRIBUTION.md` enumerates the
-source-inspected delta from the prior compiled pin and the API families this
-crate does and does not consume. Later implementation and assurance changes do
-not move the historical authorship basis: no operator, interval, span, or
-precedence rule was copied or re-derived from the compiled revision.
+crate compiles against is the landed TL-15 revision selected by `Cargo.toml`
+and recorded in `Cargo.lock`, not a moving branch head. `ATTRIBUTION.md`
+enumerates the source-inspected delta from the prior compiled pin and the API
+families this crate does and does not consume. Later implementation and
+assurance changes do not move the historical authorship basis: no operator,
+interval, span, or precedence rule was copied or re-derived from the compiled
+revision.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
 a SHA-256 digest over the normative production and precedence record so drift

@@ -99,8 +99,9 @@ The constraint re-applies when this repository moves toward stable releases.
 
 Two different facts, and they no longer coincide.
 
-The crate **compiles against** `4a5614193d21e5ae99950ae683b04ba0ec931358`, an
-exact commit in reviewed tl-syntax `main` history. The dialect was **authored from**
+The crate **compiles against** `cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, an
+exact commit in draft tl-syntax PR #93. TL-14 must repin after TL-15 lands.
+The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
 move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and
 `Cargo.lock` enforce the compiled pin; there is no local digest table and no

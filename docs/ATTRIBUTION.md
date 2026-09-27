@@ -26,18 +26,18 @@ The authorship basis above is historical and does not move: those are the bytes
 that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
-The compiled revision is
-`4a5614193d21e5ae99950ae683b04ba0ec931358`, a commit that was reachable from
-the reviewed `tl-syntax` `main` history when this pin was admitted. It is not a
-moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
+The compiled revision is the landed TL-15 change from tl-syntax PR #93. It is
+not a moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
 is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a
 checksum of it.
 
-`4a561419` is the squash merge of tl-syntax#88 and is the commit tagged
-`v0.3.0`, the tl-syntax 0.3.0 release. `Cargo.toml` pins it by exact revision
-with the version requirement `=0.3.0`.
+The previous `4a561419` pin is the squash merge of tl-syntax#88 and is the
+commit tagged
+`v0.3.0`. TL-15 adds the infinite formula, fairness, clock, and unbounded
+interval contracts consumed only by v4. V1 through v3
+retain their bounded owner vocabulary. The package version remains `0.3.0`.
 
 ## Source-inspected 0.3.0 release compiled-pin delta
 

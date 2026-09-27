@@ -10,8 +10,8 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`4a5614193d21e5ae99950ae683b04ba0ec931358`, an exact commit reachable from the
-reviewed `main` history when admitted, not a moving branch head. That revision
+`cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, the exact provisional commit
+in draft tl-syntax PR #93. TL-14 must repin after TL-15 lands. That revision
 carries the contextual and semantic contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
 a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
@@ -28,12 +28,19 @@ origin-complete past profile with `O`, `H`, strong `Y`, `S`, and `T`. See
 [`docs/DIALECT-003-clean-ascii-v3.md`](docs/DIALECT-003-clean-ascii-v3.md) for
 their closed grammars and wire identities. The v1 API and CLI remain unchanged.
 
-The implementation is organized around closed `dialect::{v1,v2,v3}` policies.
+The additive `parse_clean_ascii_v4(source, profile, clock, limits)` API accepts
+the exact `mltl.infinite-trace/v1` and `event_position` identities. It builds
+the owner's unbounded formula graph and optional ordered fairness premises.
+`format_clean_ascii_v4` emits canonical text; the v4 report has a bounded,
+strict JSON reader. See [`docs/DIALECT-004-clean-ascii-v4.md`](docs/DIALECT-004-clean-ascii-v4.md).
+
+The implementation is organized around closed `dialect::{v1,v2,v3,v4}` policies.
 The lexer, parser, formatter, and diagnostic layers share traversal and resource
 accounting, while each dialect owns its accepted spellings, precedence,
 associativity, semantic profile, owner schema, and lowering permission. Every
-successful parse is re-admitted from canonical bytes by the pinned
-`tl-syntax::FormulaDocument::from_json_bytes` boundary.
+successful bounded parse is re-admitted from canonical bytes by
+`tl-syntax::FormulaDocument::from_json_bytes`; v4 uses the owner's distinct
+`InfiniteFormulaDocument` and fairness strict readers.
 
 `PastParseReport::from_json_bytes(bytes, ParseArtifactLimits)` is the bounded
 canonical reader for `tl-parse.past-parse-report/v1`. It rejects unknown or
