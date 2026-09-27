@@ -42,9 +42,39 @@ AP-001 (`spec/assurance/AP-001.md`) applies to this exact source/dialect/depende
 | --- | --- | --- |
 | FND-001 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
 | FND-002 | fixed | 26ada2912baa10d4060143d950545bfbbec1d6b9 |
+| FND-003 | still-open | Introduced at 877769fa09a9663617bc12fc2f66a04811a41948; three documents restate Cargo's compiled pin. |
+| FND-003 | fixed | 0c76e275c550092664b0d233c5e25315def022f5 |
 
 Round 1 reviewed `26ada2912baa10d4060143d950545bfbbec1d6b9`. FND-001 after excerpt: `src/lexer.rs:221-224`: `b'{' if self.dialect == Dialect::V4 => Some(TokenKind::LeftBrace),` (and corresponding `}`, `;`, `:` guards); v1/v2/v3 `p` tails use their prior lexical path.
 
 FND-002 after excerpt: `src/infinite.rs:230-232`: `match self.refusal.map(|refusal| refusal.code) { None if self.document.is_some() => InfiniteDisposition::NoTemporalVerdict, None => InfiniteDisposition::Failed, ... }`; typed cause and locus survive zero diagnostic retention.
 
 Round 1 verdict: PASS for the reviewed TL-14 feature fixes at `26ada2912baa10d4060143d950545bfbbec1d6b9`. All substantive code findings are fixed. The unmerged TL-15 dependency remains a separate hold.
+
+## New findings (disposition pass 2)
+
+| ID | Severity | Summary | Refs | Escape Cause |
+| --- | --- | --- | --- | --- |
+| FND-003 | high | The compiled TL-15 revision is hardcoded in multiple dialect and attribution documents in addition to Cargo's pin; the new CLI assertion guards this duplicate instead of removing it. | docs/DIALECT-004-clean-ascii-v4.md:18; docs/DIALECT-001-clean-room-mltl-v1.md:24; docs/ATTRIBUTION.md:29; tests/cli.rs:51 | duplicate-authority |
+
+Round 2 reviewed `877769fa09a9663617bc12fc2f66a04811a41948` against prior trailing head `6d67172`. The changed paths were `docs/ATTRIBUTION.md`, `docs/DIALECT-001-clean-room-mltl-v1.md`, `docs/DIALECT-004-clean-ascii-v4.md`, and `tests/cli.rs`. `Cargo.toml` and both Cargo lockfiles remain the compiled dependency authority. A landed TL-15 SHA different from `cfc2761` requires synchronized edits to those authorities plus three prose copies and digest expectations; missing one leaves a false provenance claim. The test at `tests/cli.rs:53` detects some drift but preserves the duplicate. Reference the compiled pin authority instead of restating its SHA in several documents. This is the `/code-review` duplication finding; the Rust test lane and acceptance-to-tests gap check found no separate defect.
+
+Round 2 focused checks: `cargo test --offline --test cli` passed 4/4, `cargo fmt --check` passed, `git diff --check 6d67172..HEAD` passed, and targeted Quire validation of the three changed documents passed 3/3. No `spec/**`, source implementation, fuzz, corpus, CI, or assurance fixture file changed in this round. No aggregate gate was run.
+
+Round 2 verdict: FAIL with FND-003 open. The prior round 1 fixed findings remain fixed.
+
+## Round 3 disposition evidence
+
+Reviewed `0c76e275c550092664b0d233c5e25315def022f5` against `877769fa09a9663617bc12fc2f66a04811a41948`. FND-003 after excerpt (`docs/DIALECT-004-clean-ascii-v4.md:18-20`):
+
+```text
+The compiled tl-syntax revision is the landed TL-15 commit selected by
+`Cargo.toml` and recorded in `Cargo.lock`. `ATTRIBUTION.md` records its
+provenance.
+```
+
+`DIALECT-001` and `ATTRIBUTION` likewise no longer restate the compiled SHA. The compiled revision appears in `Cargo.toml`, both Cargo lockfiles, and the public `TL_SYNTAX_REVISION` constant; the CLI test asserts their agreement and rejects the SHA in the three documents. Read-only GitHub PR #93 metadata confirms its merge commit is `6aa9b11e29040d64b437da87c9944e3dedd34a86`, matching the repin. No source-behavior, spec, corpus, fuzz, CI, or assurance fixture file changed beyond the revision constant. The Rust and acceptance-to-tests lanes found no new defect.
+
+Scoped checks at this head: `cargo test --offline --test cli --test infinite_v4 --test owner_infinite_corpus` passed 38/38; `cargo fmt --check`, scoped offline Clippy with `-D warnings`, `git diff --check 877769fa..HEAD`, and targeted Quire validation of the three changed documents passed. No aggregate gate was run.
+
+Round 3 verdict: PASS for the reviewed TL-14 feature and repin. Every substantive FND in this SR file has a latest fixed disposition. The dispatching lead or coder must copy this updated reviewer-owned SR file from scratchpad to `reviews/` in a trailing commit before merging; this reviewer does not modify the frozen branch.
