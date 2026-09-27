@@ -33,7 +33,9 @@ pub(crate) fn unsupported_operator_profile(lexeme: &str) -> Option<&'static str>
 }
 
 pub(crate) const fn atom_keyword_boundary(next: u8, followed_by_bracket: bool) -> bool {
-    matches!(next, b'S' | b'T') && followed_by_bracket
+    // Future binary spellings are still token boundaries so the explicit
+    // unsupported-operator diagnostic names the operator at its own span.
+    matches!(next, b'S' | b'T' | b'U' | b'R' | b'W' | b'M') && followed_by_bracket
 }
 
 pub(crate) const fn binary_binding_power(token: TokenKind) -> Option<(u8, u8)> {
