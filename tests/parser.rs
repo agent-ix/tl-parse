@@ -117,6 +117,26 @@ fn long_unknown_identifier_keeps_full_locus_and_bounded_rendering() {
     assert!(!diagnostic.found.contains(&"z".repeat(33)));
 }
 
+// Trace: TC-008, TC-012, FR-003-AC-1, FR-003-AC-2
+#[test]
+fn truncated_interval_bounds_report_end_of_input_without_advancing() {
+    for source in ["F[", "F[0,"] {
+        let report = parse_closed(source);
+        assert!(report.document.is_none(), "{source}");
+        let diagnostic = report
+            .diagnostics
+            .iter()
+            .find(|item| item.code == DiagnosticCode::UnexpectedToken)
+            .expect("missing bound is an unexpected end of input");
+        assert_eq!(diagnostic.found, "<eof>", "{source}");
+        assert_eq!(
+            (diagnostic.span.start(), diagnostic.span.end()),
+            (source.len() as u32, source.len() as u32),
+            "{source}"
+        );
+    }
+}
+
 // Trace: TC-004, FR-001-AC-2
 #[test]
 fn noncanonical_overflowing_and_inverted_numbers_are_rejected() {
