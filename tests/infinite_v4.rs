@@ -153,6 +153,55 @@ fn v4_strict_reader_rejects_conflicting_success_state_and_outside_loci() {
 
 // Trace: TC-062, FR-016-AC-2
 #[test]
+fn v4_strict_reader_refuses_outside_retained_refusal_locus() {
+    let mut refused = parse_clean_ascii_v4(
+        "!",
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_diagnostics: 0,
+            ..ParseLimits::default()
+        },
+    );
+    assert_eq!(strict_read(&refused).unwrap(), refused);
+    assert!(refused.diagnostics.is_empty());
+    refused.refusal.as_mut().expect("typed refusal").span = SourceSpan::new(0, 1000).unwrap();
+    let error = strict_read(&refused).expect_err("outside refusal locus must be rejected");
+    assert!(error
+        .to_string()
+        .contains("v4 refusal locus exceeds source bytes"));
+}
+
+// Trace: TC-062, FR-016-AC-2, FR-341-AC-1
+#[test]
+fn v4_disposition_marks_an_untyped_missing_graph_as_failed() {
+    let mut report = parse("p0");
+    report.document = None;
+    let error = strict_read(&report).expect_err("missing graph must be rejected");
+    assert!(error
+        .to_string()
+        .contains("v4 refusal code must occur exactly when the graph is absent"));
+    assert_eq!(report.disposition(), InfiniteDisposition::Failed);
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_strict_reader_refuses_fairness_on_a_failed_report() {
+    let mut report = parse("fair {F[0,)p0}: p1");
+    let failure = parse("!");
+    report.document = None;
+    report.refusal = failure.refusal;
+    report.diagnostics = failure.diagnostics;
+    report.stats.diagnostics = report.diagnostics.len();
+    assert!(report.fairness.is_some());
+    let error = strict_read(&report).expect_err("failed report cannot bind fairness");
+    assert!(error
+        .to_string()
+        .contains("v4 fairness requires a successful graph"));
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
 fn v4_strict_reader_checks_canonical_bytes_diagnostic_loci_and_owner_nodes() {
     let successful = parse("p0");
     assert_eq!(strict_read(&successful).unwrap(), successful);
