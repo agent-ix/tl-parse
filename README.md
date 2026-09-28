@@ -10,9 +10,9 @@ It maps source directly into the exact pinned `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
 The crate compiles against `tl-syntax` at
-`cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, the exact provisional commit
-in draft tl-syntax PR #93. TL-14 must repin after TL-15 lands. That revision
-carries the contextual and semantic contracts. The dialect was authored from
+`18850985fe124e4b3254bd9b9f7ef4c1fb4e1cf1`, the exact reviewed commit
+in tl-syntax PR #94. That revision carries the contextual, semantic, and
+interval-proof contracts. The dialect was authored from
 the earlier revision `740182f1`, which is
 a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
 `Cargo.lock` is what enforces the compiled one. The dependency still resolves by
