@@ -30,3 +30,20 @@ The new harness owns its six local benchmark fixtures, uses `include_str!` for t
 ## Assurance Context
 
 AP-001 applies to an exact source, dialect, dependency, corpus, and toolchain candidate. This review evaluated base `183fa59150d3a8fa76a5129242fe50453983dae7` and head `5942996b48d63a395fe027b550a4a829baa26b15` with the changed manifest, lock, benchmark and six fixtures. The producer uses public parsing APIs and validates fixture bytes, but no retained paired measurement, independent campaign replay, full aggregate gate, architecture decision, exception, or release-owner approval was supplied for this head. Its measurements alone cannot establish semantic correctness, resource safety, or release acceptance.
+
+## Dispositions
+
+| FND | outcome | sha/reason |
+| --- | --- | --- |
+| FND-001 | fixed | 18dd497422ac923868f6180035b04722cf8f6d0a |
+
+Round 1 reviewed `18dd497422ac923868f6180035b04722cf8f6d0a`. The new `parser_only` group dispatches each of the ten checked inputs through `parse_only`, whose exhaustive `ParserKind` match invokes the corresponding public parse API and black-boxes the report. It does not call any formatter. The previous combined paths remain under `parser_roundtrip`. The `run(source, parse_limits) > 0` validation occurs before the timed loop. After excerpt (`benches/parser_roundtrip.rs:182-185`):
+
+```rust
+parse_group.throughput(Throughput::Bytes(source.len() as u64));
+parse_group.bench_function(name, |b| {
+    b.iter(|| parse_only(kind, black_box(source), parse_limits));
+});
+```
+
+Round 1 verdict: PASS for this focused parser-port review; no code-review finding remains open. `cargo bench --locked --bench parser_roundtrip -- --test` passed all ten `parser_only` and all ten `parser_roundtrip` cases. `cargo fmt --check`, locked all-target/all-feature Clippy with `-D warnings`, and `git diff --check 5942996..HEAD` passed. This does not assert the full TL-235 Campaign acceptance or resolve the previously recorded aggregate fuzz-smoke/toolchain and Quoin workflow holds.
