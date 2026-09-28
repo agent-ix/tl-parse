@@ -1,5 +1,7 @@
-use tl_parse::{format_document, parse, FormatErrorCode, FormatLimits, ParseLimits};
-use tl_syntax::{FormulaDocument, Node, NodeId, NodeKind, SemanticProfile};
+use tl_parse::{
+    format_document, format_formula, parse, FormatErrorCode, FormatLimits, ParseLimits,
+};
+use tl_syntax::{Formula, FormulaDocument, Interval, Node, NodeId, NodeKind, SemanticProfile};
 
 fn parse_closed(source: &str) -> FormulaDocument {
     let report = parse(
@@ -15,6 +17,32 @@ fn canonical(source: &str) -> String {
     format_document(&parse_closed(source), FormatLimits::default())
         .text
         .expect("format succeeds")
+}
+
+// Trace: TC-017, FR-004-AC-3
+#[test]
+fn borrowed_infinite_past_formula_refuses_a_closed_trace_formatter_policy() {
+    let nodes = [
+        Node::new(NodeKind::Proposition {
+            proposition: tl_syntax::PropositionId(0),
+        }),
+        Node::new(NodeKind::Once {
+            interval: Interval::new(0, 1).unwrap(),
+            operand: NodeId(0),
+        }),
+    ];
+    let formula = Formula::new(SemanticProfile::InfiniteTraceV1, NodeId(1), &nodes)
+        .expect("the owner admits past nodes in the infinite profile");
+    let report = format_formula(formula, FormatLimits::default());
+    assert!(report.text.is_none());
+    let error = report
+        .error
+        .expect("selected text dialect must refuse the past node");
+    assert_eq!(error.code, FormatErrorCode::InvalidGraph);
+    assert_eq!(
+        error.message,
+        "formula node is outside the selected clean-ASCII dialect"
+    );
 }
 
 // Trace: TC-014, FR-004-AC-1
@@ -58,6 +86,21 @@ fn canonical_format_is_parseable_and_idempotent() {
     ] {
         assert_eq!(canonical(source), expected, "{source}");
     }
+}
+
+// Trace: TC-016, FR-004-AC-2
+#[test]
+fn grouped_operand_refuses_output_limit_before_open_parenthesis() {
+    let document = parse_closed("!(p0&p1)");
+    let report = format_document(
+        &document,
+        FormatLimits {
+            max_output_bytes: 1,
+            ..FormatLimits::default()
+        },
+    );
+    assert!(report.text.is_none());
+    assert_eq!(report.error.unwrap().code, FormatErrorCode::OutputLimit);
 }
 
 // Trace: TC-016, FR-004-AC-2, StR-002-VC-1

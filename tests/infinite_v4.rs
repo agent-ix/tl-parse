@@ -153,6 +153,55 @@ fn v4_strict_reader_rejects_conflicting_success_state_and_outside_loci() {
 
 // Trace: TC-062, FR-016-AC-2
 #[test]
+fn v4_strict_reader_refuses_outside_retained_refusal_locus() {
+    let mut refused = parse_clean_ascii_v4(
+        "!",
+        PROFILE,
+        "event_position",
+        ParseLimits {
+            max_diagnostics: 0,
+            ..ParseLimits::default()
+        },
+    );
+    assert_eq!(strict_read(&refused).unwrap(), refused);
+    assert!(refused.diagnostics.is_empty());
+    refused.refusal.as_mut().expect("typed refusal").span = SourceSpan::new(0, 1000).unwrap();
+    let error = strict_read(&refused).expect_err("outside refusal locus must be rejected");
+    assert!(error
+        .to_string()
+        .contains("v4 refusal locus exceeds source bytes"));
+}
+
+// Trace: TC-062, FR-016-AC-2, FR-341-AC-1
+#[test]
+fn v4_disposition_marks_an_untyped_missing_graph_as_failed() {
+    let mut report = parse("p0");
+    report.document = None;
+    let error = strict_read(&report).expect_err("missing graph must be rejected");
+    assert!(error
+        .to_string()
+        .contains("v4 refusal code must occur exactly when the graph is absent"));
+    assert_eq!(report.disposition(), InfiniteDisposition::Failed);
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
+fn v4_strict_reader_refuses_fairness_on_a_failed_report() {
+    let mut report = parse("fair {F[0,)p0}: p1");
+    let failure = parse("!");
+    report.document = None;
+    report.refusal = failure.refusal;
+    report.diagnostics = failure.diagnostics;
+    report.stats.diagnostics = report.diagnostics.len();
+    assert!(report.fairness.is_some());
+    let error = strict_read(&report).expect_err("failed report cannot bind fairness");
+    assert!(error
+        .to_string()
+        .contains("v4 fairness requires a successful graph"));
+}
+
+// Trace: TC-062, FR-016-AC-2
+#[test]
 fn v4_strict_reader_checks_canonical_bytes_diagnostic_loci_and_owner_nodes() {
     let successful = parse("p0");
     assert_eq!(strict_read(&successful).unwrap(), successful);
@@ -295,10 +344,20 @@ fn v4_disposition_distinguishes_invalid_identity_from_truncated_resources() {
     );
     assert_eq!(strict_read(&later_limit).unwrap(), later_limit);
 
+    let mut understated = later_limit.clone();
+    understated.diagnostics[0].code = DiagnosticCode::WorkLimit;
+    understated.refusal.as_mut().unwrap().code = DiagnosticCode::UnexpectedCharacter;
+    assert!(strict_read(&understated).is_err());
+
     let mut visible = parse("!");
     assert_eq!(strict_read(&visible).unwrap(), visible);
     visible.refusal.as_mut().unwrap().span = SourceSpan::new(0, 1).unwrap();
     assert!(strict_read(&visible).is_err());
+
+    let mut missing_diagnostic = parse("!");
+    missing_diagnostic.diagnostics.clear();
+    missing_diagnostic.stats.diagnostics = 0;
+    assert!(strict_read(&missing_diagnostic).is_err());
 }
 
 // Trace: TC-058, FR-015-AC-1
@@ -958,6 +1017,20 @@ fn underscore_after_previous_is_one_unknown_identifier() {
     }
     assert!(v3.document.is_none());
     assert!(v4.document.is_none());
+}
+
+// Trace: TC-058, FR-015-AC-1
+#[test]
+fn proposition_identifier_tail_is_one_unknown_v4_token() {
+    let report = parse("p1x");
+    assert!(report.document.is_none());
+    let diagnostic = report
+        .diagnostics
+        .iter()
+        .find(|item| item.code == DiagnosticCode::UnknownIdentifier)
+        .expect("closed v4 identifier refusal");
+    assert_eq!((diagnostic.span.start(), diagnostic.span.end()), (0, 3));
+    assert!(parse("p1U[1,2]p2").document.is_some());
 }
 
 // Trace: TC-061, FR-016-AC-1
