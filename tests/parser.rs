@@ -100,6 +100,23 @@ fn invalid_characters_and_identifiers_have_utf8_byte_spans() {
     );
 }
 
+// Trace: TC-003, FR-001-AC-2
+#[test]
+fn long_unknown_identifier_keeps_full_locus_and_bounded_rendering() {
+    let source = "z".repeat(40);
+    let report = parse_closed(&source);
+    assert!(report.document.is_none());
+    let diagnostic = report
+        .diagnostics
+        .iter()
+        .find(|item| item.code == DiagnosticCode::UnknownIdentifier)
+        .expect("unknown identifier diagnostic");
+    assert_eq!((diagnostic.span.start(), diagnostic.span.end()), (0, 40));
+    assert!(diagnostic.found.contains(&"z".repeat(32)));
+    assert!(diagnostic.found.contains('…'));
+    assert!(!diagnostic.found.contains(&"z".repeat(33)));
+}
+
 // Trace: TC-004, FR-001-AC-2
 #[test]
 fn noncanonical_overflowing_and_inverted_numbers_are_rejected() {

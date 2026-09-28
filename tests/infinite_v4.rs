@@ -295,10 +295,19 @@ fn v4_disposition_distinguishes_invalid_identity_from_truncated_resources() {
     );
     assert_eq!(strict_read(&later_limit).unwrap(), later_limit);
 
+    let mut understated = later_limit.clone();
+    understated.refusal.as_mut().unwrap().code = DiagnosticCode::UnexpectedCharacter;
+    assert!(strict_read(&understated).is_err());
+
     let mut visible = parse("!");
     assert_eq!(strict_read(&visible).unwrap(), visible);
     visible.refusal.as_mut().unwrap().span = SourceSpan::new(0, 1).unwrap();
     assert!(strict_read(&visible).is_err());
+
+    let mut missing_diagnostic = parse("!");
+    missing_diagnostic.diagnostics.clear();
+    missing_diagnostic.stats.diagnostics = 0;
+    assert!(strict_read(&missing_diagnostic).is_err());
 }
 
 // Trace: TC-058, FR-015-AC-1
@@ -958,6 +967,20 @@ fn underscore_after_previous_is_one_unknown_identifier() {
     }
     assert!(v3.document.is_none());
     assert!(v4.document.is_none());
+}
+
+// Trace: TC-058, FR-015-AC-1
+#[test]
+fn proposition_identifier_tail_is_one_unknown_v4_token() {
+    let report = parse("p1x");
+    assert!(report.document.is_none());
+    let diagnostic = report
+        .diagnostics
+        .iter()
+        .find(|item| item.code == DiagnosticCode::UnknownIdentifier)
+        .expect("closed v4 identifier refusal");
+    assert_eq!((diagnostic.span.start(), diagnostic.span.end()), (0, 3));
+    assert!(parse("p1U[1,2]p2").document.is_some());
 }
 
 // Trace: TC-061, FR-016-AC-1

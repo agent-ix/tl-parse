@@ -60,6 +60,21 @@ fn canonical_format_is_parseable_and_idempotent() {
     }
 }
 
+// Trace: TC-016, FR-004-AC-2
+#[test]
+fn grouped_operand_refuses_output_limit_before_open_parenthesis() {
+    let document = parse_closed("!(p0&p1)");
+    let report = format_document(
+        &document,
+        FormatLimits {
+            max_output_bytes: 1,
+            ..FormatLimits::default()
+        },
+    );
+    assert!(report.text.is_none());
+    assert_eq!(report.error.unwrap().code, FormatErrorCode::OutputLimit);
+}
+
 // Trace: TC-016, FR-004-AC-2, StR-002-VC-1
 #[test]
 fn accepted_depth_and_chain_boundaries_reparse_under_the_same_limits() {
