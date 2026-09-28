@@ -296,6 +296,7 @@ fn v4_disposition_distinguishes_invalid_identity_from_truncated_resources() {
     assert_eq!(strict_read(&later_limit).unwrap(), later_limit);
 
     let mut understated = later_limit.clone();
+    understated.diagnostics[0].code = DiagnosticCode::WorkLimit;
     understated.refusal.as_mut().unwrap().code = DiagnosticCode::UnexpectedCharacter;
     assert!(strict_read(&understated).is_err());
 
