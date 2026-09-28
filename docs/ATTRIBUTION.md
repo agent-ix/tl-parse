@@ -26,8 +26,9 @@ The authorship basis above is historical and does not move: those are the bytes
 that were read when the dialect was authored. The revision this crate *compiles
 against* is separate, and it has advanced.
 
-The compiled revision is the landed TL-15 change from tl-syntax PR #93. It is
-not a moving branch head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
+The compiled revision builds on the landed TL-15 change from tl-syntax PR #93
+and includes the interval Kani proof from PR #94. It is not a moving branch
+head. `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock` and
 [`TL_SYNTAX_REVISION`] name that exact revision. Those files are where the pin
 is enforced: cargo resolves the dependency by exact revision and refuses a
 graph that disagrees. This document records the boundary and does not restate a

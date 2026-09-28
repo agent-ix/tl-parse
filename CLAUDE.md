@@ -99,8 +99,8 @@ The constraint re-applies when this repository moves toward stable releases.
 
 Two different facts, and they no longer coincide.
 
-The crate **compiles against** `cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, an
-exact commit in draft tl-syntax PR #93. TL-14 must repin after TL-15 lands.
+The crate **compiles against** `18850985fe124e4b3254bd9b9f7ef4c1fb4e1cf1`, an
+exact commit in tl-syntax PR #94 containing the Campaign's interval Kani proof.
 The dialect was **authored from**
 `740182f13b84858008d6f176f75136737d405c1b`, which is historical and does not
 move. `docs/ATTRIBUTION.md` records both as separate facts. `Cargo.toml` and
