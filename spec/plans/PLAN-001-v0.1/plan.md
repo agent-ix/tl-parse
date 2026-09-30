@@ -14,7 +14,7 @@ relationships:
 ## Dependency DAG
 
 ```text
-exact tl-syntax revision
+tl-syntax
   -> specification foundation
   -> versioned lexer and direct bounded parser
   -> stable diagnostics and fail-closed limits
