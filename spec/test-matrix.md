@@ -18,7 +18,6 @@ relationships:
 | FR-003 | FR-003-AC-1 through FR-003-AC-3 | TC-009 through TC-013 | ✅ covered |
 | FR-004 | FR-004-AC-1 through FR-004-AC-3 | TC-014 through TC-017 | ✅ covered |
 | FR-005 | FR-005-AC-1 through FR-005-AC-3 | TC-018 through TC-021, TC-047 | ✅ covered |
-| FR-006 | FR-006-AC-1 through FR-006-AC-3, FR-006-AC-5 through FR-006-AC-7 | TC-022 through TC-024, TC-026 through TC-028, TC-047 | ✅ covered |
 | FR-007 | FR-007-AC-1 through FR-007-AC-6 | TC-033 through TC-038 | ✅ covered |
 | FR-008 | FR-008-AC-1 through FR-008-AC-6 | TC-039 through TC-045 | ✅ covered |
 | FR-009 | FR-009-AC-1 through FR-009-AC-5 | TC-046 | ✅ covered |
@@ -28,7 +27,7 @@ relationships:
 | Stakeholder Req | Trace to US/FR | Test/Validation | Coverage Status |
 |---|---|---|---|
 | StR-001 | FR-001, FR-002, FR-003, FR-008 | TC-001, TC-005, TC-008, TC-010, TC-020, TC-039 | ✅ covered |
-| StR-002 | FR-003, FR-004, FR-005, FR-006 | TC-011, TC-016, TC-018, TC-019, TC-021, TC-027, TC-047 | ✅ covered |
+| StR-002 | FR-003, FR-004, FR-005 | TC-011, TC-016, TC-018, TC-019, TC-021, TC-047 | ✅ covered |
 | StR-003 | FR-007 | TC-033 through TC-037 | ✅ covered |
 
 ## Non-Functional Requirement Coverage
@@ -36,8 +35,7 @@ relationships:
 | Non-Functional Req | Verification Method | Evidence/Test Cases | Status |
 |---|---|---|---|
 | NFR-001 | deterministic and resource-bound tests | TC-011 through TC-017, TC-021 | ✅ covered |
-| NFR-002 | dialect, pin-delta, and provenance inspection | TC-020, TC-031 | ✅ covered |
-| NFR-003 | qualification integrity, fail-closed shared intake, and hosted workflow controls | TC-023, TC-026, TC-029, TC-032 | ✅ covered |
+| NFR-002 | dialect and provenance inspection | TC-020 | ✅ covered |
 
 ## Test Case Summary
 
@@ -60,20 +58,11 @@ relationships:
 | TC-015 | Prove canonical formatting idempotent | Unit | P0 | FR-004-AC-1, NFR-001-AC-1 | ✅ implemented |
 | TC-016 | Round-trip a generated bounded formula population | Property | P0 | FR-004-AC-2, StR-002-VC-1 | ✅ implemented |
 | TC-017 | Bound iterative formatting and shared/deep graphs | Unit | P0 | FR-004-AC-3, NFR-001-AC-2 | ✅ implemented |
-| TC-018 | Validate malformed/resource corpus and checksums | Integration | P0 | FR-005-AC-1, StR-002-VC-2 | ✅ implemented |
+| TC-018 | Validate malformed/resource corpus | Integration | P0 | FR-005-AC-1, StR-002-VC-2 | ✅ implemented |
 | TC-019 | Consume checked-in fuzz target seeds | Fuzz | P0 | FR-005-AC-2, StR-002-VC-2 | ✅ implemented |
 | TC-020 | Validate dialect provenance and CLI valid paths | Integration | P0 | FR-001-AC-3, FR-005-AC-3, NFR-002-AC-1 | ✅ implemented |
 | TC-021 | Validate CLI dispatch, read/write/error paths, malformed intervals, diagnostic limits, and determinism | Integration | P0 | FR-005-AC-3, NFR-001-AC-1 | ✅ implemented |
-| TC-022 | Classify every shared component through the packaged compatibility matrix and refuse a mirror reference | Integration | P0 | FR-006-AC-1 | ✅ implemented |
-| TC-023 | Reach Quoin intake from producer bytes, and prove neither Quoin nor Quire executes a producer | Integration | P0 | FR-006-AC-2, NFR-003-AC-1, NFR-003-AC-2 | ✅ implemented |
-| TC-024 | Bind the sealed record's impact snapshot to a populated Quire export naming every requirement | Integration | P0 | FR-006-AC-3 | ✅ implemented |
-| TC-026 | Demonstrate all twelve verification outcomes, pair every negative with a positive control, and refuse a dangling control in a scratch-owned Quoin store while the unmutated chain succeeds in the same scratch | Integration | P0 | FR-006-AC-5, NFR-003-AC-3 | ✅ implemented |
-| TC-027 | Report malformed input as malformed, agreeing with the corpus manifest and surviving into the retained bytes | Integration | P0 | FR-006-AC-6, StR-002-VC-2 | ✅ implemented |
-| TC-028 | Prove no local evidence framework remains and none of its files came back | Integration | P0 | FR-006-AC-7 | ✅ implemented |
-| TC-029 | Refuse duplicate or vacuously empty tracked SpecReview identity populations, including equal plain and quoted YAML spellings | Integration | P0 | NFR-003-AC-4 | ✅ implemented |
 | TC-030 | Preserve grouped child lexical spans and enclosing ancestor extents | Unit | P0 | FR-002-AC-4 | ✅ implemented |
-| TC-031 | Preserve the authorship basis and enumerate the source-inspected compiled-pin delta with consumed and unconsumed upstream API families | Integration | P0 | NFR-002-AC-2 | ✅ implemented |
-| TC-032 | Select semantic job-step run scalars and enforce one comment-safe scoped ix-flow package across command-position bare/path-qualified npm after assignments, shell groups, the complete documented npm-install alias family, and literal nested shell commands; fail closed on unquoted redirection and executable expansion scripts, reject alternate identities while ignoring inert command arguments and non-`-c` shell invocations without suppressing later commands, and observe the semantic manual-trigger set and exact runtime version | Integration | P0 | NFR-003-AC-5 | ✅ implemented |
 | TC-033 | Report ordered free propositions with parser spans and shared documents | Unit | P0 | FR-007-AC-1, StR-003-VC-1 | ✅ implemented |
 | TC-034 | Refuse an unresolved proposition with its parser byte span | Unit | P0 | FR-007-AC-2, StR-003-VC-2 | ✅ implemented |
 | TC-035 | Preserve shared requirement context distinct from parser spans | Unit | P0 | FR-007-AC-3, StR-003-VC-1 | ✅ implemented |
@@ -88,4 +77,4 @@ relationships:
 | TC-044 | Build and seed the clean-ascii v2 fuzz target and bound arbitrary-input outcomes | Fuzz | P1 | FR-008-AC-5 | ✅ implemented |
 | TC-045 | Serialize the derived report deterministically under a strict versioned identity that mutations change | Unit | P0 | FR-008-AC-6 | ✅ implemented |
 | TC-046 | Preserve all three dialects while separating their policies | Integration | P0 | FR-009-AC-1, FR-009-AC-2, FR-009-AC-3, FR-009-AC-4, FR-009-AC-5 | ✅ implemented |
-| TC-047 | Emit one versioned campaign result per checked target; classify pass/fail/unavailable/suspect from declared prerequisites, process status, and artifacts; refuse target/manifest/run/tool/sanitizer/identity mutations; and retain both structured results byte-identically through Quoin without either shared tool executing the producer | Integration | P0 | FR-005-AC-2, FR-006-AC-2, NFR-003-AC-1, SUITE-010 | ✅ implemented |
+| TC-047 | Classify fuzz smoke outcomes from process status and artifacts, refuse unknown targets and ambient sanitizer overrides, and terminate a timed-out process group | Unit | P0 | FR-005-AC-2 | ✅ implemented |

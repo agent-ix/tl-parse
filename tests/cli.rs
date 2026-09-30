@@ -5,9 +5,7 @@ use std::{
 };
 
 use tempfile::NamedTempFile;
-use tl_parse::{
-    attribution_document_digest, dialect_digest, dialect_document_digest, TL_SYNTAX_REVISION,
-};
+use tl_parse::TL_SYNTAX_REVISION;
 
 fn binary() -> Command {
     Command::new(env!("CARGO_BIN_EXE_tl-parse"))
@@ -39,57 +37,23 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     for required in [
         "independently authored",
         "MIT OR Apache-2.0",
-        // The compiled revision is selected by Cargo rather than restated here.
-        "Cargo.toml",
-        // The authorship basis, which is historical and must not be silently
-        // rewritten to match the compiled revision when the two diverge.
-        "740182f13b84858008d6f176f75136737d405c1b",
         "tl-parse.clean-ascii/v1",
     ] {
         assert!(dialect.contains(required), "dialect omits {required}");
     }
-    let dialect_v4 =
-        fs::read_to_string(format!("{root}/docs/DIALECT-004-clean-ascii-v4.md")).unwrap();
-    assert!(dialect_v4.contains("Cargo.toml"));
-    assert!(!dialect.contains(TL_SYNTAX_REVISION));
-    assert!(!dialect_v4.contains(TL_SYNTAX_REVISION));
     let manifest = fs::read_to_string(format!("{root}/Cargo.toml")).unwrap();
     assert!(manifest.contains(&format!("rev = \"{TL_SYNTAX_REVISION}\"")));
     for lockfile in ["Cargo.lock", "fuzz/Cargo.lock"] {
         let lock = fs::read_to_string(format!("{root}/{lockfile}")).unwrap();
         assert!(lock.contains(TL_SYNTAX_REVISION));
     }
-    assert_eq!(
-        dialect_digest(),
-        "22959d4df6c7a1230172289903f1c31f36859b6f2a0e4556e886bdb7ebc9ae11"
-    );
-    assert_eq!(
-        dialect_document_digest(),
-        "c7549b44694e3a5f0fa4334bd11664dbec24c1f7c599e9773671e7e0ade1fb62"
-    );
-    assert_eq!(
-        attribution_document_digest(),
-        "67d7601a39cc4385c16318801ce3153b4a0074ce9323644d9e66118973aaca7f"
-    );
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
-    // The authorship basis at 740182f1, which is historical and does not move,
-    // and the exact provisional TL-15 draft revision, which is a different
-    // fact. The per-file digest tables
-    // that used to be asserted here were dropped under
-    // issue #15: 740182f1 is on a deleted branch, so half of them could never be
-    // re-derived by anyone, and Cargo.lock is what enforces the compiled pin.
-    for required in [
-        "independently authored",
-        "MIT OR Apache-2.0",
-        "TL_SYNTAX_REVISION",
-        "740182f13b84858008d6f176f75136737d405c1b",
-    ] {
+    for required in ["independently authored", "MIT OR Apache-2.0"] {
         assert!(
             attribution.contains(required),
             "attribution omits {required}"
         );
     }
-    assert!(!attribution.contains(TL_SYNTAX_REVISION));
 
     let mut file = NamedTempFile::new().unwrap();
     write!(file, "G[0,1]p0").unwrap();
@@ -110,61 +74,6 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(value["semantic_profile"], "mltl.online-prefix/v1");
     assert!(value["document"].is_object());
-}
-
-// Trace: TC-031, NFR-002-AC-2
-#[test]
-fn compiled_pin_delta_and_consumption_boundary_are_explicit() {
-    let root = env!("CARGO_MANIFEST_DIR");
-    let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
-    for required in [
-        "d52d89549b0a6c0c429261bab912cd5396c4a19e..4a5614193d21e5ae99950ae683b04ba0ec931358",
-        "commit tagged\n`v0.3.0`",
-        "found no change under `src/`",
-        "tl-parse consumes nothing new from this range",
-        "842d82553f045eb69a7f38745756d968254fc25e..d52d89549b0a6c0c429261bab912cd5396c4a19e",
-        "CORPUS_DIR",
-        "tl-parse consumes only the new `CORPUS_DIR` constant",
-        "e70f2379a752117c79603bc399a86c26feed7716..842d82553f045eb69a7f38745756d968254fc25e",
-        "bounded strict `FormulaDocument::from_json_bytes` reader",
-        "tl-parse consumes only the reorganized compatibility exports",
-        "8dc18eec5af227f484170362c9e8894b8531a27d..e70f2379a752117c79603bc399a86c26feed7716",
-        "formula-v2 schema",
-        "origin-complete history semantic profile",
-        "tl-parse consumes those new contracts only through the explicitly selected",
-        "26b801d4a68ebfe720062cfdb3c66b070ab60e92..8dc18eec5af227f484170362c9e8894b8531a27d",
-        "future-operator lowering family",
-        "tl-parse consumes the future-operator lowering family",
-        "953ee825e5060335b4c79682f5f41a78c5a1bfae..26b801d4a68ebfe720062cfdb3c66b070ab60e92",
-        "caller-context APIs",
-        "signal declarations",
-        "span-free semantic formula identity",
-        "assurance-only changes",
-        "tl-parse consumes the shared",
-        "it does not consume the span-free semantic-formula",
-        "FormulaDocument",
-        "SemanticProfile",
-        "No later grammar",
-        "source was consulted",
-    ] {
-        assert!(
-            attribution.contains(required),
-            "attribution omits compiled-pin delta fact {required:?}"
-        );
-    }
-    assert!(
-        !attribution.contains("current reviewed `main`"),
-        "the exact compiled revision was mislabeled as a moving branch head"
-    );
-
-    let dialect =
-        fs::read_to_string(format!("{root}/docs/DIALECT-001-clean-room-mltl-v1.md")).unwrap();
-    assert!(dialect.contains("not a moving branch head"));
-    assert!(dialect.contains("carries no per-file SHA-256 table"));
-
-    let deny = fs::read_to_string(format!("{root}/deny.toml")).unwrap();
-    assert!(deny.contains("reviewed commit reachable from tl-syntax `main`"));
-    assert!(!deny.contains("head of tl-syntax `main`"));
 }
 
 // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1

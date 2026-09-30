@@ -53,12 +53,6 @@ pub const DIALECT_V4_REVISION: &str = "tl-parse.clean-ascii/v4";
 /// Normative v4 dialect document.
 pub const DIALECT_V4_DOCUMENT: &str = include_str!("../docs/DIALECT-004-clean-ascii-v4.md");
 
-/// SHA-256 digest of the complete v4 dialect document.
-pub fn dialect_v4_document_digest() -> String {
-    use sha2::{Digest, Sha256};
-    format!("{:x}", Sha256::digest(DIALECT_V4_DOCUMENT.as_bytes()))
-}
-
 /// Stable identity of serialized v2 derived-operator parse reports.
 pub const DERIVED_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.derived-parse-report/v1";
 
@@ -120,13 +114,6 @@ pub fn dialect_digest() -> String {
     format!("{:x}", Sha256::digest(DIALECT_RECORD.as_bytes()))
 }
 
-/// Returns the SHA-256 digest of the complete normative dialect document.
-pub fn dialect_document_digest() -> String {
-    use sha2::{Digest, Sha256};
-
-    format!("{:x}", Sha256::digest(DIALECT_DOCUMENT.as_bytes()))
-}
-
 /// Returns the lowercase SHA-256 digest of the normative v2 dialect record.
 pub fn dialect_v2_digest() -> String {
     use sha2::{Digest, Sha256};
@@ -134,32 +121,11 @@ pub fn dialect_v2_digest() -> String {
     format!("{:x}", Sha256::digest(DIALECT_V2_RECORD.as_bytes()))
 }
 
-/// Returns the SHA-256 digest of the complete normative v2 dialect document.
-pub fn dialect_v2_document_digest() -> String {
-    use sha2::{Digest, Sha256};
-
-    format!("{:x}", Sha256::digest(DIALECT_V2_DOCUMENT.as_bytes()))
-}
-
 /// Returns the lowercase SHA-256 digest of the normative v3 dialect record.
 pub fn dialect_v3_digest() -> String {
     use sha2::{Digest, Sha256};
 
     format!("{:x}", Sha256::digest(DIALECT_V3_RECORD.as_bytes()))
-}
-
-/// Returns the SHA-256 digest of the complete normative v3 dialect document.
-pub fn dialect_v3_document_digest() -> String {
-    use sha2::{Digest, Sha256};
-
-    format!("{:x}", Sha256::digest(DIALECT_V3_DOCUMENT.as_bytes()))
-}
-
-/// Returns the SHA-256 digest of the complete attribution boundary document.
-pub fn attribution_document_digest() -> String {
-    use sha2::{Digest, Sha256};
-
-    format!("{:x}", Sha256::digest(ATTRIBUTION_DOCUMENT.as_bytes()))
 }
 
 /// Serializes a parse report as compact, stable-key-order JSON.

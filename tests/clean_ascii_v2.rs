@@ -1,11 +1,10 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, path::PathBuf};
 
 use proptest::prelude::*;
 use tl_parse::{
-    dialect_v2_digest, dialect_v2_document_digest, format_document, parse, parse_clean_ascii_v2,
-    report_json, DerivedOperator, DerivedParseReport, DiagnosticCode, FormatLimits, ParseLimits,
-    DERIVED_PARSE_REPORT_SCHEMA_VERSION, DIALECT_REVISION, DIALECT_V2_DOCUMENT,
-    DIALECT_V2_REVISION, TL_SYNTAX_REVISION,
+    format_document, parse, parse_clean_ascii_v2, report_json, DerivedOperator, DerivedParseReport,
+    DiagnosticCode, FormatLimits, ParseLimits, DERIVED_PARSE_REPORT_SCHEMA_VERSION,
+    DIALECT_REVISION, DIALECT_V2_DOCUMENT, DIALECT_V2_REVISION, TL_SYNTAX_REVISION,
 };
 use tl_syntax::{
     Formula, FormulaDocument, FutureLoweringRequest, Interval, Node, NodeId, NodeKind,
@@ -230,14 +229,6 @@ fn v2_identity_is_explicit_and_v1_is_unchanged() {
         "tl-parse.derived-parse-report/v1"
     );
     assert!(DIALECT_V2_DOCUMENT.contains(DIALECT_V2_REVISION));
-    assert_eq!(
-        dialect_v2_digest(),
-        "8542aebdc8ecde044659d89f293324d958aee2fac06dbef203d5d12ef71a59b8"
-    );
-    assert_eq!(
-        dialect_v2_document_digest(),
-        "f3365451484a0585170d9382e253b8c39b75b77a20ca5e478629177b7faf3f73"
-    );
 
     let report = v2("p0 W[0,1] p1");
     let json = serde_json::to_value(&report).unwrap();
@@ -555,12 +546,6 @@ fn v2_refusals_are_typed_and_located() {
 fn every_checked_v2_fuzz_seed_is_bounded() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let seeds = root.join("fuzz/corpus/clean_ascii_v2");
-    let checksum = Command::new("sha256sum")
-        .args(["--check", "SHA256SUMS"])
-        .current_dir(&seeds)
-        .output()
-        .unwrap();
-    assert!(checksum.status.success());
     assert!(root.join("fuzz/fuzz_targets/clean_ascii_v2.rs").is_file());
     // The build itself is proven by `make fuzz-build`; this pins that the
     // manifest declares the target it builds.

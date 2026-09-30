@@ -40,10 +40,9 @@ Release gate: the full local gate (`make ci`) passes at this revision against
   are organized around closed `v1`/`v2`/`v3` dialect policies that each own
   their spellings, precedence, associativity, semantic profile, owner schema
   and lowering permission, while sharing traversal and resource accounting.
-  Each dialect publishes its normative record and document with digests
-  (`DIALECT_V2_RECORD`, `DIALECT_V3_RECORD`, `DIALECT_V2_DOCUMENT`,
-  `DIALECT_V3_DOCUMENT`, `dialect_v2_digest`, `dialect_v2_document_digest`,
-  `dialect_v3_digest`, `dialect_v3_document_digest`). Every successful parse is
+  Each dialect publishes its normative record and document, with a record
+  digest (`DIALECT_V2_RECORD`, `DIALECT_V3_RECORD`, `DIALECT_V2_DOCUMENT`,
+  `DIALECT_V3_DOCUMENT`, `dialect_v2_digest`, `dialect_v3_digest`). Every successful parse is
   re-admitted from canonical bytes through tl-syntax's strict
   `FormulaDocument::from_json_bytes` reader.
 - **Strict artifact reader limits.** `ParseArtifactLimits` (with

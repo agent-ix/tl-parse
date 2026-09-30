@@ -23,6 +23,4 @@ documents whose license does not permit reuse.
 
 Local CI intentionally refuses non-empty `MAKEFLAGS`, including parallel,
 dry-run, touch, and ignore-error modes such as `make -j4 ci`. Run `make ci`
-without Make control flags so the failure-propagation and transcript censuses
-remain meaningful. The qualified `quire` executable and every other mandatory
-tool are exact path-and-SHA-256 entries in `tools.lock`.
+without Make control flags.

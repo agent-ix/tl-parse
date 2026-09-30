@@ -32,8 +32,8 @@ tokenize it deterministically with half-open UTF-8 byte spans.
 |---|---|---|
 | FR-001-AC-1 | The full token vocabulary, precedence, associativity, and whitespace behavior match the checked-in dialect revision. | Test (TC-001, TC-002) |
 | FR-001-AC-2 | Invalid characters, identifiers, and numbers are rejected at stable half-open UTF-8 byte spans. | Test (TC-003, TC-004) |
-| FR-001-AC-3 | The dialect record states its independent authorship, exact tl-syntax vocabulary pin, and digest-bearing revision. | Inspection (TC-020) |
+| FR-001-AC-3 | The dialect record states its independent authorship and license boundary. | Inspection (TC-020) |
 
 ## Dependencies
 
-Depends only on PGM-01 and the exact pinned tl-syntax operator vocabulary.
+Depends only on the exact pinned tl-syntax operator vocabulary.

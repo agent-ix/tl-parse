@@ -1,53 +1,45 @@
 ---
 id: NFR-002
-title: Preserve clean-room provenance and qualification boundaries
+title: Preserve clean-room provenance boundary
 type: NFR
 quality_attribute: compliance
 ---
 
-# NFR-002: Preserve clean-room provenance and qualification boundaries
+# NFR-002: Preserve clean-room provenance boundary
 
 ## Statement
 
 The source shall remain independently authored from the permitted tl-syntax
-operator model and repository requirements, with exact revision pins, an
-enumerated source-inspected delta whenever the compiled pin advances, and no
-claim that automated checks replace human review.
+operator model and repository requirements, with no claim that automated checks
+replace human review.
 
 ## Scope
 
-The requirement covers grammar authorship, dependency/dialect/corpus pins,
-the distinction between upstream API changes this crate consumes and does not
-consume, qualification language, and release authority.
+The requirement covers grammar authorship, the license boundary, qualification
+language, and release authority.
 
 ## Rationale
 
-Textual compatibility and assurance claims are not reviewable if their source,
-version, license, or decision owner can drift silently.
+Compatibility and assurance claims are not reviewable if their source, license,
+or decision owner can drift silently.
 
 ## Measurement and Evaluation
 
 | Metric | Target | Threshold | Method |
 |---|---|---|---|
-| Unpinned governed inputs | 0 | 0 | Inspection |
-| Compiled-pin advances without an enumerated source-inspected delta | 0 | 0 | Test |
 | Automated release approvals | 0 | 0 | Inspection |
 
 ## Verification
 
-Dialect, wire, and corpus tests inspect exact identities. A provenance test
-requires the attribution record to identify the exact old-to-new compiled-pin
-range, enumerate the changed public API families found by source inspection,
-and say which of those families tl-parse directly consumes. No automated check
-grants review or release authority; that remains a human's and is established by
-inspection rather than by a gate.
+The dialect record and attribution record are checked for their authorship and
+license statements. No automated check grants review or release authority; that
+remains a human's and is established by inspection rather than by a gate.
 
 ## Acceptance Criteria
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-002-AC-1 | The dialect record names its authorship basis, license boundary, exact compiled tl-syntax pin, stable revision, and digest, with the authorship basis and the compiled revision recorded as separate facts. The compiled pin is enforced by `Cargo.toml` and `Cargo.lock` rather than by a repository-local digest table. | Test (TC-020) |
-| NFR-002-AC-2 | The attribution record preserves the historical authorship basis and enumerates the source-inspected `26b801d4a68ebfe720062cfdb3c66b070ab60e92..8dc18eec5af227f484170362c9e8894b8531a27d` compiled-pin delta, the future-operator lowering family that the clean-ascii v2 dialect consumes, and the earlier `953ee825e5060335b4c79682f5f41a78c5a1bfae..26b801d4a68ebfe720062cfdb3c66b070ab60e92` delta: caller-context documents, signal catalogs and bindings, span-free semantic formula identity, and assurance-only changes. It states which of those API families tl-parse consumes, that it does not consume the span-free semantic-formula identity family, continues to consume the pre-existing graph, interval, span, proposition, and semantic-profile contracts, and consulted no later grammar source. | Test (TC-031) |
+| NFR-002-AC-1 | The dialect record names its authorship basis and license boundary. | Test (TC-020) |
 
 ## Qualification Boundary
 

@@ -6,19 +6,12 @@ Parsing, formatting, and diagnostics for Mission-time Linear Temporal Logic.
 
 The v0.1 boundary uses the independently authored, versioned ASCII dialect in
 [`docs/DIALECT-001-clean-room-mltl-v1.md`](docs/DIALECT-001-clean-room-mltl-v1.md).
-It maps source directly into the exact pinned `tl-syntax` graph model and does
+It maps source directly into the `tl-syntax` graph model and does
 not own a second AST or temporal semantics.
 
-The crate compiles against `tl-syntax` at
-`cfc2761cbdf9aa6e30f1b04db5c2a0c00023e4a0`, the exact provisional commit
-in draft tl-syntax PR #93. TL-14 must repin after TL-15 lands. That revision
-carries the contextual and semantic contracts. The dialect was authored from
-the earlier revision `740182f1`, which is
-a separate and historical fact; `docs/ATTRIBUTION.md` records both, and
-`Cargo.lock` is what enforces the compiled one. The dependency still resolves by
-exact git revision because
-`tl-syntax` has no registry release, and source release remains blocked while
-that is true.
+The dialect's clean-room authorship boundary is recorded in
+`docs/ATTRIBUTION.md`. `tl-syntax` has no registry release, so the dependency
+resolves from git, and source release remains blocked while that is true.
 
 The additive `parse_clean_ascii_v2` API accepts bounded derived future
 operators `W` and `M`. The additive `parse_clean_ascii_v3` and
@@ -64,26 +57,9 @@ cargo run --bin tl-parse -- validate --profile closed formula.mltl
 printf 'p0 U[1,2] true' | cargo run --bin tl-parse -- format --profile online -
 ```
 
-The checksum-protected hostile-input corpus is in `corpus/v1`; fuzz seeds and
+The hostile-input corpus is in `corpus/v1`; fuzz seeds and
 the `cargo-fuzz` targets are under `fuzz/`. `make fuzz-smoke` runs both targets
-through the bounded Rust campaign producer and writes one
-`tl-parse.fuzz-campaign/v1` result per target for shared assurance intake.
-
-## Assurance
-
-Verification results are produced by this repository's own tools, transcribed
-and retained by [Quoin](https://github.com/agent-ix/quoin), and described by
-static facts exported from [Quire](https://github.com/agent-ix/quire-rs).
-Neither tool executes a producer. The two fuzz-campaign documents are retained
-byte-identically as separate Quoin proof inputs, and the same Rust campaign tool
-validates their closed protocol before the existing Python driver hands the
-mapped result to Quoin. `make assurance` classifies the toolchain through the
-packaged Engineering Assurance compatibility matrix and drives the
-seal/intake/receipt chain.
-
-This repository retains no evidence of its own. Verification evidence is what
-the chain produces at the reviewed revision; Git history and pull-request review
-are the integrity boundary for the source.
+through a bounded cargo-fuzz smoke run.
 
 ## Development status
 

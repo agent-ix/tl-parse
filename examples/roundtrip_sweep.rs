@@ -1,4 +1,4 @@
-//! The parse-format-parse fixed point, as a producer (FR-006-AC-2).
+//! The parse-format-parse fixed point, as a producer.
 //!
 //! Reviewers of PR #6 established this property by independent execution and
 //! called it "the crate's central correctness argument": every source the

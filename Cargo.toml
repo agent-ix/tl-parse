@@ -26,7 +26,6 @@ tl-syntax = { version = "=0.3.0", git = "https://github.com/agent-ix/tl-syntax.g
 command-group = "=5.0.1"
 criterion = { version = "=0.5.1", default-features = false }
 proptest = "=1.5.0"
-serde_yaml_ng = "0.10"
 tempfile = "=3.10.1"
 
 [[bench]]

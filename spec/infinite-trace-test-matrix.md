@@ -21,7 +21,7 @@ relationships:
 Executing assertions in `tests/infinite_v4.rs` and
 `tests/infinite_trace_corpus.rs` cover the public API and checked seeds. The
 `clean_ascii_v3` and `unbounded_parse_roundtrip` fuzz targets each completed
-64 local libFuzzer runs at the TL-14 candidate; their seeds are SHA-256 pinned.
+64 local libFuzzer runs at the TL-14 candidate.
 
 ## Test Case Summary
 
@@ -33,7 +33,7 @@ Executing assertions in `tests/infinite_v4.rs` and
 | TC-061 | Preserve byte-exact interval and premise loci through nesting and UTF-8 | Property | P0 | FR-016-AC-1 | ✅ implemented |
 | TC-062 | Replay malformed inputs and map diagnostic codes without message parsing | Integration | P0 | FR-016-AC-2 | ✅ implemented |
 | TC-063 | Prove representable fixed points, exact fairness order and typed refusal of unrepresentable owner graphs | Property | P0 | FR-017-AC-1 | ✅ implemented |
-| TC-064 | Digest-check malformed/locus fixtures and fail on one-axis mutation | Integration | P0 | FR-017-AC-2 | ✅ implemented |
+| TC-064 | Check malformed/locus fixtures against their manifest and fail on one-axis mutation | Integration | P0 | FR-017-AC-2 | ✅ implemented |
 | TC-065 | Execute both named fuzz targets with checked seeds | Fuzz | P1 | FR-017-AC-3 | ✅ implemented |
 | TC-066 | Repeat deterministic reports and test every exact/one-over limit | Property | P0 | NFR-004-AC-1 | ✅ implemented |
 
@@ -41,5 +41,5 @@ Executing assertions in `tests/infinite_v4.rs` and
 
 | Purpose | Target | Type | Test Cases |
 |---|---|---|---|
-| Parse against pinned owner graph and corpus | tl-syntax | service | TC-058 through TC-064 |
+| Parse against owner graph and corpus | tl-syntax | service | TC-058 through TC-064 |
 | Keep v3 past regression while fuzzing v4 | cargo-fuzz | workspace | TC-065, TC-066 |

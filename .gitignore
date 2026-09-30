@@ -6,7 +6,7 @@ Cargo.lock.bak
 .idea/
 .vscode/
 
-# The pinned shared-assurance interpreter, built by `make assurance-env`.
+# The interpreter environment built by `make assurance-env`.
 .venv-assurance/
 
 target/

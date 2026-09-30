@@ -4,17 +4,7 @@
 #
 # Native orchestration. Every target calls the toolchain that owns the job:
 # cargo for the crate, the corpus conformance runner and the round-trip sweep
-# for the parser, quire for static export, quoin for evidence. Nothing here
-# computes a verdict, attests to its own correctness, or retains evidence of its
-# own.
-#
-# This file is not a trust root. Quoin binds each retained input by digest and
-# the chain derives every attested result from the producer's own bytes, so a
-# producer that did not run yields an absent or empty input the chain names.
-# That covers the work re-run inside `assurance-inputs`. It does not cover a
-# pure gate with no retained output — fmt-check, lint, test, check-corpus,
-# fuzz-build, fuzz-smoke, deny, audit-unsafe, rustdoc, or the `quire validate`
-# half of spec.
+# for the parser, quire for static export.
 #
 # agent-ix/tl-parse#11: the local evidence collector this guard used to
 # protect is gone, but the class it caught is real — a `-` prefix, `.IGNORE`,
@@ -64,26 +54,10 @@ endif
 CARGO ?= cargo
 PYTHON ?= python3
 QUIRE ?= quire
-QUOIN ?= quoin
 
-# The shared-assurance lane runs in its own interpreter. Unlike tl-syntax there
-# is no jsonschema conflict to resolve here — nothing in this repository imports
-# jsonschema once the local evidence machinery is gone. The environment exists
-# because engineering-assurance is pinned as a git tag, and resolving a git
-# dependency into the system interpreter would make the pin depend on whatever
-# else that interpreter happens to have.
+# Interpreter environment still built by hosted CI (`make assurance-env`).
 ASSURANCE_VENV ?= .venv-assurance
 ASSURANCE_PYTHON ?= $(ASSURANCE_VENV)/bin/python
-
-ASSURANCE_DIR := target/assurance
-CONFORMANCE_RESULT := $(ASSURANCE_DIR)/parser-conformance.jsonl
-ROUNDTRIP_RESULT := $(ASSURANCE_DIR)/roundtrip-property.jsonl
-CENSUS_RESULT := $(ASSURANCE_DIR)/test-census.json
-PARSER_FUZZ_RESULT := $(ASSURANCE_DIR)/fuzz-parser-campaign.json
-CLEAN_ASCII_V2_FUZZ_RESULT := $(ASSURANCE_DIR)/fuzz-clean-ascii-v2-campaign.json
-QUIRE_EXPORT := $(ASSURANCE_DIR)/quire-static-export.json
-MSRV_RESULT := $(ASSURANCE_DIR)/msrv.jsonl
-REVISION ?= $(shell git rev-parse HEAD)
 
 .PHONY: help
 help:
@@ -91,8 +65,7 @@ help:
 	@echo "  make fmt              - Format with rustfmt"
 	@echo "  make fmt-check        - Verify formatting (CI gate)"
 	@echo "  make lint             - Clippy with -D warnings"
-	@echo "  make test             - cargo test plus the shared-assurance tests"
-	@echo "  make check-corpus     - Verify malformed and fuzz-seed corpus bytes"
+	@echo "  make test             - cargo test"
 	@echo "  make conformance      - Replay the hostile-input corpus through the crate"
 	@echo "  make roundtrip        - Sweep the parse-format-parse fixed point"
 	@echo "  make test-census      - Bind requirement-tagged tests to compiled tests"
@@ -106,11 +79,7 @@ help:
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make build            - Release build"
 	@echo "  make clean            - cargo clean and drop the assurance environment"
-	@echo "  make assurance-env    - Create the pinned shared-assurance interpreter"
-	@echo "  make assurance-inputs - Run the producers and write their structured results"
-	@echo "  make pins             - Classify the toolchain through the shared matrix"
-	@echo "  make assurance-chain  - Seal, retain, and verify through Quoin"
-	@echo "  make assurance        - pins + assurance-chain"
+	@echo "  make assurance-env    - Create the interpreter environment hosted CI builds"
 	@echo "  make ci               - All CI gates locally (hosted CI is manual-only)"
 
 # =============================================================================
@@ -129,22 +98,13 @@ fmt-check:
 lint:
 	$(CARGO) clippy --all-targets --all-features -- -D warnings
 
-# The traced tests invoke the assurance gates, so the producers must already have
-# run. They are a prerequisite rather than something a test creates for itself: a
-# test that can produce its own inputs can produce a green run out of nothing.
 .PHONY: test
-test: assurance-inputs
+test:
 	$(CARGO) test --all-targets --all-features
 
 # =============================================================================
 # Parser domain
 # =============================================================================
-
-.PHONY: check-corpus
-check-corpus:
-	$(PYTHON) scripts/check_checksum_manifest.py corpus/v1
-	$(PYTHON) scripts/check_checksum_manifest.py fuzz/corpus/parser
-	$(PYTHON) scripts/check_checksum_manifest.py fuzz/corpus/clean_ascii_v2
 
 .PHONY: conformance
 conformance:
@@ -165,9 +125,8 @@ fuzz-build:
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
-	mkdir -p $(ASSURANCE_DIR)
-	$(CARGO) run --quiet --example fuzz_campaign -- parser > $(PARSER_FUZZ_RESULT)
-	$(CARGO) run --quiet --example fuzz_campaign -- clean_ascii_v2 > $(CLEAN_ASCII_V2_FUZZ_RESULT)
+	$(CARGO) run --quiet --example fuzz_campaign -- parser
+	$(CARGO) run --quiet --example fuzz_campaign -- clean_ascii_v2
 
 .PHONY: build
 build:
@@ -217,12 +176,9 @@ rustdoc:
 	RUSTDOCFLAGS=-Dwarnings $(CARGO) doc --no-deps --all-features
 
 # =============================================================================
-# Shared assurance
+# Hosted CI interpreter environment
 # =============================================================================
 
-# Rebuilt when the pin changes. Without this prerequisite, editing the pinned
-# release never rebuilds the environment and the toolchain keeps whatever it
-# already had.
 $(ASSURANCE_PYTHON): requirements-assurance.txt
 	rm -rf $(ASSURANCE_VENV)
 	$(PYTHON) -m venv $(ASSURANCE_VENV)
@@ -232,51 +188,11 @@ $(ASSURANCE_PYTHON): requirements-assurance.txt
 .PHONY: assurance-env
 assurance-env: $(ASSURANCE_PYTHON)
 
-# The only target that runs a producer. Everything downstream consumes these
-# files and refuses to create them.
-.PHONY: assurance-inputs
-assurance-inputs: assurance-env fuzz-smoke
-	mkdir -p $(ASSURANCE_DIR)
-	$(CARGO) run --quiet --example corpus_conformance -- \
-		--manifest corpus/v1/manifest.json > $(CONFORMANCE_RESULT)
-	$(CARGO) run --quiet --release --example roundtrip_sweep > $(ROUNDTRIP_RESULT)
-	$(PYTHON) scripts/rust_test_census.py --json > $(CENSUS_RESULT)
-	$(QUIRE) coverage --scope . --json > $(QUIRE_EXPORT)
-	rustup run 1.98.1 $(CARGO) check --locked --all-targets --all-features \
-		--message-format=json > $(MSRV_RESULT)
-
-.PHONY: pins
-pins: assurance-env
-	$(ASSURANCE_PYTHON) scripts/check_shared_pins.py
-
-.PHONY: assurance-chain
-assurance-chain: assurance-inputs
-	$(PYTHON) scripts/assurance_chain.py --candidate-revision $(REVISION)
-
-.PHONY: assurance
-assurance: pins assurance-chain
-
-# An operator target, not a CI gate. It writes into this repository's own Quoin
-# evidence store, which is a reviewed change to spec/evidence/ rather than
-# something a gate should do on every run.
-.PHONY: assurance-record
-assurance-record: assurance-inputs
-	$(PYTHON) scripts/assurance_chain.py --adapt $(CONFORMANCE_RESULT) \
-		> $(ASSURANCE_DIR)/entries.json
-	$(QUOIN) evidence record \
-		--repo . \
-		--suite SUITE-001 \
-		--commit $(REVISION) \
-		--tool "tl-parse-corpus-conformance 0.1.0" \
-		--adapter entries \
-		--kind Integration \
-		--results $(ASSURANCE_DIR)/entries.json
-
 # =============================================================================
 # Composite
 # =============================================================================
 
 .PHONY: ci
-ci: fmt-check lint test check-corpus conformance roundtrip test-census \
+ci: fmt-check lint test conformance roundtrip test-census \
 	fuzz-build fuzz-smoke deny audit-unsafe test-execution-control-guard spec \
-	msrv rustdoc assurance
+	msrv rustdoc

@@ -17,21 +17,10 @@ revision `740182f13b84858008d6f176f75136737d405c1b`. No parser implementation,
 grammar production, or grammar prose from any third-party MLTL tool was used.
 The separately retained `ATTRIBUTION.md` names the exact tl-syntax files and
 license texts consulted and records the negative clean-room declaration as a
-reviewable artifact. It deliberately carries no per-file SHA-256 table because
-the historical authorship revision is no longer reachable from an upstream ref.
-
-The revision above is the authorship basis and is historical. The revision this
-crate compiles against is the landed TL-15 revision selected by `Cargo.toml`
-and recorded in `Cargo.lock`, not a moving branch head. `ATTRIBUTION.md`
-enumerates the source-inspected delta from the prior compiled pin and the API
-families this crate does and does not consume. Later implementation and
-assurance changes do not move the historical authorship basis: no operator,
-interval, span, or precedence rule was copied or re-derived from the compiled
-revision.
+reviewable artifact.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
-a SHA-256 digest over the normative production and precedence record so drift
-is detectable by tests and evidence.
+a SHA-256 digest over the normative production and precedence record.
 
 ## Normative lexical record
 

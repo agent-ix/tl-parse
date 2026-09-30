@@ -14,6 +14,8 @@ This document defines `tl-parse.clean-ascii/v3`. The dialect is an internal,
 independently authored ASCII representation for Boolean formulas plus the
 closed past-time operator set `O`, `H`, `Y`, `S`, and `T`. It is not a native
 Quire source language and makes no independent claim about temporal semantics.
+It was authored from tl-syntax MRS-003/FR-013; no third-party grammar was
+consulted.
 
 Successful parsing produces `tl-syntax.formula/v2` under semantic profile
 `mltl.origin-complete-history/v1` and operator catalog

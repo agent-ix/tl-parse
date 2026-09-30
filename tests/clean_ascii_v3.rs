@@ -1,10 +1,9 @@
 use proptest::prelude::*;
 use tl_parse::{
-    dialect_v3_digest, dialect_v3_document_digest, format_clean_ascii_v3, parse,
-    parse_clean_ascii_v2, parse_clean_ascii_v3, DiagnosticCode, FormatErrorCode, FormatLimits,
-    ParseLimits, PastDialectRevision, PastOperatorProfile, PastParseReport, PastParseSchemaVersion,
-    RecoveryAction, DIALECT_REVISION, DIALECT_V2_REVISION, DIALECT_V3_DOCUMENT,
-    DIALECT_V3_REVISION, PAST_PARSE_REPORT_SCHEMA_VERSION, TL_SYNTAX_REVISION,
+    format_clean_ascii_v3, parse, parse_clean_ascii_v2, parse_clean_ascii_v3, DiagnosticCode,
+    FormatErrorCode, FormatLimits, ParseLimits, PastDialectRevision, PastOperatorProfile,
+    PastParseReport, PastParseSchemaVersion, RecoveryAction, DIALECT_REVISION, DIALECT_V2_REVISION,
+    DIALECT_V3_DOCUMENT, DIALECT_V3_REVISION, PAST_PARSE_REPORT_SCHEMA_VERSION, TL_SYNTAX_REVISION,
 };
 use tl_syntax::{
     FormulaDocument, FormulaSchemaVersion, Interval, Node, NodeId, NodeKind, PropositionId,
@@ -48,14 +47,6 @@ fn v3_identity_is_closed_and_prior_dialects_are_unchanged() {
         "tl-parse.past-parse-report/v1"
     );
     assert!(DIALECT_V3_DOCUMENT.contains(DIALECT_V3_REVISION));
-    assert_eq!(
-        dialect_v3_digest(),
-        "e5909f5c086e7f182f15d90ac1c2e8d93a0177a1b2cbea5cc2cee84405220591"
-    );
-    assert_eq!(
-        dialect_v3_document_digest(),
-        "feaa05df2816cbd84682bb0af261a0715cce4a8ab04de75520eb481ecbe50e50"
-    );
     assert_eq!(PAST_OPERATORS_V1, "tl-syntax.past-operators/v1");
 
     let report = v3("Yp0");

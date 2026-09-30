@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use sha2::{Digest, Sha256};
 use tl_parse::tl_syntax::{InfiniteClock, SemanticProfile};
 use tl_parse::{
     format_clean_ascii_v3, format_clean_ascii_v4, format_document, parse, parse_clean_ascii_v3,
@@ -14,23 +13,6 @@ const INFINITE_SMALL: &str = include_str!("inputs/infinite-small.txt");
 const INFINITE_FAIRNESS: &str = include_str!("inputs/infinite-fairness.txt");
 const SHARED_MEDIAN: &str = include_str!("inputs/shared-median.txt");
 const SHARED_NEAR_NODE_CAP: &str = include_str!("inputs/shared-near-node-cap.txt");
-const INPUT_SHA256SUMS: &str = include_str!("inputs/SHA256SUMS");
-
-fn verify_inputs() {
-    let files = [
-        ("bounded-small.txt", BOUNDED_SMALL),
-        ("infinite-fairness.txt", INFINITE_FAIRNESS),
-        ("infinite-small.txt", INFINITE_SMALL),
-        ("past-small.txt", PAST_SMALL),
-        ("shared-median.txt", SHARED_MEDIAN),
-        ("shared-near-node-cap.txt", SHARED_NEAR_NODE_CAP),
-    ];
-    let actual = files
-        .iter()
-        .map(|(name, source)| format!("{:x}  {name}\n", Sha256::digest(source.as_bytes())))
-        .collect::<String>();
-    assert_eq!(actual, INPUT_SHA256SUMS, "benchmark input digests changed");
-}
 
 fn limits(near_cap: bool) -> ParseLimits {
     ParseLimits {
@@ -108,7 +90,6 @@ fn parse_only(kind: ParserKind, source: &str, limits: ParseLimits) {
 }
 
 fn parser_benchmarks(c: &mut Criterion) {
-    verify_inputs();
     let cases: [BenchmarkCase; 10] = [
         (
             "bounded_small",

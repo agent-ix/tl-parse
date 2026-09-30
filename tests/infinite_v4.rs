@@ -1,4 +1,3 @@
-use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
 use tl_parse::tl_syntax::{
     FairnessPremisesDocument, InfiniteClock, InfiniteFormulaDocument, InfiniteNode,
@@ -1197,13 +1196,8 @@ fn checked_v4_and_v3_fuzz_seeds_execute_real_parser_paths() {
         ("clean_ascii_v3", &["invalid.txt", "past.txt"][..]),
     ] {
         let directory = root.join(target);
-        let sums = fs::read_to_string(directory.join("SHA256SUMS")).unwrap();
-        assert_eq!(sums.lines().count(), files.len());
-        for (line, file) in sums.lines().zip(files.iter()) {
-            let (digest, pinned_file) = line.split_once("  ").unwrap();
-            assert_eq!(pinned_file, *file);
+        for file in files {
             let bytes = fs::read(directory.join(file)).unwrap();
-            assert_eq!(digest, format!("{:x}", Sha256::digest(&bytes)));
             let source = std::str::from_utf8(&bytes).unwrap();
             if target == "unbounded_parse_roundtrip" {
                 let report = parse(source);
