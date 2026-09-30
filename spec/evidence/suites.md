@@ -25,7 +25,7 @@ Hosted CI intentionally has no push or pull-request trigger. Local `make ci` is
 the iteration gate; a hosted run is dispatched deliberately for a finalized
 revision so parallel PR work does not generate repeated billable runs.
 
-SUITE-007 replaces the former local PGM-01 evidence validation suite. There is
+SUITE-007 replaces the former local evidence validation suite. There is
 no retained-evidence suite of any kind any more: the historical records this
 repository kept were deleted under the owner's pre-stable release of the
 preservation constraint (`agent-ix/engineering-assurance#7`), and the

@@ -27,7 +27,7 @@
       "why": "The authority on which component versions are pinned. Deliberately carries no digest here: it is expected to advance as the matrix is re-accepted, and pinning its bytes locally would make this repository a second acceptance authority."
     }
   ],
-  "consumed_artifacts_note": "This list shrank to one entry when the retained evidence was deleted. verification_semantics.py, schemas/pgm01-compatibility-view-v1.schema.json and the two PGM-01 positive-control fixtures were pinned by digest because the compatibility view read them; that view is gone, so this repository no longer reads them and pinning bytes it does not read would be a claim about work it does not do. The consequence is stated rather than hidden: artifact_digest_mismatches now has nothing with a digest to re-hash and reports an empty list for that reason, not because a comparison passed.",
+  "consumed_artifacts_note": "This list shrank to one entry when the retained evidence was deleted. verification_semantics.py, schemas/pgm01-compatibility-view-v1.schema.json and the two positive-control fixtures were pinned by digest because the compatibility view read them; that view is gone, so this repository no longer reads them and pinning bytes it does not read would be a claim about work it does not do. The consequence is stated rather than hidden: artifact_digest_mismatches now has nothing with a digest to re-hash and reports an empty list for that reason, not because a comparison passed.",
   "upstream_dependency": {
     "component": "tl-syntax",
     "authorship_basis": "740182f13b84858008d6f176f75136737d405c1b",

@@ -3,8 +3,6 @@ id: MRS-001
 title: tl-parse v0.1 master requirements
 type: MasterRequirements
 relationships:
-  - target: ix://agent-ix/quire-contract-ir/PGM-01
-    type: depends_on
   - target: ix://agent-ix/tl-syntax/MRS-001
     type: depends_on
 ---
@@ -18,8 +16,7 @@ tl-parse converts independently specified ASCII source into the exact pinned
 tl-syntax graph model, emits stable source diagnostics, and formats validated
 graphs into one canonical representation.
 
-PGM-01 governs provenance, compatibility, evidence, human authority, and
-qualification boundaries. tl-syntax owns formula nodes, intervals, source
+tl-syntax owns formula nodes, intervals, source
 spans, proposition identities, and semantic-profile identities; this crate
 does not introduce a second AST or temporal semantics.
 
@@ -89,4 +86,3 @@ passes.
 
 - [tl-parse epic](https://github.com/agent-ix/tl-parse/issues/4).
 - [tl-syntax](https://github.com/agent-ix/tl-syntax).
-- [PGM-01](https://github.com/agent-ix/quire-contract-ir/blob/main/spec/program/PGM-01-governance.md).
