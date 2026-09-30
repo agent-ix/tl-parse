@@ -22,7 +22,7 @@ profiles can change a formula before later semantic checks begin.
 | ID | Criteria | Validation |
 |---|---|---|
 | StR-001-VC-1 | The dialect revision, grammar, precedence, associativity, and clean-room provenance are explicit and stable. | Inspection (TC-020, TC-039) |
-| StR-001-VC-2 | Every accepted source produces a structurally valid graph from the exact pinned tl-syntax revision, while rejected source produces no graph. | Test (TC-007, TC-008) |
+| StR-001-VC-2 | Every accepted source produces a structurally valid graph, while rejected source produces no graph. | Test (TC-007, TC-008) |
 
 ## Stakeholders
 
