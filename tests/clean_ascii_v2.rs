@@ -4,7 +4,7 @@ use proptest::prelude::*;
 use tl_parse::{
     format_document, parse, parse_clean_ascii_v2, report_json, DerivedOperator, DerivedParseReport,
     DiagnosticCode, FormatLimits, ParseLimits, DERIVED_PARSE_REPORT_SCHEMA_VERSION,
-    DIALECT_REVISION, DIALECT_V2_DOCUMENT, DIALECT_V2_REVISION, TL_SYNTAX_REVISION,
+    DIALECT_REVISION, DIALECT_V2_DOCUMENT, DIALECT_V2_REVISION,
 };
 use tl_syntax::{
     Formula, FormulaDocument, FutureLoweringRequest, Interval, Node, NodeId, NodeKind,
@@ -235,7 +235,6 @@ fn v2_identity_is_explicit_and_v1_is_unchanged() {
     assert_eq!(json["schema_version"], DERIVED_PARSE_REPORT_SCHEMA_VERSION);
     assert_eq!(json["dialect_revision"], DIALECT_V2_REVISION);
     assert_eq!(json["operator_profile"], FUTURE_OPERATORS_V1);
-    assert_eq!(json["tl_syntax_revision"], TL_SYNTAX_REVISION);
 
     for source in ["p0 W[0,1] p1", "p0 M[0,1] p1", "X p0", "p0 S[0,1] p1"] {
         let report = parse(source, PROFILE, ParseLimits::default());
@@ -667,7 +666,6 @@ fn derived_report_is_deterministic_and_strict() {
     assert!(changes(
         &|value| value["lowerings"][1]["expression_span"]["start"] = 1.into()
     ));
-    assert!(changes(&|value| value["tl_syntax_revision"] = "0".into()));
 
     let failed = v2("p0 W p1");
     let decoded: DerivedParseReport =

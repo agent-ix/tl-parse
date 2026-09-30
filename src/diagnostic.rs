@@ -3,7 +3,7 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 use tl_syntax::{FormulaDocument, SemanticProfile, SourceSpan};
 
-use crate::{DIAGNOSTIC_SCHEMA_VERSION, DIALECT_REVISION, TL_SYNTAX_REVISION};
+use crate::{DIAGNOSTIC_SCHEMA_VERSION, DIALECT_REVISION};
 
 /// Hard maximum source bytes processed by one request.
 pub const HARD_MAX_SOURCE_BYTES: usize = 1_048_576;
@@ -336,7 +336,7 @@ pub enum DiagnosticCode {
     InvalidInterval,
     /// Input remains after a complete expression.
     TrailingInput,
-    /// Directly constructed graph failed the pinned tl-syntax validator.
+    /// Directly constructed graph failed the validator.
     ValidationFailure,
     /// A recognized operator outside the explicitly selected operator profile.
     UnsupportedOperator,
@@ -523,8 +523,6 @@ pub struct ParseReport {
     pub schema_version: String,
     /// Text dialect identity.
     pub dialect_revision: String,
-    /// Exact compiled tl-syntax source revision.
-    pub tl_syntax_revision: String,
     /// Requested and preserved semantic profile.
     pub semantic_profile: SemanticProfile,
     /// Effective limits after process-safe clamping.
@@ -546,7 +544,6 @@ impl ParseReport {
         Self {
             schema_version: DIAGNOSTIC_SCHEMA_VERSION.to_owned(),
             dialect_revision: DIALECT_REVISION.to_owned(),
-            tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
             semantic_profile: profile,
             limits,
             stats: ParseStats {

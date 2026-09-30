@@ -2,14 +2,14 @@
 
 use core::fmt;
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tl_syntax::{
     FormulaDocument, NodeKind, PropositionId, RequirementContextDocument, SemanticProfile,
     SignalCatalogDocument, SignalId, SourceSpan,
 };
 
-use crate::{parse, ParseLimits, TL_SYNTAX_REVISION};
+use crate::{parse, ParseLimits};
 
 /// Strict wire identity for a context-bound parser result.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -37,8 +37,6 @@ pub struct BoundProposition {
 pub struct ContextualParseReport {
     /// Closed wire identity for this report family.
     pub schema_version: ContextualParseSchemaVersion,
-    /// Exact pinned tl-syntax revision used to validate the shared documents.
-    pub tl_syntax_revision: String,
     /// Successfully parsed, validated formula document.
     pub formula_document: FormulaDocument,
     /// Exact caller-supplied shared signal catalog.
@@ -57,8 +55,6 @@ pub struct ContextualParseReport {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ContextualParseReportWire {
     schema_version: ContextualParseSchemaVersion,
-    #[serde(deserialize_with = "deserialize_tl_syntax_revision")]
-    tl_syntax_revision: String,
     formula_document: FormulaDocument,
     signal_catalog: SignalCatalogDocument,
     signal_catalog_sha256: String,
@@ -100,7 +96,6 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
         }
         Ok(Self {
             schema_version: wire.schema_version,
-            tl_syntax_revision: wire.tl_syntax_revision,
             formula_document: wire.formula_document,
             signal_catalog: wire.signal_catalog,
             signal_catalog_sha256: wire.signal_catalog_sha256,
@@ -108,18 +103,6 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
             request_sha256: wire.request_sha256,
             bindings: wire.bindings,
         })
-    }
-}
-
-fn deserialize_tl_syntax_revision<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let revision = String::deserialize(deserializer)?;
-    if revision == TL_SYNTAX_REVISION {
-        Ok(revision)
-    } else {
-        Err(serde::de::Error::custom("unexpected tl-syntax revision"))
     }
 }
 
@@ -190,7 +173,6 @@ pub fn parse_with_context(
     let request_sha256 = request_digest(&formula_document, catalog_document, requirement_context)?;
     Ok(ContextualParseReport {
         schema_version: ContextualParseSchemaVersion::V2,
-        tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
         formula_document,
         signal_catalog: catalog_document.clone(),
         signal_catalog_sha256,
@@ -247,7 +229,6 @@ fn request_digest(
         "formulaDocument": formula_document,
         "signalCatalog": catalog_document,
         "requirementContext": requirement_context,
-        "tlSyntaxRevision": TL_SYNTAX_REVISION,
     }))
 }
 

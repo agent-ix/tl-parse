@@ -99,7 +99,7 @@ work, or output-limit mismatch fails closed and produces no text.
 Parsing and formatting use the crate's clamped source, token, node, depth,
 diagnostic, work, and output limits. Limit exhaustion and malformed input are
 reported through stable diagnostic/error codes without unwinding. A parse
-report carries the exact dialect, report-schema, operator-profile, semantic
-profile, and compiled `tl-syntax` revision identities. A document is present
+report carries the exact dialect, report-schema, operator-profile, and semantic
+profile identities. A document is present
 only when the parse is diagnostic-free and validates under the syntax
 model.

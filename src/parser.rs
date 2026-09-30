@@ -106,7 +106,7 @@ pub(crate) fn parse_dialect(
                         eof,
                         Vec::new(),
                         RecoveryAction::Stopped,
-                        format!("pinned tl-syntax validation failed: {message}"),
+                        format!("validation failed: {message}"),
                     );
                 }
             }
@@ -135,14 +135,14 @@ fn strictly_admit_document(
     let bytes = document.canonical_json_bytes().map_err(|error| {
         (
             DiagnosticCode::ValidationFailure,
-            format!("pinned tl-syntax canonical encoding failed: {error}"),
+            format!("canonical encoding failed: {error}"),
         )
     })?;
     match FormulaDocument::from_json_bytes(&bytes, SyntaxArtifactLimits::default()) {
         Ok(admitted) if admitted == document => Ok(admitted),
         Ok(_) => Err((
             DiagnosticCode::ValidationFailure,
-            "pinned tl-syntax strict admission changed the document".to_owned(),
+            "strict admission changed the document".to_owned(),
         )),
         Err(error) => {
             let code = match error {
@@ -158,10 +158,7 @@ fn strictly_admit_document(
                 StrictDocumentReadError::WorkLimitExceeded { .. } => DiagnosticCode::WorkLimit,
                 _ => DiagnosticCode::ValidationFailure,
             };
-            Err((
-                code,
-                format!("pinned tl-syntax strict admission failed: {error}"),
-            ))
+            Err((code, format!("strict admission failed: {error}")))
         }
     }
 }
@@ -658,7 +655,7 @@ impl Parser<'_> {
         };
         let root = NodeId(root_index);
         let lowered = Formula::new(self.profile, root, &self.nodes)
-            .map_err(|error| format!("pinned tl-syntax validation failed: {error}"))
+            .map_err(|error| format!("validation failed: {error}"))
             .and_then(|formula| {
                 FutureLoweringRequest {
                     request_identity: FUTURE_LOWERING_REQUEST_V1.as_bytes(),
@@ -676,7 +673,7 @@ impl Parser<'_> {
                     expression_span: Some(expression_span),
                 }
                 .lower()
-                .map_err(|refusal| format!("pinned tl-syntax lowering refused: {refusal}"))
+                .map_err(|refusal| format!("lowering refused: {refusal}"))
             });
         let lowering = match lowered {
             Ok(lowering) => lowering,

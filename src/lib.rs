@@ -2,7 +2,7 @@
 //! Deterministic, bounded parsing and canonical formatting for bounded MLTL.
 //!
 //! The crate implements the independently authored ASCII dialect identified by
-//! [`DIALECT_REVISION`]. Successful parsing returns the exact pinned
+//! [`DIALECT_REVISION`]. Successful parsing returns the
 //! [`tl_syntax::FormulaDocument`] model; tl-parse owns no second temporal AST.
 
 mod context;
@@ -61,9 +61,6 @@ pub const PAST_PARSE_REPORT_SCHEMA_VERSION: &str = "tl-parse.past-parse-report/v
 
 /// Stable identity of serialized parser diagnostic reports.
 pub const DIAGNOSTIC_SCHEMA_VERSION: &str = "tl-parse.diagnostics/v1";
-
-/// Exact tl-syntax source revision compiled into this crate.
-pub const TL_SYNTAX_REVISION: &str = "6aa9b11e29040d64b437da87c9944e3dedd34a86";
 
 /// Stable revision of the checked-in hostile-input and fuzz-seed corpus.
 pub const CORPUS_REVISION: &str = "tl-parse-corpus/v1";

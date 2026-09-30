@@ -39,10 +39,6 @@ fn v4_report_strict_reader_rejects_identity_and_locus_mutations() {
     outside.premise_spans[0] = SourceSpan::new(0, 1000).unwrap();
     assert!(strict_read(&outside).is_err());
 
-    let mut stale_owner = report.clone();
-    stale_owner.tl_syntax_revision = "stale-owner".to_owned();
-    assert!(strict_read(&stale_owner).is_err());
-
     let mut missing_graph = report.clone();
     missing_graph.document = None;
     missing_graph.fairness = None;
@@ -426,7 +422,6 @@ fn mismatched_profile_and_clock_are_typed_refusals() {
 #[test]
 fn legacy_reports_and_canonical_text_match_the_pre_v4_base_bytes() {
     // Captured by executing the three public entry points.
-    // The compiled-owner revision is the sole intentional report field change.
     let mut cases = 0;
     for line in include_str!("fixtures/legacy-v1-v2-v3.tsv").lines() {
         let mut fields = line.splitn(4, '\t');
@@ -466,11 +461,7 @@ fn legacy_reports_and_canonical_text_match_the_pre_v4_base_bytes() {
             }
             other => panic!("unexpected base dialect {other}"),
         };
-        let normalized = report.replace(tl_parse::TL_SYNTAX_REVISION, "<compiled-owner-revision>");
-        assert_eq!(
-            normalized, expected_report,
-            "{dialect} report for {source:?}"
-        );
+        assert_eq!(report, expected_report, "{dialect} report for {source:?}");
         assert_eq!(
             canonical.as_deref().unwrap_or("<none>"),
             expected_text,

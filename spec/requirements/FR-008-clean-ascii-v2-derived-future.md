@@ -59,7 +59,7 @@ AST, an evaluator branch, a user-authored Quire language, or a FRETish parser.
   - Dense, timestamped, unit-bearing, open, or unbounded interval text is
     refused through the existing interval diagnostics.
 - **Report:** a `tl-parse.derived-parse-report/v1` value carries:
-  - the dialect and operator-profile identities, the tl-syntax revision, the
+  - the dialect and operator-profile identities, the
     semantic profile, limits, and stats;
   - the document, present only on a diagnostic-free parse;
   - one lowering record per derived expression, in lowering order: kind,
