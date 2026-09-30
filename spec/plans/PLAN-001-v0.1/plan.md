@@ -14,8 +14,8 @@ relationships:
 ## Dependency DAG
 
 ```text
-PGM-01 + exact tl-syntax revision
-  -> specification and assurance foundation
+exact tl-syntax revision
+  -> specification foundation
   -> versioned lexer and direct bounded parser
   -> stable diagnostics and fail-closed limits
   -> bounded canonical formatter and generated round trips

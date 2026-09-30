@@ -2,10 +2,7 @@
 # Reinstated after agent-ix/tl-parse#11: a `-` prefix, `.IGNORE`, or a
 # `SHELL := /usr/bin/true` assignment can make `make ci` (or any pure gate
 # such as fmt-check, lint, deny, audit-unsafe, rustdoc) exit 0 having executed
-# nothing. Quoin's digest binding only catches this for producers whose output
-# it retains (the `assurance-inputs` chain); it does not cover a pure gate with
-# no retained output. This script is the cheap, collector-free replacement:
-# a static scan of the Makefile's own text for the constructs that neuter
+# nothing. This script is a cheap, collector-free guard: a static scan of the Makefile's own text for the constructs that neuter
 # Make's execution controls. It is invoked at PARSE time from the top of the
 # Makefile (via $(shell ...) + $(error ...)), before any target runs, so it
 # reads the whole file from disk regardless of where in the file a dangerous

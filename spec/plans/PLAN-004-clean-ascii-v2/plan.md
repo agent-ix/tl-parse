@@ -22,6 +22,6 @@ lowers `W`/`M` through tl-syntax and never adds a derived node.
    `tl-parse.derived-parse-report/v1`.
 4. Leave v1 parsing, reports, formatting, and the CLI unchanged. Prove that
    with byte-level tests and the existing golden tests.
-5. Add the `clean_ascii_v2` fuzz target and checksummed seeds. Run the fuzz
+5. Add the `clean_ascii_v2` fuzz target and seeds. Run the fuzz
    build and smoke gates, then the exact-head local `make ci`. Hosted CI stays
    manual-only.

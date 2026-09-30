@@ -112,10 +112,14 @@ fn target_directory(root: &Path) -> PathBuf {
 fn copy_seeds(source: &Path, destination: &Path) -> io::Result<()> {
     for entry in fs::read_dir(source)? {
         let path = entry?.path();
-        if fs::symlink_metadata(&path)?.file_type().is_file() {
-            if let Some(name) = path.file_name() {
-                fs::copy(&path, destination.join(name))?;
-            }
+        if !fs::symlink_metadata(&path)?.file_type().is_file() {
+            return Err(io::Error::other(format!(
+                "seed {} is not a regular file",
+                path.display()
+            )));
+        }
+        if let Some(name) = path.file_name() {
+            fs::copy(&path, destination.join(name))?;
         }
     }
     Ok(())

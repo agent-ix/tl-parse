@@ -8,11 +8,14 @@ status: active
 
 # Clean-room attribution boundary
 
-The tl-parse dialect was independently authored from only the checked syntax
+The tl-parse v1 dialect was independently authored from only the checked syntax
 vocabulary and value model in `agent-ix/tl-syntax` revision
 `740182f13b84858008d6f176f75136737d405c1b`, licensed MIT OR Apache-2.0. The
 files consulted at that revision were `src/syntax.rs`, `src/document.rs`,
 `LICENSE-MIT` and `LICENSE-APACHE`.
+
+The v3 dialect was authored from tl-syntax MRS-003/FR-013. No third-party
+grammar was consulted.
 
 No third-party parser implementation, parser grammar, grammar production, or
 grammar prose was consulted or copied. Conventional ASCII operator spellings

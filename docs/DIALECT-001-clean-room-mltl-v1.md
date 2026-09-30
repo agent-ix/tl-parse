@@ -20,8 +20,7 @@ license texts consulted and records the negative clean-room declaration as a
 reviewable artifact.
 
 Stable dialect identity: `tl-parse.clean-ascii/v1`. The implementation exposes
-a SHA-256 digest over the normative production and precedence record so drift
-is detectable by tests and evidence.
+a SHA-256 digest over the normative production and precedence record.
 
 ## Normative lexical record
 

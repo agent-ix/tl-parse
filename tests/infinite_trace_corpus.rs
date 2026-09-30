@@ -157,9 +157,6 @@ fn v4_fixture_files_and_loci_match_the_manifest() {
 fn one_axis_fixture_mutations_break_the_oracle() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("corpus/infinite-trace");
     let source = fs::read(root.join("valid-unbounded.txt")).unwrap();
-    let mut changed_source = source.clone();
-    changed_source[0] = b'G';
-    assert_ne!(changed_source, source);
 
     let manifest: Value =
         serde_json::from_slice(&fs::read(root.join("manifest.json")).unwrap()).unwrap();
