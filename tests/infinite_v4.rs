@@ -428,7 +428,7 @@ fn legacy_reports_and_canonical_text_match_the_pre_v4_base_bytes() {
     // Captured by executing the three public entry points at origin/main f8ce562.
     // The compiled-owner revision is the sole intentional report field change.
     let mut cases = 0;
-    for line in include_str!("fixtures/legacy-v1-v2-v3-f8ce562.tsv").lines() {
+    for line in include_str!("fixtures/legacy-v1-v2-v3.tsv").lines() {
         let mut fields = line.splitn(4, '\t');
         let dialect = fields.next().expect("dialect");
         let source = fields.next().expect("source");

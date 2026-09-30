@@ -9,8 +9,8 @@ status: active
 # Clean-room attribution boundary
 
 The tl-parse v1 dialect was independently authored from only the checked syntax
-vocabulary and value model in `agent-ix/tl-syntax`, licensed MIT OR
-Apache-2.0. The files consulted were `src/syntax.rs`, `src/document.rs`,
+vocabulary and value model in `agent-ix/tl-syntax`,
+licensed MIT OR Apache-2.0. The files consulted were `src/syntax.rs`, `src/document.rs`,
 `LICENSE-MIT` and `LICENSE-APACHE`.
 
 The v3 dialect was authored from tl-syntax MRS-003/FR-013. No third-party

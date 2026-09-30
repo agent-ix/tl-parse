@@ -5,7 +5,6 @@ use std::{
 };
 
 use tempfile::NamedTempFile;
-use tl_parse::TL_SYNTAX_REVISION;
 
 fn binary() -> Command {
     Command::new(env!("CARGO_BIN_EXE_tl-parse"))
@@ -40,12 +39,6 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
         "tl-parse.clean-ascii/v1",
     ] {
         assert!(dialect.contains(required), "dialect omits {required}");
-    }
-    let manifest = fs::read_to_string(format!("{root}/Cargo.toml")).unwrap();
-    assert!(manifest.contains(&format!("rev = \"{TL_SYNTAX_REVISION}\"")));
-    for lockfile in ["Cargo.lock", "fuzz/Cargo.lock"] {
-        let lock = fs::read_to_string(format!("{root}/{lockfile}")).unwrap();
-        assert!(lock.contains(TL_SYNTAX_REVISION));
     }
     let attribution = fs::read_to_string(format!("{root}/docs/ATTRIBUTION.md")).unwrap();
     for required in ["independently authored", "MIT OR Apache-2.0"] {

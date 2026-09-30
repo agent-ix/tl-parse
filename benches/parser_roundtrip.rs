@@ -28,7 +28,7 @@ fn limits(near_cap: bool) -> ParseLimits {
 fn bounded(source: &str, limits: ParseLimits) -> usize {
     let report = parse(source, SemanticProfile::ClosedTraceV1, limits);
     assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
-    let document = report.document.expect("bounded input is pinned and valid");
+    let document = report.document.expect("bounded input is valid");
     let formatted = format_document(&document, FormatLimits::default());
     formatted.text.expect("bounded format succeeds").len()
 }
@@ -36,7 +36,7 @@ fn bounded(source: &str, limits: ParseLimits) -> usize {
 fn past(source: &str, limits: ParseLimits) -> usize {
     let report = parse_clean_ascii_v3(source, limits);
     assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
-    let document = report.document.expect("past input is pinned and valid");
+    let document = report.document.expect("past input is valid");
     let formatted = format_clean_ascii_v3(&document, FormatLimits::default());
     formatted.text.expect("past format succeeds").len()
 }
@@ -49,7 +49,7 @@ fn infinite(source: &str, limits: ParseLimits) -> usize {
         limits,
     );
     assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
-    let document = report.document.expect("infinite input is pinned and valid");
+    let document = report.document.expect("infinite input is valid");
     let formatted =
         format_clean_ascii_v4(&document, report.fairness.as_ref(), FormatLimits::default());
     formatted.text.expect("infinite format succeeds").len()
