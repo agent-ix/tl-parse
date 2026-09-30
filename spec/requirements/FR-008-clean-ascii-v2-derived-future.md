@@ -21,7 +21,7 @@ relationships:
 
 When a caller explicitly selects `tl-parse.clean-ascii/v2`, the crate shall
 parse the bounded derived operators `W[a,b]` and `M[a,b]`. It shall lower each
-through the pinned tl-syntax `FutureLoweringRequest` into primitive nodes and
+through the tl-syntax `FutureLoweringRequest` into primitive nodes and
 report the exact operator and expression spans. If the source holds a
 malformed, unknown, or unsupported form, then the crate shall return a typed
 diagnostic and no document. The crate shall not add a derived node, a second
@@ -91,5 +91,5 @@ AST, an evaluator branch, a user-authored Quire language, or a FRETish parser.
 ## Dependencies
 
 Depends on FR-002 graph construction and FR-004 canonical formatting. Also
-depends on the tl-syntax FR-008 lowering API and the FR-009 dialect rules at a
-pinned tl-syntax revision that contains `src/future.rs` (tl-syntax#40).
+depends on the tl-syntax FR-008 lowering API and the FR-009 dialect rules
+(tl-syntax#40).

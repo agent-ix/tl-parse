@@ -1,2 +1,0 @@
-# Exists only because .github/workflows/ci.yml runs `make assurance-env`,
-# which builds a venv from this file. It installs nothing.

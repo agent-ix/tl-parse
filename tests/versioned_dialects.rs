@@ -94,7 +94,7 @@ fn past_policy_owns_exact_graph_precedence_spans_and_canonical_text() {
 
 // Trace: TC-046, FR-009-AC-3, FR-009-AC-4
 #[test]
-fn every_success_crosses_the_real_pinned_syntax_owner_reader() {
+fn every_success_crosses_the_real_syntax_owner_reader() {
     let documents = [
         v1("G[0,2](p0->p1)").document.unwrap(),
         parse_clean_ascii_v2(

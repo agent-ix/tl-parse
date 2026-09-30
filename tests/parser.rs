@@ -126,7 +126,7 @@ fn noncanonical_overflowing_and_inverted_numbers_are_rejected() {
 fn graph_is_topological_and_nodes_retain_full_source_spans() {
     let report = parse_closed("F[1,2](p7 & !p8)");
     let document = report.document.expect("valid formula");
-    document.validate().expect("pinned validator accepts graph");
+    document.validate().expect("validator accepts graph");
     for (index, node) in document.nodes().iter().enumerate() {
         match node.kind {
             NodeKind::Not { operand }

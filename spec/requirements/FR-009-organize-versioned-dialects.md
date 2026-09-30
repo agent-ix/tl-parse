@@ -35,7 +35,7 @@ builds the owner tl-syntax graph; the formatter consults the same selected
 dialect policy; diagnostics own stable codes/loci but no recovery semantics.
 
 V1 remains the primitive future/Boolean dialect. V2 adds only W/M and lowers
-them through the pinned tl-syntax owner API. V3 is exactly
+them through the tl-syntax owner API. V3 is exactly
 `tl-parse.clean-ascii/v3` and admits case-sensitive O/H/Y/S/T plus Boolean
 syntax under `tl-syntax.past-operators/v1`, producing only
 `tl-syntax.formula/v2` / `mltl.origin-complete-history/v1`. V3 refuses every

@@ -6,9 +6,6 @@ Cargo.lock.bak
 .idea/
 .vscode/
 
-# The interpreter environment built by `make assurance-env`.
-.venv-assurance/
-
 target/
 *-target/
 target-*/

@@ -425,10 +425,10 @@ fn mismatched_profile_and_clock_are_typed_refusals() {
 // Trace: TC-060, FR-015-AC-3
 #[test]
 fn legacy_reports_and_canonical_text_match_the_pre_v4_base_bytes() {
-    // Captured by executing the three public entry points at origin/main f8ce562.
+    // Captured by executing the three public entry points.
     // The compiled-owner revision is the sole intentional report field change.
     let mut cases = 0;
-    for line in include_str!("fixtures/legacy-v1-v2-v3-f8ce562.tsv").lines() {
+    for line in include_str!("fixtures/legacy-v1-v2-v3.tsv").lines() {
         let mut fields = line.splitn(4, '\t');
         let dialect = fields.next().expect("dialect");
         let source = fields.next().expect("source");
