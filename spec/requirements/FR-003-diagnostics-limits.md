@@ -20,7 +20,7 @@ successful document. Logical limits shall stop work before unbounded growth.
 
 - Each diagnostic carries a stable code, severity, byte span, found token,
   ordered expected-token set, recovery action, and human-readable message.
-- Parse reports identify the dialect, diagnostic schema, tl-syntax revision,
+- Parse reports identify the dialect, diagnostic schema,
   semantic profile, configured limits, and observed logical counts.
 - Source bytes, tokens, nodes, nesting, diagnostics, and parser work are
   independently bounded with stable limit-specific codes.

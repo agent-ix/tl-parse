@@ -15,7 +15,7 @@ use crate::{
     lexer::{checked_span, lex, Token, TokenKind},
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
     FormatLimits, FormatReport, FormatStats, InfiniteRefusal, ParseArtifactLimits, ParseLimits,
-    ParseStats, RecoveryAction, StrictParseArtifactReadError, TL_SYNTAX_REVISION,
+    ParseStats, RecoveryAction, StrictParseArtifactReadError,
 };
 
 /// Wire identity of a v4 parse attempt.
@@ -55,8 +55,6 @@ pub struct InfiniteParseReport {
     pub schema_version: InfiniteParseSchemaVersion,
     /// Selected text dialect.
     pub dialect_revision: InfiniteDialectRevision,
-    /// Exact compiled tl-syntax revision.
-    pub tl_syntax_revision: String,
     /// Selected semantic profile.
     pub semantic_profile: SemanticProfile,
     /// Selected clock spelling.
@@ -84,7 +82,6 @@ pub struct InfiniteParseReport {
 struct InfiniteParseReportWire {
     schema_version: InfiniteParseSchemaVersion,
     dialect_revision: InfiniteDialectRevision,
-    tl_syntax_revision: String,
     semantic_profile: SemanticProfile,
     clock: String,
     limits: ParseLimits,
@@ -101,9 +98,6 @@ impl TryFrom<InfiniteParseReportWire> for InfiniteParseReport {
     type Error = &'static str;
 
     fn try_from(wire: InfiniteParseReportWire) -> Result<Self, Self::Error> {
-        if wire.tl_syntax_revision != TL_SYNTAX_REVISION {
-            return Err("unexpected compiled tl-syntax revision");
-        }
         if wire.limits != wire.limits.clamped()
             || wire.stats.tokens > wire.limits.max_tokens
             || wire.stats.nodes > wire.limits.max_nodes
@@ -188,7 +182,6 @@ impl TryFrom<InfiniteParseReportWire> for InfiniteParseReport {
         Ok(Self {
             schema_version: wire.schema_version,
             dialect_revision: wire.dialect_revision,
-            tl_syntax_revision: wire.tl_syntax_revision,
             semantic_profile: wire.semantic_profile,
             clock: wire.clock,
             limits: wire.limits,
@@ -295,7 +288,6 @@ pub fn parse_clean_ascii_v4(
     let mut report = InfiniteParseReport {
         schema_version: InfiniteParseSchemaVersion::V1,
         dialect_revision: InfiniteDialectRevision::V4,
-        tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
         semantic_profile: profile,
         clock: clock.to_owned(),
         limits,

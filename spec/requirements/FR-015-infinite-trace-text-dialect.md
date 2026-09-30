@@ -47,8 +47,7 @@ V4 refuses an absent or different TL profile before graph construction. V1,
 v2 and v3 reject the v4 envelope and every unbounded interval; their existing
 documents, reports and canonical bytes do not change. V4 preserves the
 explicit `event_position` clock from FR-020 and refuses other clocks. No
-parser path evaluates fairness or liveness. The parse report records exact
-compiled owner revision and effective limits.
+parser path evaluates fairness or liveness. The parse report records effective limits.
 
 ## Acceptance Criteria
 

@@ -7,7 +7,7 @@ use tl_syntax::{
 
 use crate::{
     diagnostic::preflight_parse_artifact, lexer::TokenKind, parser::parse_dialect, Diagnostic,
-    ParseArtifactLimits, ParseLimits, ParseStats, StrictParseArtifactReadError, TL_SYNTAX_REVISION,
+    ParseArtifactLimits, ParseLimits, ParseStats, StrictParseArtifactReadError,
 };
 
 use super::{BinarySpelling, Dialect, UnarySpelling};
@@ -136,8 +136,6 @@ pub struct PastParseReport {
     pub dialect_revision: PastDialectRevision,
     /// Closed tl-syntax operator-profile identity.
     pub operator_profile: PastOperatorProfile,
-    /// Exact compiled tl-syntax source revision.
-    pub tl_syntax_revision: String,
     /// Fixed origin-complete history profile.
     pub semantic_profile: SemanticProfile,
     /// Effective limits after process-safe clamping.
@@ -156,7 +154,6 @@ struct PastParseReportWire {
     schema_version: PastParseSchemaVersion,
     dialect_revision: PastDialectRevision,
     operator_profile: PastOperatorProfile,
-    tl_syntax_revision: String,
     semantic_profile: SemanticProfile,
     limits: ParseLimits,
     stats: ParseStats,
@@ -168,9 +165,6 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
     type Error = &'static str;
 
     fn try_from(wire: PastParseReportWire) -> Result<Self, Self::Error> {
-        if wire.tl_syntax_revision != TL_SYNTAX_REVISION {
-            return Err("unexpected tl-syntax revision");
-        }
         if wire.limits != wire.limits.clamped() {
             return Err("parse limits exceed the process-safe maximum");
         }
@@ -223,7 +217,7 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
                 .map_err(|_| "document cannot be encoded as canonical owner JSON")?;
             let admitted =
                 FormulaDocument::from_json_bytes(&owner_bytes, SyntaxArtifactLimits::default())
-                    .map_err(|_| "document fails the pinned tl-syntax strict reader")?;
+                    .map_err(|_| "document fails the strict reader")?;
             if admitted != *document {
                 return Err("strictly admitted document differs from the parse report");
             }
@@ -238,7 +232,6 @@ impl TryFrom<PastParseReportWire> for PastParseReport {
             schema_version: wire.schema_version,
             dialect_revision: wire.dialect_revision,
             operator_profile: wire.operator_profile,
-            tl_syntax_revision: wire.tl_syntax_revision,
             semantic_profile: wire.semantic_profile,
             limits: wire.limits,
             stats: wire.stats,
@@ -297,7 +290,6 @@ pub fn parse_clean_ascii_v3(source: &str, limits: ParseLimits) -> PastParseRepor
         schema_version: PastParseSchemaVersion::V1,
         dialect_revision: PastDialectRevision::V3,
         operator_profile: PastOperatorProfile::PastOperatorsV1,
-        tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
         semantic_profile: report.semantic_profile,
         limits: report.limits,
         stats: report.stats,

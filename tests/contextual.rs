@@ -1,7 +1,7 @@
 use serde_json::Value;
 use tl_parse::{
     parse, parse_with_context, ContextualParseError, ContextualParseReport,
-    ContextualParseSchemaVersion, ParseLimits, TL_SYNTAX_REVISION,
+    ContextualParseSchemaVersion, ParseLimits,
 };
 use tl_syntax::{
     OwnedSignalDeclaration, PropositionBinding, PropositionId, RequirementContextDocument,
@@ -53,7 +53,6 @@ fn binds_each_free_proposition_once_in_first_parser_node_order() {
     let report = bind("p2 & (p1 | p2)", Some(&caller_context));
 
     assert_eq!(report.schema_version, ContextualParseSchemaVersion::V2);
-    assert_eq!(report.tl_syntax_revision, TL_SYNTAX_REVISION);
     assert_eq!(report.bindings.len(), 2);
     assert_eq!(report.bindings[0].proposition, PropositionId(2));
     assert_eq!(report.bindings[0].signal, SignalId(11));
@@ -202,12 +201,9 @@ fn v1_parse_wire_remains_compatible_and_v2_binding_wire_is_closed() {
         .unwrap()
         .insert("unknown".into(), Value::Bool(true));
     assert!(serde_json::from_value::<ContextualParseReport>(unknown).is_err());
-    let mut wrong_version = value.clone();
+    let mut wrong_version = value;
     wrong_version["schemaVersion"] = Value::String("tl-parse.contextual-binding/v3".into());
     assert!(serde_json::from_value::<ContextualParseReport>(wrong_version).is_err());
-    let mut wrong_revision = value;
-    wrong_revision["tlSyntaxRevision"] = Value::String("not-this-pin".into());
-    assert!(serde_json::from_value::<ContextualParseReport>(wrong_revision).is_err());
 
     let mut wrong_catalog_digest: Value = serde_json::from_str(&encoded).unwrap();
     wrong_catalog_digest["signalCatalogSha256"] = Value::String("0".repeat(64));

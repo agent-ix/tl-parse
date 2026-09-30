@@ -3,10 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tl_syntax::{FormulaDocument, FutureKind, NodeId, SemanticProfile, SourceSpan};
 
-use crate::{
-    lexer::TokenKind, parser::parse_dialect, Diagnostic, ParseLimits, ParseStats,
-    TL_SYNTAX_REVISION,
-};
+use crate::{lexer::TokenKind, parser::parse_dialect, Diagnostic, ParseLimits, ParseStats};
 
 use super::{v1, BinarySpelling, Dialect, UnarySpelling};
 
@@ -136,8 +133,6 @@ pub struct DerivedParseReport {
     pub dialect_revision: DerivedDialectRevision,
     /// Closed tl-syntax operator-profile identity.
     pub operator_profile: DerivedOperatorProfile,
-    /// Exact compiled tl-syntax source revision.
-    pub tl_syntax_revision: String,
     /// Requested and preserved semantic profile.
     pub semantic_profile: SemanticProfile,
     /// Effective limits after process-safe clamping.
@@ -158,7 +153,6 @@ struct DerivedParseReportWire {
     schema_version: DerivedParseSchemaVersion,
     dialect_revision: DerivedDialectRevision,
     operator_profile: DerivedOperatorProfile,
-    tl_syntax_revision: String,
     semantic_profile: SemanticProfile,
     limits: ParseLimits,
     stats: ParseStats,
@@ -197,7 +191,6 @@ impl DerivedParseReport {
             schema_version: wire.schema_version,
             dialect_revision: wire.dialect_revision,
             operator_profile: wire.operator_profile,
-            tl_syntax_revision: wire.tl_syntax_revision,
             semantic_profile: wire.semantic_profile,
             limits: wire.limits,
             stats: wire.stats,
@@ -223,7 +216,6 @@ pub fn parse_clean_ascii_v2(
         schema_version: DerivedParseSchemaVersion::V1,
         dialect_revision: DerivedDialectRevision::V2,
         operator_profile: DerivedOperatorProfile::FutureOperatorsV1,
-        tl_syntax_revision: TL_SYNTAX_REVISION.to_owned(),
         semantic_profile: report.semantic_profile,
         limits: report.limits,
         stats: report.stats,

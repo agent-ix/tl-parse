@@ -26,7 +26,7 @@ pub fn format_document(document: &FormulaDocument, limits: FormatLimits) -> Form
             limits.clamped(),
             FormatStats::default(),
             FormatErrorCode::InvalidGraph,
-            format!("pinned tl-syntax validation failed: {error}"),
+            format!("validation failed: {error}"),
         ),
     }
 }
@@ -49,7 +49,7 @@ pub fn format_clean_ascii_v3(document: &FormulaDocument, limits: FormatLimits) -
             limits.clamped(),
             FormatStats::default(),
             FormatErrorCode::InvalidGraph,
-            format!("pinned tl-syntax validation failed: {error}"),
+            format!("validation failed: {error}"),
         ),
     }
 }

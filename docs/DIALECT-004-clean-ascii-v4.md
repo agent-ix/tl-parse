@@ -41,7 +41,6 @@ The formatter parenthesizes every binary expression to preserve its tree.
 Every interval and premise has a half-open UTF-8 byte span. On refusal the
 parser returns typed diagnostics and no graph. Source, token, node, nesting,
 diagnostic, work, and output limits are clamped to process-safe maxima.
-The v4 report records the selected profile, clock, dialect, compiled owner
-revision, effective limits, graph, fairness binding, spans, diagnostics, and
+The v4 report records the selected profile, clock, dialect, effective limits, graph, fairness binding, spans, diagnostics, and
 the decisive typed refusal with its byte locus even if diagnostics are capped.
 Canonical report JSON is strictly read under artifact limits.

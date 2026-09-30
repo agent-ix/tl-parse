@@ -3,7 +3,7 @@ use tl_parse::{
     format_clean_ascii_v3, parse, parse_clean_ascii_v2, parse_clean_ascii_v3, DiagnosticCode,
     FormatErrorCode, FormatLimits, ParseLimits, PastDialectRevision, PastOperatorProfile,
     PastParseReport, PastParseSchemaVersion, RecoveryAction, DIALECT_REVISION, DIALECT_V2_REVISION,
-    DIALECT_V3_DOCUMENT, DIALECT_V3_REVISION, PAST_PARSE_REPORT_SCHEMA_VERSION, TL_SYNTAX_REVISION,
+    DIALECT_V3_DOCUMENT, DIALECT_V3_REVISION, PAST_PARSE_REPORT_SCHEMA_VERSION,
 };
 use tl_syntax::{
     FormulaDocument, FormulaSchemaVersion, Interval, Node, NodeId, NodeKind, PropositionId,
@@ -56,7 +56,6 @@ fn v3_identity_is_closed_and_prior_dialects_are_unchanged() {
         report.operator_profile,
         PastOperatorProfile::PastOperatorsV1
     );
-    assert_eq!(report.tl_syntax_revision, TL_SYNTAX_REVISION);
     assert_eq!(
         report.semantic_profile,
         SemanticProfile::OriginCompleteHistoryV1
@@ -280,9 +279,6 @@ fn past_report_wire_is_strict_and_self_consistent() {
     ));
     assert!(rejects(
         &|value| value["operator_profile"] = "tl-syntax.future-operators/v1".into()
-    ));
-    assert!(rejects(
-        &|value| value["tl_syntax_revision"] = "unreviewed".into()
     ));
     assert!(rejects(
         &|value| value["semantic_profile"] = "mltl.closed-trace/v1".into()
