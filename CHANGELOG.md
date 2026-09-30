@@ -59,12 +59,8 @@ Release gate: the full local gate (`make ci`) passes at this revision against
 
 ### Changed
 
-- **MSRV is now Rust 1.98.1** (was 1.75). `rust-toolchain.toml` pins that exact
-  toolchain.
-- **Depends on tl-syntax 0.3.0.** The dependency is pinned by exact revision
-  `4a5614193d21e5ae99950ae683b04ba0ec931358` (tag `v0.3.0`) with version
-  requirement `=0.3.0`; `TL_SYNTAX_REVISION` names that revision. tl-syntax
-  0.3.0 changes no source relative to the previous pin.
+- **MSRV is now Rust 1.98.1.**
+- **Depends on tl-syntax 0.3.0.**
 - **Typed signal catalog binding** (`parse_with_context`,
   `ContextualParseReport`, `BoundProposition`, first shipped in v0.1.0) is
   unchanged in behavior and now resolves the signal catalog, proposition map
@@ -84,10 +80,4 @@ Release gate: the full local gate (`make ci`) passes at this revision against
   `OriginCompleteHistoryV1`, `NodeKind` gains `Once`, `Historically`,
   `StrongPrevious`, `Since` and `Triggered`, `FormulaSchemaVersion` gains `V2`,
   and formulas nested deeper than 4096 are refused. *Migration:* follow the
-  tl-syntax 0.3.0 CHANGELOG; depend on tl-syntax at the same revision and
-  `=0.3.0` if you also name it directly, so one tl-syntax resolves.
-- **Rust 1.75 through 1.98.0 can no longer build the crate.** *Migration:*
-  build with Rust 1.98.1 or newer and raise your own `rust-version` to match.
-- **`TL_SYNTAX_REVISION` changes value** to
-  `4a5614193d21e5ae99950ae683b04ba0ec931358`. *Migration:* update any
-  recorded or asserted copy of it.
+  tl-syntax 0.3.0 CHANGELOG.

@@ -59,6 +59,6 @@ AST, or run tools/evidence collection.
 
 ## Dependencies
 
-Depends on the exact pinned tl-syntax catalog/context types and FR-002 for the
+Depends on the tl-syntax catalog/context types and FR-002 for the
 validated formula and source-span facts. It does not depend on Quire, Quoin,
 Engineering Assurance, or a runtime contract-IR surface.

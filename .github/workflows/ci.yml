@@ -58,9 +58,6 @@ jobs:
           npm install --global '@agent-ix/quire-cli' '@agent-ix/quoin' '@agent-ix/ix-flow'
           quoin module ensure-defaults
 
-      - name: Build the pinned assurance environment
-        run: make assurance-env
-
       - name: Install cargo-deny and cargo-fuzz
         uses: taiki-e/install-action@v2
         with:

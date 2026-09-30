@@ -88,7 +88,7 @@ The operator span always lies within the expression span.
 ## Lowering
 
 The parser never builds a derived node. After both operands are parsed, it
-submits the operands, interval, and both spans to the pinned tl-syntax
+submits the operands, interval, and both spans to the tl-syntax
 `FutureLoweringRequest` with the selected semantic profile. It then appends
 exactly the three returned primitive nodes:
 

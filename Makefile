@@ -55,10 +55,6 @@ CARGO ?= cargo
 PYTHON ?= python3
 QUIRE ?= quire
 
-# Interpreter environment still built by hosted CI (`make assurance-env`).
-ASSURANCE_VENV ?= .venv-assurance
-ASSURANCE_PYTHON ?= $(ASSURANCE_VENV)/bin/python
-
 .PHONY: help
 help:
 	@echo "Available targets:"
@@ -78,8 +74,7 @@ help:
 	@echo "  make msrv             - Check all targets and features with Rust 1.98.1"
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make build            - Release build"
-	@echo "  make clean            - cargo clean and drop the assurance environment"
-	@echo "  make assurance-env    - Create the interpreter environment hosted CI builds"
+	@echo "  make clean            - cargo clean"
 	@echo "  make ci               - All CI gates locally (hosted CI is manual-only)"
 
 # =============================================================================
@@ -135,7 +130,6 @@ build:
 .PHONY: clean
 clean:
 	$(CARGO) clean
-	rm -rf $(ASSURANCE_VENV)
 
 # =============================================================================
 # Supply chain & safety
@@ -174,19 +168,6 @@ msrv:
 .PHONY: rustdoc
 rustdoc:
 	RUSTDOCFLAGS=-Dwarnings $(CARGO) doc --no-deps --all-features
-
-# =============================================================================
-# Hosted CI interpreter environment
-# =============================================================================
-
-$(ASSURANCE_PYTHON): requirements-assurance.txt
-	rm -rf $(ASSURANCE_VENV)
-	$(PYTHON) -m venv $(ASSURANCE_VENV)
-	$(ASSURANCE_VENV)/bin/pip install --quiet --disable-pip-version-check \
-		-r requirements-assurance.txt
-
-.PHONY: assurance-env
-assurance-env: $(ASSURANCE_PYTHON)
 
 # =============================================================================
 # Composite

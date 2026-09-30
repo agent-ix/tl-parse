@@ -101,5 +101,5 @@ diagnostic, work, and output limits. Limit exhaustion and malformed input are
 reported through stable diagnostic/error codes without unwinding. A parse
 report carries the exact dialect, report-schema, operator-profile, semantic
 profile, and compiled `tl-syntax` revision identities. A document is present
-only when the parse is diagnostic-free and validates under the pinned syntax
+only when the parse is diagnostic-free and validates under the syntax
 model.

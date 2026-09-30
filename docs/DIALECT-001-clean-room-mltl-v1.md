@@ -12,8 +12,7 @@ status: active
 
 This grammar was independently authored for tl-parse from the operator and
 checked-value vocabulary exposed by MIT OR Apache-2.0 dual-licensed
-`agent-ix/tl-syntax` at exact
-revision `740182f13b84858008d6f176f75136737d405c1b`. No parser implementation,
+`agent-ix/tl-syntax`. No parser implementation,
 grammar production, or grammar prose from any third-party MLTL tool was used.
 The separately retained `ATTRIBUTION.md` names the exact tl-syntax files and
 license texts consulted and records the negative clean-room declaration as a
