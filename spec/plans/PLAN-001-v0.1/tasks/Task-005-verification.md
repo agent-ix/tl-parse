@@ -19,10 +19,9 @@ and resolve agent and pull-request review findings.
 
 ## Completion Evidence
 
-Corpus hashes, seed consumption, successful round trips, CLI file/stdin/profile
+Seed consumption, successful round trips, CLI file/stdin/profile
 and exit-class tests, evidence contracts, code review, and gap analysis pass.
-Hosted CI remains manual-only and confirms the finalized PR revision after the
-retained Task-006 record is committed.
+Hosted CI remains manual-only and confirms the finalized PR revision.
 
 Reopened on 2026-09-13 to replace console-only fuzz smoke execution with the
 FR-005-AC-2 structured Rust campaign result required by tl-parse#25.

@@ -1,4 +1,4 @@
-//! Replay the checked hostile-input corpus through the real crate (FR-006-AC-2, FR-006-AC-6).
+//! Replay the checked hostile-input corpus through the real crate (FR-005-AC-1).
 //!
 //! This is a producer. It runs the actual lexer, parser and formatter over the
 //! actual corpus bytes and writes one JSON object per fixture to stdout. It

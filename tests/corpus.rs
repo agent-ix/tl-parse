@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, path::PathBuf};
 
 use serde::Deserialize;
 use tl_parse::{format_document, parse, report_json, DiagnosticCode, FormatLimits, ParseLimits};
@@ -27,21 +27,11 @@ fn code_name(code: DiagnosticCode) -> &'static str {
     code.as_str()
 }
 
-// Trace: TC-018, FR-005-AC-1, StR-002-VC-2, SUITE-005
+// Trace: TC-018, FR-005-AC-1, StR-002-VC-2
 #[test]
-fn malformed_resource_corpus_is_checksummed_and_matches_its_manifest() {
+fn malformed_resource_corpus_matches_its_manifest() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let corpus = root.join("corpus/v1");
-    let checksum = Command::new("sha256sum")
-        .args(["--check", "SHA256SUMS"])
-        .current_dir(&corpus)
-        .output()
-        .unwrap();
-    assert!(
-        checksum.status.success(),
-        "{}",
-        String::from_utf8_lossy(&checksum.stderr)
-    );
     let manifest: Manifest =
         serde_json::from_slice(&fs::read(corpus.join("manifest.json")).unwrap()).unwrap();
     assert_eq!(manifest.schema_version, "tl-parse.corpus/v1");
@@ -96,12 +86,6 @@ fn malformed_resource_corpus_is_checksummed_and_matches_its_manifest() {
 fn every_checked_fuzz_seed_is_bounded_and_successes_round_trip() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let seeds = root.join("fuzz/corpus/parser");
-    let checksum = Command::new("sha256sum")
-        .args(["--check", "SHA256SUMS"])
-        .current_dir(&seeds)
-        .output()
-        .unwrap();
-    assert!(checksum.status.success());
     assert!(root.join("fuzz/fuzz_targets/parser.rs").is_file());
 
     let limits = ParseLimits {

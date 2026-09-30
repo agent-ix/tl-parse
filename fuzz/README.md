@@ -6,17 +6,11 @@ statistics, report serialization, and successful canonical round trips. The
 is the v2 lowering and primitive-text path. `clean_ascii_v3` exercises the
 past-time regression, and `unbounded_parse_roundtrip` exercises the v4 parser,
 formatter, and canonical fixed point. Both new targets have checked seeds.
-Their checked seeds are independently authored under `MIT OR Apache-2.0` and are
-protected by `corpus/<target>/SHA256SUMS`.
+Their checked seeds are independently authored under `MIT OR Apache-2.0`.
 
 Seed consumption is part of the normal Rust test suite. `make fuzz-smoke`
-invokes the repository-owned `examples/fuzz_campaign.rs` producer for both
-targets with fixed 64-execution and 300-second bounds, LeakSanitizer enabled,
-and digest-verified copies of every declared seed. Each run emits a typed
-`tl-parse.fuzz-campaign/v1` result; crash artifacts are represented by bounded
-metadata identities while lossless binary attachment remains tracked by
-`agent-ix/quoin#363`. The tool's `validate` mode is also the Rust-owned result
-adapter: it refuses mutations to the protocol, target, trace, bounds, manifest,
-tool, sanitizer, process, outcome, limitation, or artifact identities before
-the existing Python driver invokes Quoin. Longer libFuzzer campaigns are
-supplementary population evidence, not a universal proof.
+invokes the repository-owned `examples/fuzz_campaign.rs` runner for both
+targets with fixed 64-execution and 300-second bounds and LeakSanitizer
+enabled; it fails on a nonzero fuzzer exit or any crash artifact. Longer
+libFuzzer campaigns are supplementary population evidence, not a universal
+proof.

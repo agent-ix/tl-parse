@@ -12,7 +12,7 @@ relationships:
 ## Purpose
 
 This specification defines the clean-room textual boundary for bounded MLTL.
-tl-parse converts independently specified ASCII source into the exact pinned
+tl-parse converts independently specified ASCII source into the
 tl-syntax graph model, emits stable source diagnostics, and formats validated
 graphs into one canonical representation.
 
@@ -54,12 +54,11 @@ declared resource limits.
 
 FR-001 owns the dialect and lexer, FR-002 parsing and graph construction,
 FR-003 diagnostics and fail-closed limits, FR-004 canonical formatting and
-round trips, FR-005 corpora, fuzzing, CLI, and evidence interchange, FR-006
-the shared-assurance intake boundary, and FR-007 additive shared-catalog/context
+round trips, FR-005 corpora, fuzzing, and CLI, and FR-007 additive shared-catalog/context
 binding reports for parsed formulas without changing the dialect or parser
 graph, and FR-008 the explicitly selected `tl-parse.clean-ascii/v2` dialect,
-whose `W`/`M` operators lower through tl-syntax into primitive nodes. NFR-001 constrains determinism/resources, NFR-002 provenance and
-authority, and NFR-003 explicit fail-closed qualification controls.
+whose `W`/`M` operators lower through tl-syntax into primitive nodes. NFR-001 constrains determinism/resources, and NFR-002 the clean-room
+provenance boundary.
 
 FR-009 separates dialect policy from shared traversal and gives the delivered
 clean-ascii/v3 past boundary its complete owner contract while preserving every
@@ -69,18 +68,9 @@ existing public and wire behavior.
 
 | Component | This specification guarantees | Assumption or external responsibility |
 | --- | --- | --- |
-| tl-parse | Bounded dialect parsing, graph construction, diagnostics, canonical formatting, corpus/fuzz behavior, context-bound reports, and producer-owned result bytes | It does not evaluate, rewrite, monitor, or infer application signal meaning. |
-| tl-syntax | — | The exact pinned revision supplies validated graph, interval, span, proposition, and semantic-profile contracts. tl-parse does not redefine them. |
+| tl-parse | Bounded dialect parsing, graph construction, diagnostics, canonical formatting, corpus/fuzz behavior, and context-bound reports | It does not evaluate, rewrite, monitor, or infer application signal meaning. |
+| tl-syntax | — | The compiled revision supplies validated graph, interval, span, proposition, and semantic-profile contracts. tl-parse does not redefine them. |
 | Quire | tl-parse supplies its specification and requirement-tagged source tree as inputs | Quire reports static specification/coverage facts and does not execute a parser producer or grant release authority. |
-| Quoin | tl-parse supplies producer-written structured results | Quoin seals, retains, audits, and reports the bytes it receives; it neither creates producer results nor decides release sufficiency. |
-| Engineering Assurance | tl-parse reports the observed shared-tool versions to the released compatibility contract | The released compatibility matrix owns classification; this repository does not restate its rules. |
-| ix-flow / release owner | tl-parse preserves an absent decision as an incomplete receipt | Only the human release owner may record the release decision; no automated pass implies it. |
-
-NFR-003 records the remaining assumption that Make's own execution controls are
-not qualified by a shared control. That known risk remains `tl-parse#11` and a
-human release-decision input; the producer-byte boundary covers only results
-that were actually produced and does not turn bypassed non-producer gates into
-passes.
 
 ## References
 

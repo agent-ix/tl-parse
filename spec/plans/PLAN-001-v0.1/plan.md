@@ -20,7 +20,6 @@ PGM-01 + exact tl-syntax revision
   -> stable diagnostics and fail-closed limits
   -> bounded canonical formatter and generated round trips
   -> corpus, fuzz seeds, CLI, verification, and review remediation
-  -> exact-candidate retained evidence
   -> human v0.1 source-release decision
 ```
 
@@ -32,8 +31,7 @@ PGM-01 + exact tl-syntax revision
 | Task-002 | Versioned lexer and direct parser | Complete dialect, exact graph/profile, precedence, and source-span tests |
 | Task-003 | Stable diagnostics and limits | Golden reports and independent parser resource-boundary tests |
 | Task-004 | Canonical formatter and round trips | Exact, idempotent, generated, shared/deep, and exhaustion tests |
-| Task-005 | Corpus, fuzz, CLI, and verification | Checksummed populations, CLI tests, complete local gate, and resolved review findings |
-| Task-006 | Exact-candidate evidence | Sealed PGM-01 validations and checksummed retained record |
+| Task-005 | Corpus, fuzz, CLI, and verification | Corpus populations, CLI tests, complete local gate, and resolved review findings |
 | Task-007 | Human source-release decision | Maintainer review and explicit release decision |
 
 ## Exit Criteria

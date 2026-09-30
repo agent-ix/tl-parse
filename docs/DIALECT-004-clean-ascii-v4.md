@@ -15,10 +15,6 @@ status: active
 when premises are present, a same-graph fairness document. It does not
 evaluate formulas or decide fairness.
 
-The compiled tl-syntax revision is the landed TL-15 commit selected by
-`Cargo.toml` and recorded in `Cargo.lock`. `ATTRIBUTION.md` records its
-provenance.
-
 ## Grammar
 
 V4 retains the Boolean constants, canonical `p` plus unsigned decimal atoms,
