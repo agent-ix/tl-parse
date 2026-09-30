@@ -21,7 +21,7 @@ ordered tl-syntax formula document and shall expose no second public AST.
 - Proposition text maps exactly to its numeric `PropositionId`.
 - Constants and every Boolean and temporal operator map one-for-one to the
   corresponding `NodeKind`.
-- A document is returned only after exact tl-syntax structural validation and
+- A document is returned only after tl-syntax structural validation and
   only when no lexical, syntactic, or resource diagnostic occurred.
 - Parentheses shall group an expression without replacing the grouped node's
   own lexical source span, while every enclosing operator span shall include

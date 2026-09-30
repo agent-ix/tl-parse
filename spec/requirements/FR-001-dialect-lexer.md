@@ -36,4 +36,4 @@ tokenize it deterministically with half-open UTF-8 byte spans.
 
 ## Dependencies
 
-Depends only on the exact pinned tl-syntax operator vocabulary.
+Depends only on tl-syntax operator vocabulary.
