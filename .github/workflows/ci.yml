@@ -7,6 +7,9 @@ name: CI
 on:
   workflow_dispatch:
 
+env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
 jobs:
   msrv:
     name: Rust 1.98.1 Feature Boundary
@@ -15,6 +18,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Configure private shared dependency read access
+        env:
+          READ_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          test -n "$READ_TOKEN"
+          auth=$(printf 'x-access-token:%s' "$READ_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git config --global http.https://github.com/agent-ix/ix-cli-kit.extraheader "AUTHORIZATION: basic $auth"
       - name: Install MSRV
         uses: dtolnay/rust-toolchain@master
         with:
@@ -31,6 +42,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Configure private shared dependency read access
+        env:
+          READ_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          test -n "$READ_TOKEN"
+          auth=$(printf 'x-access-token:%s' "$READ_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git config --global http.https://github.com/agent-ix/ix-cli-kit.extraheader "AUTHORIZATION: basic $auth"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -73,6 +92,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Configure private shared dependency read access
+        env:
+          READ_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          test -n "$READ_TOKEN"
+          auth=$(printf 'x-access-token:%s' "$READ_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git config --global http.https://github.com/agent-ix/ix-cli-kit.extraheader "AUTHORIZATION: basic $auth"
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo artifacts
