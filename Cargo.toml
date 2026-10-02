@@ -17,6 +17,7 @@ name = "tl_parse"
 path = "src/lib.rs"
 
 [dependencies]
+ix-cli-kit = { git = "https://github.com/agent-ix/ix-cli-kit", rev = "cc69a934f887966f955440bff8c356e3da449bee" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
