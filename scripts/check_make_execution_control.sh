@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reinstated after agent-ix/tl-parse#11: a `-` prefix, `.IGNORE`, or a
 # `SHELL := /usr/bin/true` assignment can make `make ci` (or any pure gate
-# such as fmt-check, lint, deny, audit-unsafe, rustdoc) exit 0 having executed
+# such as fmt-check, lint, deny, rustdoc) exit 0 having executed
 # nothing. This script is a cheap, collector-free guard: a static scan of the Makefile's own text for the constructs that neuter
 # Make's execution controls. It is invoked at PARSE time from the top of the
 # Makefile (via $(shell ...) + $(error ...)), before any target runs, so it
@@ -21,10 +21,8 @@ fi
 # --self-test reproduces each bypass an independent review found (and each
 # control that proves the fix isn't just refusing everything), plus a check
 # on the real repository Makefile. It is not part of the parse-time guard
-# path Make invokes; it's this script's own regression test, run the same way
-# `check_unsafe_comments.sh --update-baseline` is a second mode of that
-# script rather than a separate file. `make test-execution-control-guard`
-# (and `ci`) run it.
+# path Make invokes; it's this script's own regression test, run by
+# `make test-execution-control-guard` (and `ci`).
 if [[ "${1:-}" == "--self-test" ]]; then
   self_test_dir="$(cd "$(dirname "$0")/.." && pwd)"
   self_test_script="$self_test_dir/scripts/check_make_execution_control.sh"

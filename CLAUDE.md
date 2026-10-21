@@ -12,10 +12,8 @@ make test           # cargo test
 make build          # release build
 make clean          # cargo clean
 make deny           # cargo deny check licenses and sources
-make audit-unsafe   # check that every unsafe block has a // SAFETY: comment
 make conformance    # replay the hostile-input corpus through the crate
 make roundtrip      # sweep the parse-format-parse fixed point
-make test-census    # bind requirement-tagged tests to compiled tests
 make fuzz-build     # compile the checked-in cargo-fuzz target locally
 make fuzz-smoke     # execute a bounded local libFuzzer seed smoke run
 make spec           # validate specifications and strict coverage
@@ -43,7 +41,7 @@ Backported from `agent-ix/ecaz`:
 
 - `clippy.toml` pins MSRV to `1.98.1` and caps cognitive complexity / arg count
 - `deny.toml` allow-lists licenses and denies unknown registries/git sources
-- `scripts/check_unsafe_comments.sh` runs in CI and locally via `make audit-unsafe`. Every `unsafe {` block must have a `// SAFETY:` comment within the 3 preceding lines, or be listed in `scripts/unsafe_comment_baseline.txt`. Update the baseline with `bash scripts/check_unsafe_comments.sh --update-baseline`.
+- Clippy lints deny undocumented unsafe blocks; crate Rust lints forbid unsafe code.
 - `rustfmt.toml` uses only stable 100-character-width settings. CI fails on drift.
 - `rust-toolchain.toml` pins the exact MSRV (1.98.1) + rustfmt + clippy.
 
