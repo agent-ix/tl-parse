@@ -12,6 +12,9 @@ repository = "https://github.com/agent-ix/tl-parse"
 [lints.rust]
 unsafe_code = "forbid"
 
+[lints.clippy]
+undocumented_unsafe_blocks = "deny"
+
 [lib]
 name = "tl_parse"
 path = "src/lib.rs"

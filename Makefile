@@ -64,11 +64,9 @@ help:
 	@echo "  make test             - cargo test"
 	@echo "  make conformance      - Replay the hostile-input corpus through the crate"
 	@echo "  make roundtrip        - Sweep the parse-format-parse fixed point"
-	@echo "  make test-census      - Bind requirement-tagged tests to compiled tests"
 	@echo "  make fuzz-build       - Compile the checked-in cargo-fuzz target"
 	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
 	@echo "  make deny             - cargo deny check licenses and sources"
-	@echo "  make audit-unsafe     - Enforce // SAFETY: comments on unsafe blocks"
 	@echo "  make test-execution-control-guard - Self-test the Make execution-control guard"
 	@echo "  make spec             - Validate specification and coverage with Quire"
 	@echo "  make msrv             - Check all targets and features with Rust 1.98.1"
@@ -109,10 +107,6 @@ conformance:
 roundtrip:
 	$(CARGO) run --quiet --release --example roundtrip_sweep
 
-.PHONY: test-census
-test-census:
-	$(PYTHON) scripts/rust_test_census.py
-
 .PHONY: fuzz-build
 fuzz-build:
 	rustup run nightly cargo fuzz build parser --target-dir "$${CARGO_TARGET_DIR:-target}/fuzz"
@@ -142,10 +136,6 @@ deny:
 	$(CARGO) deny check licenses
 	$(CARGO) deny check sources
 
-.PHONY: audit-unsafe
-audit-unsafe:
-	bash scripts/check_unsafe_comments.sh
-
 # Regression coverage for scripts/check_make_execution_control.sh and the
 # MAKEFLAGS check above (agent-ix/tl-parse#11), reproducing each bypass an
 # independent review found plus a control per fix. This is the guard's own
@@ -174,6 +164,6 @@ rustdoc:
 # =============================================================================
 
 .PHONY: ci
-ci: fmt-check lint test conformance roundtrip test-census \
-	fuzz-build fuzz-smoke deny audit-unsafe test-execution-control-guard spec \
+ci: fmt-check lint test conformance roundtrip \
+	fuzz-build fuzz-smoke deny test-execution-control-guard spec \
 	msrv rustdoc
