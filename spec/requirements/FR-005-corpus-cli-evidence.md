@@ -47,6 +47,9 @@ target seeded by those fixtures, and thin CLI surfaces.
   use the library report, and have stable success, invalid-input, and usage
   exit classes.
 
+- The CLI SHALL delegate generic format-report JSON encoding and result-line writing to ix-cli-kit. Domain report serialization, bounded input, profile selection and diagnostic rendering remain owned by tl-parse.
+- If stdout closes with BrokenPipe, then the CLI SHALL retain the command outcome; other write failures retain usage-or-I/O exit 2 with the existing diagnostic context. Result lines retain exactly one appended newline.
+
 ## Acceptance Criteria
 
 | ID | Criteria | Verification |
@@ -54,6 +57,7 @@ target seeded by those fixtures, and thin CLI surfaces.
 | FR-005-AC-1 | Every malformed/resource corpus fixture produces its declared bounded outcome. | Test (TC-018) |
 | FR-005-AC-2 | Each checked-in fuzz target compiles, a 64-execution/300-second libFuzzer smoke run consumes every seed, every unavailable or failed run is non-zero, and successful seeds round-trip under declared limits. | Test (TC-019, TC-047) |
 | FR-005-AC-3 | CLI validation/formatting outputs and exit classes match the library for valid, invalid, profile, stdin, source-limit, and usage cases; an oversized seekable file reports its metadata byte count, while a non-closing stream is read only through the first byte beyond the limit, without parsing fabricated text. | Test (TC-020, TC-021) |
+| FR-005-AC-4 | Shared compact format-report encoding and result-line writing retain JSON fields, one appended newline and domain exit classes; an injected BrokenPipe succeeds and another write error retains its context. | Test (TC-020, TC-021) |
 
 ## Dependencies
 

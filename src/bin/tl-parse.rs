@@ -109,8 +109,8 @@ fn run() -> Result<ExitCode, String> {
     if let Some(text) = formatted.text.as_ref() {
         if json {
             write_stdout(
-                &serde_json::to_string(&formatted)
-                    .map_err(|error| format!("cannot serialize format report: {error}"))?,
+                &ix_cli_kit::json::encode(&formatted, false)
+                    .map_err(|error| format!("cannot serialize format report: {}", error.source))?,
             )?;
         } else {
             write_stdout(text)?;
@@ -130,7 +130,7 @@ fn write_stdout(text: &str) -> Result<(), String> {
 }
 
 fn write_output(writer: &mut impl Write, text: &str) -> Result<(), String> {
-    match writeln!(writer, "{text}") {
+    match ix_cli_kit::streams::write_result(writer, text) {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
         Err(error) => Err(format!("cannot write stdout: {error}")),
@@ -251,7 +251,7 @@ mod tests {
         }
     }
 
-    // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
+    // Trace: TC-021, FR-005-AC-3, FR-005-AC-4, NFR-001-AC-1
     #[test]
     fn reader_and_writer_errors_keep_their_fail_closed_classes() {
         let error = match read_bounded_reader(FailingReader, 32) {
@@ -260,6 +260,10 @@ mod tests {
         };
         assert_eq!(error.kind(), io::ErrorKind::Other);
         assert_eq!(error.to_string(), "fixture read failure");
+
+        let mut written = Vec::new();
+        write_output(&mut written, "p0").unwrap();
+        assert_eq!(written, b"p0\n");
 
         assert_eq!(
             write_output(&mut FailingWriter(io::ErrorKind::BrokenPipe), "p0"),

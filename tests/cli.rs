@@ -69,7 +69,7 @@ fn dialect_provenance_and_cli_valid_paths_are_exact() {
     assert!(value["document"].is_object());
 }
 
-// Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
+// Trace: TC-021, FR-005-AC-3, FR-005-AC-4, NFR-001-AC-1
 #[test]
 fn cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes() {
     let run_invalid = || stdin_run(&["validate", "--json", "-"], "F[3,1]p0");
@@ -89,6 +89,15 @@ fn cli_invalid_usage_and_repeated_outputs_have_stable_exit_classes() {
 
     let format_json = stdin_run(&["format", "--json", "-"], "p0 & p1");
     assert!(format_json.status.success());
+    assert_eq!(format_json.stdout.last(), Some(&b'\n'));
+    assert_eq!(
+        format_json
+            .stdout
+            .iter()
+            .filter(|&&byte| byte == b'\n')
+            .count(),
+        1
+    );
     let value: serde_json::Value = serde_json::from_slice(&format_json.stdout).unwrap();
     assert_eq!(value["text"], "p0&p1");
 
