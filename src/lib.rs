@@ -4,6 +4,7 @@
 //! The crate implements the independently authored ASCII dialect identified by
 //! [`DIALECT_REVISION`]. Successful parsing returns the
 //! [`tl_syntax::FormulaDocument`] model; tl-parse owns no second temporal AST.
+#![doc = include_str!("../README.md")]
 
 mod context;
 mod diagnostic;
