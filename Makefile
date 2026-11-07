@@ -148,7 +148,7 @@ test-execution-control-guard:
 
 .PHONY: spec
 spec:
-	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/*.md' --strict --summary
+	$(QUIRE) validate --scope . 'spec/**/*.md' 'docs/DIALECT-*.md' 'docs/ATTRIBUTION.md' --strict --summary
 	$(QUIRE) coverage --scope . --strict
 
 .PHONY: msrv

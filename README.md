@@ -1,75 +1,130 @@
-# TL Parse
+# tl-parse
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/k8DVhuYBR2)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
+[![Rust](https://img.shields.io/badge/rust-1.98.1%2B-orange?logo=rust)](Cargo.toml)
 
-Parsing, formatting, and diagnostics for Mission-time Linear Temporal Logic.
+tl-parse is a Rust crate and command-line tool that reads Mission-time Linear
+Temporal Logic (MLTL) from ASCII text into the formula graph defined by
+[tl-syntax](https://github.com/agent-ix/tl-syntax), writes a graph back out as
+canonical text, and reports malformed input as typed diagnostics. It is part of
+the TL family with [tl-rewrite](https://github.com/agent-ix/tl-rewrite),
+[tl-mltl](https://github.com/agent-ix/tl-mltl),
+[tl-oracle](https://github.com/agent-ix/tl-oracle) and
+[quire-mltl](https://github.com/agent-ix/quire-mltl).
 
-The v0.1 boundary uses the independently authored, versioned ASCII dialect in
-[`docs/DIALECT-001-clean-room-mltl-v1.md`](docs/DIALECT-001-clean-room-mltl-v1.md).
-It maps source directly into the `tl-syntax` graph model and does
-not own a second AST or temporal semantics.
+The parser takes the dialect and the semantic profile from the caller and never
+infers either from the text. Every parse is bounded by limits on source bytes,
+tokens, nodes, nesting depth and work, and every refusal carries a stable code
+and a byte span. A parse returns a formula document or diagnostics, never both.
+The crate does not evaluate formulas and does not define a second syntax tree.
 
-The dialect's clean-room authorship boundary is recorded in
-`docs/ATTRIBUTION.md`. `tl-syntax` has no registry release, so the dependency
-resolves from git, and source release remains blocked while that is true.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.svg">
+  <img alt="The source text G[0,2](p0 -> F[1,1]p1) and a semantic profile, closed, go into parse, which returns a FormulaDocument or a Diagnostic with one of 18 stable codes and a byte span. format_document turns the document into canonical text, G[0,2](p0->F[1,1]p1). Parsing that text again gives the same graph." src="docs/images/hero-light.svg">
+</picture>
 
-The additive `parse_clean_ascii_v2` API accepts bounded derived future
-operators `W` and `M`. The additive `parse_clean_ascii_v3` and
-`format_clean_ascii_v3` APIs provide the deliberately separate
-origin-complete past profile with `O`, `H`, strong `Y`, `S`, and `T`. See
-[`docs/DIALECT-002-clean-ascii-v2.md`](docs/DIALECT-002-clean-ascii-v2.md) and
-[`docs/DIALECT-003-clean-ascii-v3.md`](docs/DIALECT-003-clean-ascii-v3.md) for
-their closed grammars and wire identities. The v1 API and CLI remain unchanged.
+> **Status: prerelease.** The API is not stable. The crate has `publish = false`
+> and depends on tl-syntax through git. Registry publication waits for the v0.1
+> assurance review.
 
-The additive `parse_clean_ascii_v4(source, profile, clock, limits)` API accepts
-the exact `mltl.infinite-trace/v1` and `event_position` identities. It builds
-the owner's unbounded formula graph and optional ordered fairness premises.
-`format_clean_ascii_v4` emits canonical text; the v4 report has a bounded,
-strict JSON reader. See [`docs/DIALECT-004-clean-ascii-v4.md`](docs/DIALECT-004-clean-ascii-v4.md).
+## Usage
 
-The implementation is organized around closed `dialect::{v1,v2,v3,v4}` policies.
-The lexer, parser, formatter, and diagnostic layers share traversal and resource
-accounting, while each dialect owns its accepted spellings, precedence,
-associativity, semantic profile, owner schema, and lowering permission. Every
-successful bounded parse is re-admitted from canonical bytes by
-`tl-syntax::FormulaDocument::from_json_bytes`; v4 uses the owner's distinct
-`InfiniteFormulaDocument` and fairness strict readers.
+This parses a formula, formats it to canonical text, and then parses an
+inverted interval to show a diagnostic. It runs as a doc test.
 
-`PastParseReport::from_json_bytes(bytes, ParseArtifactLimits)` is the bounded
-canonical reader for `tl-parse.past-parse-report/v1`. It rejects unknown or
-duplicate fields, trailing data, noncanonical JSON, incorrect identities,
-out-of-range report state, and invalid embedded owner documents.
+```rust
+use tl_parse::{format_document, parse, DiagnosticCode, FormatLimits, ParseLimits};
+use tl_parse::tl_syntax::SemanticProfile;
 
-## Build
+let report = parse(
+    "G[0,2](p0 -> F[1,1]p1)",
+    SemanticProfile::ClosedTraceV1,
+    ParseLimits::default(),
+);
+assert!(report.diagnostics.is_empty());
+let document = report.document.expect("the source parses");
+let formatted = format_document(&document, FormatLimits::default());
+assert_eq!(formatted.text.as_deref(), Some("G[0,2](p0->F[1,1]p1)"));
 
-```bash
-make ci
+let refused = parse("p0 U[3,1] p1", SemanticProfile::ClosedTraceV1, ParseLimits::default());
+assert!(refused.document.is_none());
+assert_eq!(refused.diagnostics[0].code, DiagnosticCode::InvalidInterval);
+assert_eq!(refused.diagnostics[0].span.start(), 4);
 ```
 
-`make ci` is the complete local iteration gate. Hosted GitHub Actions is
-manual-only (`workflow_dispatch`) and is deliberately run only for a finalized
-PR revision.
+The two sources are the fixtures `corpus/v1/valid-canonical.txt` and
+`corpus/v1/inverted-interval.txt`, which `examples/corpus_conformance.rs`
+replays. The command-line tool does the same from a shell:
 
-The thin CLI accepts a file or stdin:
-
-```bash
-cargo run --bin tl-parse -- validate --profile closed formula.mltl
+```sh
 printf 'p0 U[1,2] true' | cargo run --bin tl-parse -- format --profile online -
 ```
 
-The hostile-input corpus is in `corpus/v1`; fuzz seeds and
-the `cargo-fuzz` targets are under `fuzz/`. `make fuzz-smoke` runs both targets
-through a bounded cargo-fuzz smoke run.
+More examples, including the other dialects, are in
+[docs/examples.md](docs/examples.md).
 
-## Development status
+## Reference
 
-Its public API is not stable yet, and registry publication is disabled until
-the v0.1 assurance review is complete.
+| Dialect | Identity | Adds | Entry points |
+| --- | --- | --- | --- |
+| v1 | `tl-parse.clean-ascii/v1` | Boolean operators and the bounded future operators `F`, `G`, `U`, `R`. | `parse`, `format_document`, `format_formula` |
+| v2 | `tl-parse.clean-ascii/v2` | The derived operators `W` and `M`, lowered to primitive nodes. | `parse_clean_ascii_v2` |
+| v3 | `tl-parse.clean-ascii/v3` | The past operators `O`, `H`, `Y`, `S`, `T`. | `parse_clean_ascii_v3`, `format_clean_ascii_v3` |
+| v4 | `tl-parse.clean-ascii/v4` | Unbounded intervals `[a,)`, past and future operators together, and a `fair {...}:` envelope. | `parse_clean_ascii_v4`, `format_clean_ascii_v4` |
 
-Agent-assisted contributions are reviewed under the same requirements,
-testing, provenance, and human release gates as every other contribution.
+The v1 dialect is specified in
+[its clean-room document](docs/DIALECT-001-clean-room-mltl-v1.md)
+and the later dialects in
+[v2](docs/DIALECT-002-clean-ascii-v2.md),
+[v3](docs/DIALECT-003-clean-ascii-v3.md) and
+[v4](docs/DIALECT-004-clean-ascii-v4.md). The authorship record is
+[docs/ATTRIBUTION.md](docs/ATTRIBUTION.md). The pages in [docs/](docs/index.md)
+describe each dialect, the command-line tool and the diagnostics.
+
+| Item | What it holds |
+| --- | --- |
+| `ParseReport` | Result of `parse`: dialect, profile, limits, statistics, optional document, diagnostics. |
+| `Diagnostic`, `DiagnosticCode` | A located refusal and its 18 stable codes. |
+| `ParseLimits`, `FormatLimits` | Caller limits, clamped to hard maxima. |
+| `parse_with_context` | Parses, then binds each proposition to a shared signal catalog. |
+| `PastParseReport`, `InfiniteParseReport` | Reports with strict canonical JSON readers. |
+
+## The TL stack
+
+tl-parse is the front end of the family. It reads text into the types that
+tl-syntax defines, and tl-rewrite, tl-mltl and quire-mltl work on those types.
+tl-rewrite also uses it in development tests.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tl-stack-dark.svg">
+  <img alt="The TL crates. tl-syntax defines the formula graph, profiles and signal catalog, and tl-parse, tl-oracle, tl-mltl, tl-rewrite and quire-mltl all depend on it. tl-rewrite depends on tl-mltl. quire-mltl depends on tl-mltl and quire-observation, and is the single bridge to Quire. Dashed lines are development-only: tl-mltl and tl-rewrite test against tl-oracle, and tl-rewrite tests against tl-parse." src="docs/images/tl-stack-light.svg">
+</picture>
+
+[docs/how-it-works.md](docs/how-it-works.md) shows where tl-parse sits in the
+text-to-outcome pipeline.
+
+## Building and testing
+
+```sh
+make test          # cargo test --all-targets --all-features
+make conformance   # replay corpus/v1 through the crate
+make roundtrip     # parse-format-parse sweep
+make fuzz-smoke    # bounded cargo-fuzz run over the checked-in seeds
+make ci            # every local gate, including format, clippy, deny, spec, MSRV and rustdoc
+```
+
+The Rust version is pinned in `rust-toolchain.toml` (1.98.1). Hosted CI is
+manual-only; the checks run locally. The hostile-input corpus is in `corpus/`
+and the fuzz package is in `fuzz/`.
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](CLA.md). Work is specified
+before it is implemented; see [CLAUDE.md](CLAUDE.md) for the workflow and
+commands. The change history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-Licensed under either of Apache License, Version 2.0 or MIT license at your
-option.
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or the
+[MIT license](LICENSE-MIT) at your option.
