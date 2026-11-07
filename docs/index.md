@@ -13,7 +13,3 @@ tl-parse is a parser, canonical formatter and diagnostic reporter for Mission-ti
 
 The normative dialect documents are kept as written:
 [v1](DIALECT-001-clean-room-mltl-v1.md), [v2](DIALECT-002-clean-ascii-v2.md), [v3](DIALECT-003-clean-ascii-v3.md) and [v4](DIALECT-004-clean-ascii-v4.md). [ATTRIBUTION.md](ATTRIBUTION.md) records the clean-room authorship boundary.
-
-## Scope
-
-The crate turns text into tl-syntax types and tl-syntax types back into text. It does not evaluate formulas (tl-mltl), rewrite them (tl-rewrite) or connect to Quire (quire-mltl), and it defines no syntax tree of its own. The caller selects the dialect and the semantic profile. The public API is not stable and the crate has `publish = false`.
