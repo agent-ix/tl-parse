@@ -38,3 +38,39 @@ A formula passes through several crates on its way from text to a Quire outcome.
 </picture>
 
 The calling program moves documents from one stage to the next. The dependency structure between the crates is in the [README](../README.md#the-tl-stack).
+
+## In a debugging session
+
+tl-parse answers the first question in a debugging session: does the requirement text become the formula the engineer meant? The requirement in the worked example is `F[0,3] p2`, a deadline that signal `s2` must hold at some instant from 0 through 3. Every later stage works on the document tl-parse produces here.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/scenario-sequence-dark.svg">
+  <img alt="A deadline requirement fails on a recorded trace, and the engineer asks why. The engineer sends F[0,3] p2 to tl-parse and gets a formula document, binds p2 to signal s2 with tl-syntax, and sends the document to tl-rewrite, which reports Unchanged. tl-mltl evaluates the formula and trace and returns false at time 0 with a buffer of 4 instants, and R2U2, which runs outside the crates, returns false at time 0 for the C2PO expression F[0,3](p2). tl-oracle evaluates the same formula and trace independently and returns false. quire-mltl maps the result to Value false. Numbered rings mark where to look at each step." src="images/scenario-sequence-light.svg">
+</picture>
+
+At this step, check that the document matches the requirement. `format` prints the canonical text, and it should read back as the requirement. `validate --json` prints the document, and the `future` node should carry the interval `{"start":0,"end":3}`. An interval parsed as `[0,2]` changes the verdict at a later stage, and nothing downstream can repair it.
+
+```text
+$ printf 'F[0,3] p2' | tl-parse format --profile online -
+F[0,3]p2
+
+$ printf 'F[0,3] p2' | tl-parse validate --profile online --json - | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d['document']['nodes'])); print(d['diagnostics'])"
+[{"kind": "proposition", "proposition": 2, "span": {"start": 7, "end": 9}}, {"kind": "future", "interval": {"start": 0, "end": 3}, "operand": 0, "span": {"start": 0, "end": 9}}]
+[]
+```
+
+Node 0 is proposition 2 and node 1 is a `future` node over node 0. The `diagnostics` list is empty.
+
+A malformed requirement returns no document. Each problem has a code and a byte span. Here the upper bound is missing:
+
+```text
+$ printf 'F[0,] p2' | tl-parse validate --profile online -
+error[unexpected_token] 4..5: expected interval end integer, found "]"
+error[trailing_input] 6..8: unexpected trailing token "p2"; expected end of input
+$ echo $?
+1
+```
+
+The first diagnostic points at the `]` where an integer was expected. The second follows from the first, because the parser recovered by skipping a token. Fix the first diagnostic and rerun before reading the others.
+
+The later stages are in the [worked example in tl-mltl](https://github.com/agent-ix/tl-mltl/blob/main/docs/scenario.md).

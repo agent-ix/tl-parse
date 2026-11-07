@@ -4,7 +4,7 @@ tl-parse is a parser, canonical formatter and diagnostic reporter for Mission-ti
 
 | Page | What it covers |
 | --- | --- |
-| [how-it-works.md](how-it-works.md) | The lexer, parser and formatter, resource bounds, strict documents, and where the crate sits in the pipeline from text to a Quire outcome. |
+| [how-it-works.md](how-it-works.md) | The lexer, parser and formatter, resource bounds, strict documents, and where the crate sits in the pipeline from text to a Quire outcome, and its step in a debugging session. |
 | [dialects.md](dialects.md) | The four dialects: spellings, precedence, profiles and report types. |
 | [cli.md](cli.md) | The `tl-parse` binary: commands, options, output and exit codes. |
 | [diagnostics.md](diagnostics.md) | Diagnostic codes, spans, recovery actions, limits and format errors. |
