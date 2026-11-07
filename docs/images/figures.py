@@ -13,7 +13,9 @@ revisions in src/lib.rs and the diagnostic codes in src/diagnostic.rs.
 
 The block between the two SHARED markers is identical in every TL repository
 (tl-syntax, tl-parse, tl-rewrite, tl-mltl, tl-oracle, quire-mltl). Copy it
-verbatim and call tl_stack(here="<crate>") and stack_pipeline(here="<crate>").
+verbatim and call tl_stack(here="<crate>") and stack_pipeline(here="<crate>"). The block
+between the two SHARED SCENARIO markers is also identical in every TL repository; call
+scenario_sequence(here="<crate>").
 """
 
 import json
@@ -154,6 +156,96 @@ def stack_pipeline(here="tl-syntax"):
 # ---- repository data ---------------------------------------------------------
 
 
+# ==== SHARED SCENARIO: copy verbatim into sibling figures.py (begin) ==========
+
+SCENARIO_LANES = [
+    # (name, one-word role, step number whose look-here callout sits on this lane)
+    ("engineer", "you", None),
+    ("tl-parse", "text", 1),
+    ("tl-syntax", "signals", 2),
+    ("tl-rewrite", "normalize", 3),
+    ("tl-mltl", "evaluate", 4),
+    ("R2U2", "outside", None),
+    ("tl-oracle", "reference", 5),
+    ("quire-mltl", "assurance", 6),
+]
+
+SCENARIO_LOOK = [
+    # (step, crate, what to look at) for the case r2u2-future-deadline-v1
+    (1, "tl-parse", "the tree is one F node, interval [0,3], over p2"),
+    (2, "tl-syntax", "p2 is bound to signal s2, the signal the requirement waits for"),
+    (3, "tl-rewrite", "status Unchanged: no rule applies and no step is recorded"),
+    (4, "tl-mltl", "s2 is absent at instants 0 to 3, so false at time 0; R2U2 agrees"),
+    (5, "tl-oracle", "a second evaluator reads the same formula and trace and returns false"),
+    (6, "quire-mltl", "false becomes Value false only if the observation views allow a value"),
+]
+
+
+def scenario_sequence(here=None):
+    """The debugging walkthrough as a sequence diagram; the lane named `here` is highlighted."""
+    f = Figure(
+        "scenario-sequence",
+        980,
+        684,
+        "A deadline requirement fails on a recorded trace, and the engineer asks why. The engineer "
+        "sends F[0,3] p2 to tl-parse and gets a formula document, binds p2 to signal s2 with tl-syntax, "
+        "and sends the document to tl-rewrite, which reports Unchanged. tl-mltl evaluates the formula "
+        "and trace and returns false at time 0 with a buffer of 4 instants, and R2U2, which runs outside "
+        "the crates, returns false at time 0 for the C2PO expression F[0,3](p2). tl-oracle evaluates the "
+        "same formula and trace independently and returns false. quire-mltl maps the result to Value false. "
+        "Numbered rings mark where to look at each step.",
+    )
+    w, h = 112, 50
+    step = (980 - w) / (len(SCENARIO_LANES) - 1)
+    cx = [round(i * step + w / 2) for i in range(len(SCENARIO_LANES))]
+    lane = {name: i for i, (name, _, _) in enumerate(SCENARIO_LANES)}
+    bottom = 492
+    for i, (name, sub, _) in enumerate(SCENARIO_LANES):
+        if name == "engineer":
+            role = "code"
+        elif name == here:
+            role = "logic"
+        else:
+            role = "ink"
+        f.box(cx[i] - w // 2, 0, w, h, role, name, sub, dashed=(name == "R2U2"))
+        f.line([(cx[i], h + 2), (cx[i], bottom)], "faint", dashed=True, arrow=False, weight=1.0)
+    y = 82
+    pairs = [
+        # (from, to, go label, go role, back label, back role, dashed, ring step)
+        ("engineer", "tl-parse", "F[0,3] p2", "code", "formula doc", "model", False, 1),
+        ("engineer", "tl-syntax", "signal catalog", "ink", "p2 bound to s2", "model", False, 2),
+        ("engineer", "tl-rewrite", "formula doc", "model", "Unchanged", "evidence", False, 3),
+        ("engineer", "tl-mltl", "formula + trace", "model", "false at 0, buffer 4", "evidence", False, 4),
+        ("tl-mltl", "R2U2", "F[0,3](p2)", "model", "false at 0", "evidence", True, None),
+        ("engineer", "tl-oracle", "formula + trace", "model", "false", "evidence", True, 5),
+        ("engineer", "quire-mltl", "result", "model", "Value false", "evidence", False, 6),
+    ]
+    for a, b, go, go_role, back, back_role, dev, ring in pairs:
+        ia, ib = lane[a], lane[b]
+        f.line([(cx[ia] + 3, y), (cx[ib] - 3, y)], go_role, dashed=dev, weight=1.5 if dev else 2.4)
+        f.text(cx[ia] + 12, y - 7, go, go_role, "mono", SMALL)
+        yb = y + 26
+        f.line([(cx[ib] - 3, yb), (cx[ia] + 3, yb)], back_role, dashed=dev, weight=1.5 if dev else 2.4)
+        f.text(cx[ia] + 26, yb - 7, back, back_role, "mono", SMALL)
+        if ring:
+            rx, ry = cx[ib] + 22, y + 13
+            f.dot(rx, ry, 9, "evidence", filled=False)
+            f.text(rx, ry + 4, str(ring), "evidence", "mono", SMALL, "middle")
+        y += 62
+    f.text(0, bottom + 32, "Look here", "muted", "title", TITLE)
+    ly = bottom + 56
+    for n, crate, what in SCENARIO_LOOK:
+        f.dot(9, ly - 4, 9, "evidence", filled=False)
+        f.text(9, ly, str(n), "evidence", "mono", SMALL, "middle")
+        f.text(30, ly, crate, "logic" if crate == here else "muted", "mono", SMALL)
+        f.text(140, ly, what, "ink", "mono", SMALL)
+        ly += 22
+    return f
+
+
+# ==== SHARED SCENARIO (end) ===================================================
+
+
 def load(path):
     return json.loads((ROOT / path).read_text(encoding="utf-8"))
 
@@ -234,4 +326,8 @@ def pipeline_here():
     return stack_pipeline(here="tl-parse")
 
 
-FIGURES = [hero, tl_stack_here, pipeline_here]
+def scenario_sequence_here():
+    return scenario_sequence(here="tl-parse")
+
+
+FIGURES = [hero, tl_stack_here, pipeline_here, scenario_sequence_here]
