@@ -39,7 +39,7 @@ A formula passes through several crates on its way from text to a Quire outcome.
 
 The calling program moves documents from one stage to the next. The dependency structure between the crates is in the [README](../README.md#the-tl-stack).
 
-## In a debugging session
+## A worked example
 
 tl-parse answers the first question in a debugging session: does the requirement text become the formula the engineer meant? The requirement in the worked example is `F[0,3] p2`, a deadline that signal `s2` must hold at some instant from 0 through 3. Every later stage works on the document tl-parse produces here.
 
