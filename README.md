@@ -24,9 +24,30 @@ The crate does not evaluate formulas and does not define a second syntax tree.
   <img alt="The source text G[0,2](p0 -> F[1,1]p1) and a semantic profile, closed, go into parse, which returns a FormulaDocument or a Diagnostic with one of 18 stable codes and a byte span. format_document turns the document into canonical text, G[0,2](p0->F[1,1]p1). Parsing that text again gives the same graph." src="docs/images/hero-light.svg">
 </picture>
 
-> **Status: prerelease.** The API is not stable. The crate has `publish = false`
-> and depends on tl-syntax through git. Registry publication waits for the v0.1
-> assurance review.
+## Getting started
+
+tl-parse is not on crates.io. Depend on it through git:
+
+```toml
+[dependencies]
+tl-parse = { git = "https://github.com/agent-ix/tl-parse" }
+```
+
+Add `rev = "<commit>"` to pin a commit. It needs the Rust version in `rust-version` in `Cargo.toml`, or newer.
+
+To install the command-line tool:
+
+```sh
+cargo install --git https://github.com/agent-ix/tl-parse --bin tl-parse
+```
+
+To build from a clone:
+
+```sh
+git clone https://github.com/agent-ix/tl-parse.git
+cd tl-parse
+cargo build --release
+```
 
 ## Usage
 
