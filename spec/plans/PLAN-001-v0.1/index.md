@@ -8,7 +8,6 @@ description: "Contents of the tl-parse v0.1 implementation plan bundle."
 ## Contents
 
 - [Plan overview](./plan.md)
-- [Update log](./log.md)
 - [Task-001: Specification and assurance foundation](./tasks/Task-001-foundation.md)
 - [Task-002: Versioned lexer and direct parser](./tasks/Task-002-parser.md)
 - [Task-003: Stable diagnostics and limits](./tasks/Task-003-diagnostics.md)

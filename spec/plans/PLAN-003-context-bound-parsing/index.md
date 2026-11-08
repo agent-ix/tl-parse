@@ -13,4 +13,4 @@ description: "Contents of the tl-parse context-bound parsing plan bundle."
 | Shared revision pin | complete | `Cargo.toml`, `TL_SYNTAX_REVISION` |
 | Native binding report | complete | `src/context.rs` |
 | Acceptance matrix | complete | `tests/contextual.rs`, TC-033–TC-038 |
-| Local Rust gates | complete | documented plan log |
+| Local Rust gates | complete |
