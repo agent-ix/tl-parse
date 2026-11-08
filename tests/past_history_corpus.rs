@@ -57,7 +57,6 @@ fn load() -> (Manifest, Cases) {
     (manifest, cases)
 }
 
-// Trace: TC-056, FR-013-AC-2, FR-013-AC-3
 #[test]
 fn shared_corpus_replays_through_clean_ascii_v3() {
     let (manifest, cases) = load();
@@ -122,7 +121,6 @@ fn shared_corpus_replays_through_clean_ascii_v3() {
     }
 }
 
-// Trace: TC-056, FR-013-AC-2, FR-013-AC-3
 #[test]
 fn source_mutation_breaks_exact_replay() {
     let (_, cases) = load();

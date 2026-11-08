@@ -991,7 +991,7 @@ fn node_and_output_limits_refuse_without_partial_artifacts() {
     assert!(formatted.text.is_none());
 }
 
-// Trace: TC-184, FR-047-AC-2; TC-066, NFR-004-AC-1
+// Trace: TC-066, NFR-004-AC-1
 #[test]
 fn zero_diagnostic_budget_truncates_clock_refusal_without_emitting_a_diagnostic() {
     let report = parse_clean_ascii_v4(
@@ -1009,7 +1009,7 @@ fn zero_diagnostic_budget_truncates_clock_refusal_without_emitting_a_diagnostic(
     assert!(report.stats.diagnostics_truncated);
 }
 
-// Trace: TC-184, FR-047-AC-2; TC-066, NFR-004-AC-1
+// Trace: TC-066, NFR-004-AC-1
 #[test]
 fn parser_work_diagnostics_never_leave_a_usable_graph() {
     let mut observed_work_diagnostic_after_nodes = false;
@@ -1059,7 +1059,7 @@ fn parser_work_diagnostics_never_leave_a_usable_graph() {
     assert!(truncated.document.is_none());
 }
 
-// Trace: TC-184, FR-047-AC-2; TC-066, NFR-004-AC-1
+// Trace: TC-066, NFR-004-AC-1
 #[test]
 fn derived_lowering_accepts_exact_node_budget_and_refuses_before_partial_push() {
     let source = "p0 W[0,) p1";
