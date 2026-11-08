@@ -132,7 +132,7 @@ fn every_unbounded_and_fairness_form_keeps_its_byte_loci_through_the_round_trip(
                 .collect::<Vec<_>>(),
             slices(source, &premises)
                 .into_iter()
-                .map(|s| normalize(s))
+                .map(normalize)
                 .collect::<Vec<_>>(),
             "{id}: premise text changed across the round trip"
         );
