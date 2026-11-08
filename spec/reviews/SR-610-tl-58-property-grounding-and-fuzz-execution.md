@@ -41,7 +41,7 @@ not re-census the other criteria.
 ## Fuzz execution record
 
 Candidate: branch `issue/tl-58-property-fuzz-evidence` on `origin/main`
-`5f9a21c` plus the PR 77 spec fixes. Host: Darwin 25.4.0, arm64, 2026-11-08. Toolchain: rustc
+plus the PR 77 spec fixes. Host: Darwin 25.4.0, arm64, 2026-11-08. Toolchain: rustc
 `1.100.0-nightly (1303417c4 2026-09-21)`, cargo-fuzz 0.13.1, libFuzzer via
 libfuzzer-sys 0.4.13, quire 0.38.3 (engine 0.52.1), quoin 0.29.4.
 
