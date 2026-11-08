@@ -52,15 +52,15 @@ target was run from an empty or seed-only corpus.
 
 | Target | Fault | Result |
 | --- | --- | --- |
-| - | - | - |
+| infinite-loci test (`tests/infinite_loci.rs`) | interval locus end shortened by one byte in `src/infinite.rs` (`interval_spans` push) | reviewer-run: the test fails on the first mismatched span; reverted. No libFuzzer target was changed, so no seeded fault was run against the four fuzz targets here |
 
 ## Findings
 
 | ID | Severity | Summary | Refs |
 | --- | --- | --- | --- |
-| FND-6301 | low | No crash, timeout or out-of-memory result in any recorded run of the four existing parser targets, including the `unbounded_parse_roundtrip` fixed-point target, on throwaway copies of their checked seeds. Coverage was still growing in most runs, so no plateau is claimed. | campaign.json |
-| FND-6302 | medium | The source-locus corpus covered one unbounded form (`F`, `G`) and one fairness form. `corpus/infinite-loci/cases.json` adds all eight unbounded-capable operators, a u32-maximum bound, mixed closed and unbounded intervals, an empty envelope, a trailing-semicolon premise, two premises, and eight refusals with typed code and exact byte locus; spans were counted independently of the parser. `tests/infinite_loci.rs` checks them and that canonical text re-parses to itself with unchanged interval and premise text. | corpus/infinite-loci, TC-064, FR-017-AC-2 |
-| FND-6303 | low | On macOS libFuzzer counts the address sanitizer's freed memory toward RSS, so the default 2048 MB limit is too low; recorded runs pass `-rss_limit_mb=8192`. Not a target defect. | fuzz/README |
+| FND-61401 | low | No crash, timeout or out-of-memory result in any recorded run of the four existing parser targets, including the `unbounded_parse_roundtrip` fixed-point target, on throwaway copies of their checked seeds. Coverage was still growing in most runs, so no plateau is claimed. | campaign.json |
+| FND-61402 | medium | The source-locus corpus covered one unbounded form (`F`, `G`) and one fairness form. `corpus/infinite-loci/cases.json` adds all eight unbounded-capable operators, a u32-maximum bound, mixed closed and unbounded intervals, an empty envelope, a trailing-semicolon premise, two premises, and eight refusals with typed code and exact byte locus; spans were counted independently of the parser. `tests/infinite_loci.rs` checks them and that canonical text re-parses to itself with unchanged interval and premise text. | corpus/infinite-loci, TC-064, FR-017-AC-2 |
+| FND-61403 | low | On macOS libFuzzer counts the address sanitizer's freed memory toward RSS, so the default 2048 MB limit is too low; recorded runs pass `-rss_limit_mb=8192`. Not a target defect. | fuzz/README |
 
 ## Limitations
 
