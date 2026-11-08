@@ -53,9 +53,9 @@ parser path evaluates fairness or liveness. The parse report records effective l
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-015-AC-1 | All eight bounded/unbounded future and past primitives, Y, and lowered W/M parse into the owner graph only under exact v4 and TL infinite-profile selection. | Test (TC-058) |
-| FR-015-AC-2 | A fairness envelope yields ordered, unique validated roots in the same graph; absent and empty envelopes mean no assumptions and never decide fairness. | Test (TC-059) |
-| FR-015-AC-3 | V1/v2/v3 bytes and admissions remain unchanged; each refuses v4-only syntax, while v4 refuses finite/QSL profile or non-event-position clocks. | Test (TC-060) |
+| FR-015-AC-1 | All eight bounded/unbounded future and past primitives, Y, and lowered W/M parse into the owner graph only under exact v4 and TL infinite-profile selection. | unit-testing (TC-058) |
+| FR-015-AC-2 | A fairness envelope yields ordered, unique validated roots in the same graph; absent and empty envelopes mean no assumptions and never decide fairness. | unit-testing (TC-059) |
+| FR-015-AC-3 | V1/v2/v3 bytes and admissions remain unchanged; each refuses v4-only syntax, while v4 refuses finite/QSL profile or non-event-position clocks. | integration-testing (TC-060) |
 
 ## Dependencies
 

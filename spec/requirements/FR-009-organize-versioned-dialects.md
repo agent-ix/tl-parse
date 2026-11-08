@@ -62,11 +62,11 @@ rewrite, proposition inference or source language.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-009-AC-1 | V1, V2 and V3 accept exactly their closed spellings/profiles and cross-refuse every other dialect without fallback or partial graph. | Test (TC-046) |
-| FR-009-AC-2 | Every O/H/Y/S/T precedence, associativity, interval and span case parses to the exact formula-v2 graph and round-trips to one canonical v3 text. | Test (TC-046) |
-| FR-009-AC-3 | Existing owner-admissible v1/v2/v3 documents, diagnostics, public paths and resource charges remain byte-identical across the module reorganization, and inputs beyond an immutable owner ceiling refuse with the corresponding resource diagnostic. | Test (TC-046) |
-| FR-009-AC-4 | The real tl-syntax strict reader admits every successful graph and rejects every profile/operator/topology mutation; tl-parse owns no mirror node or semantic evaluator. | Test (TC-046) |
-| FR-009-AC-5 | Exact limits succeed and one-over source/token/node/depth/diagnostic/work/output inputs refuse before excess retention; bounded arbitrary UTF-8 never unwinds. | Test (TC-046) |
+| FR-009-AC-1 | V1, V2 and V3 accept exactly their closed spellings/profiles and cross-refuse every other dialect without fallback or partial graph. | integration-testing (TC-046) |
+| FR-009-AC-2 | Every O/H/Y/S/T precedence, associativity, interval and span case parses to the exact formula-v2 graph and round-trips to one canonical v3 text. | integration-testing (TC-046) |
+| FR-009-AC-3 | Existing owner-admissible v1/v2/v3 documents, diagnostics, public paths and resource charges remain byte-identical across the module reorganization, and inputs beyond an immutable owner ceiling refuse with the corresponding resource diagnostic. | integration-testing (TC-046) |
+| FR-009-AC-4 | The real tl-syntax strict reader admits every successful graph and rejects every profile/operator/topology mutation; tl-parse owns no mirror node or semantic evaluator. | integration-testing (TC-046) |
+| FR-009-AC-5 | Exact limits succeed and one-over source/token/node/depth/diagnostic/work/output inputs refuse before excess retention; bounded arbitrary UTF-8 never unwinds. | property-based-testing (TC-046) |
 
 ## Dependencies
 

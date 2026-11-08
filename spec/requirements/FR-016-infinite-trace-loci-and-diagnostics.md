@@ -52,8 +52,8 @@ retains original code and locus; it never claims `proved` or `refuted`.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-016-AC-1 | Every interval and premise retains exact byte spans across whitespace, nested syntax and multibyte UTF-8 prefixes. | Test (TC-061) |
-| FR-016-AC-2 | Each malformed/profile/resource family has a stable code and smallest offending locus, no partial graph, and a total typed FR-341 mapping. | Test (TC-062) |
+| FR-016-AC-1 | Every interval and premise retains exact byte spans across whitespace, nested syntax and multibyte UTF-8 prefixes. | unit-testing (TC-061) |
+| FR-016-AC-2 | Each malformed/profile/resource family has a stable code and smallest offending locus, no partial graph, and a total typed FR-341 mapping. | integration-testing (TC-062) |
 
 ## Dependencies
 
