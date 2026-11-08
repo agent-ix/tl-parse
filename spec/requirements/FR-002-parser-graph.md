@@ -31,10 +31,10 @@ ordered tl-syntax formula document and shall expose no second public AST.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-002-AC-1 | Primitive, nested, precedence-sensitive, and complete-vocabulary inputs produce the specified topologically ordered node kinds and spans. | Test (TC-005, TC-006) |
-| FR-002-AC-2 | Every successful result validates through tl-syntax and preserves the requested semantic profile. | Test (TC-007) |
-| FR-002-AC-3 | Missing operands, delimiters, or trailing tokens retain recovery diagnostics and never expose a partial document. | Test (TC-008) |
-| FR-002-AC-4 | Grouping parentheses preserve the grouped node's delimiter-free lexical source span, and every enclosing unary or binary operator span includes the complete balanced grouping extent. | Test (TC-030) |
+| FR-002-AC-1 | Primitive, nested, precedence-sensitive, and complete-vocabulary inputs produce the specified topologically ordered node kinds and spans. | property-based-testing (TC-005, TC-006) |
+| FR-002-AC-2 | Every successful result validates through tl-syntax and preserves the requested semantic profile. | integration-testing (TC-007) |
+| FR-002-AC-3 | Missing operands, delimiters, or trailing tokens retain recovery diagnostics and never expose a partial document. | property-based-testing (TC-008) |
+| FR-002-AC-4 | Grouping parentheses preserve the grouped node's delimiter-free lexical source span, and every enclosing unary or binary operator span includes the complete balanced grouping extent. | unit-testing (TC-030) |
 
 ## Dependencies
 

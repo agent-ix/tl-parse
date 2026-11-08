@@ -31,9 +31,9 @@ successful document. Logical limits shall stop work before unbounded growth.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-003-AC-1 | Golden malformed inputs produce the exact expected codes, spans, expected tokens, found token, recovery action, and stable JSON bytes. | Test (TC-009, TC-010) |
-| FR-003-AC-2 | Every declared resource limit is exercised at its boundary and produces no document, panic, or undeclared growth. | Test (TC-011, TC-012) |
-| FR-003-AC-3 | Identical source, profile, and limits produce byte-identical reports and diagnostics. | Test (TC-013) |
+| FR-003-AC-1 | Golden malformed inputs produce the exact expected codes, spans, expected tokens, found token, recovery action, and stable JSON bytes. | unit-testing (TC-009, TC-010) |
+| FR-003-AC-2 | Every declared resource limit is exercised at its boundary and produces no document, panic, or undeclared growth. | unit-testing (TC-011, TC-012) |
+| FR-003-AC-3 | Identical source, profile, and limits produce byte-identical reports and diagnostics. | unit-testing (TC-013) |
 
 ## Dependencies
 

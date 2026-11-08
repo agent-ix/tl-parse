@@ -9,6 +9,25 @@ relationships:
 
 # tl-parse v0.1 Test Matrix
 
+## Verification Classification
+
+Each acceptance criterion's `Verification` cell names its method from the Quoin
+verification catalog, and the method is the classification:
+
+- `property-based-testing`: at least one generated-input (`proptest`) test
+  tagged to the criterion asserts it. Deterministic loops over fixed lists and
+  exhaustive-looking example tables are not property tests.
+- `unit-testing`, `integration-testing`, `fuzzing`: example-only. Fixed inputs
+  with expected outputs, or a bounded fuzz smoke, assert the criterion; no
+  property test does.
+- `Inspection`: excluded from property testing. FR-001-AC-3 states a documentary
+  fact (authorship and license boundary) that has no input domain to quantify
+  over.
+
+The Measurement and Evaluation rows (NFR-001-M-1, NFR-001-M-2, NFR-002-M-1,
+NFR-004-M-1, NFR-004-M-2) are derived counts over the criteria above and carry
+no classification of their own.
+
 ## Functional Requirement Coverage
 
 | Functional Req | Acceptance Criteria | Test Cases | Status |

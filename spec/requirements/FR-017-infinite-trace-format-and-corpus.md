@@ -55,9 +55,9 @@ executing targets. Corpus expectations are independent of parser output.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-017-AC-1 | Every admitted v4 graph and fairness set representable in v4 text formats to text that re-parses to the same owner identities and is byte-stable at the next formatting step; a valid shared or non-textual owner topology returns `unrepresentable_graph` and no text. | Test (TC-063) |
-| FR-017-AC-2 | Malformed and locus corpus fixtures have unique identities, human expectations; changing a source, locus or expected code fails replay. | Test (TC-064) |
-| FR-017-AC-3 | Both named fuzz targets exercise real parser paths with checked seeds, bounded outcomes and no panic, including past-time v3 regression. | Test (TC-065) |
+| FR-017-AC-1 | Every admitted v4 graph and fairness set representable in v4 text formats to text that re-parses to the same owner identities and is byte-stable at the next formatting step; a valid shared or non-textual owner topology returns `unrepresentable_graph` and no text. | unit-testing (TC-063) |
+| FR-017-AC-2 | Malformed and locus corpus fixtures have unique identities, human expectations; changing a source, locus or expected code fails replay. | integration-testing (TC-064) |
+| FR-017-AC-3 | Both named fuzz targets exercise real parser paths with checked seeds, bounded outcomes and no panic, including past-time v3 regression. | fuzzing (TC-065) |
 
 ## Dependencies
 

@@ -47,7 +47,7 @@ compare full report bytes. Exercise arbitrary bounded UTF-8 under fuzzing.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-004-AC-1 | Equal v4 inputs and limits yield byte-identical reports and text; each exact limit succeeds and one-over refuses before a partial graph or excess output. | Test (TC-066) |
+| NFR-004-AC-1 | Equal v4 inputs and limits yield byte-identical reports and text; each exact limit succeeds and one-over refuses before a partial graph or excess output. | unit-testing (TC-066) |
 
 ## Dependencies
 

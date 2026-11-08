@@ -39,7 +39,7 @@ remains a human's and is established by inspection rather than by a gate.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-002-AC-1 | The dialect record names its authorship basis and license boundary. | Test (TC-020) |
+| NFR-002-AC-1 | The dialect record names its authorship basis and license boundary. | integration-testing (TC-020) |
 
 ## Qualification Boundary
 

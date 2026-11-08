@@ -27,15 +27,15 @@ Executing assertions in `tests/infinite_v4.rs` and
 
 | Test ID | Title | Type | Priority | Traces To | Status |
 |---|---|---|---|---|---|
-| TC-058 | Parse all admitted future/past forms into strict owner graph | Property | P0 | FR-015-AC-1 | ✅ implemented |
-| TC-059 | Bind ordered fairness premises to the same graph without a verdict | Property | P0 | FR-015-AC-2 | ✅ implemented |
+| TC-058 | Parse all admitted future/past forms into strict owner graph | Unit | P0 | FR-015-AC-1 | ✅ implemented |
+| TC-059 | Bind ordered fairness premises to the same graph without a verdict | Unit | P0 | FR-015-AC-2 | ✅ implemented |
 | TC-060 | Cross-refuse v1/v2/v3/v4 dialect, profile and clock mismatches | Integration | P0 | FR-015-AC-3 | ✅ implemented |
-| TC-061 | Preserve byte-exact interval and premise loci through nesting and UTF-8 | Property | P0 | FR-016-AC-1 | ✅ implemented |
+| TC-061 | Preserve byte-exact interval and premise loci through nesting and UTF-8 | Unit | P0 | FR-016-AC-1 | ✅ implemented |
 | TC-062 | Replay malformed inputs and map diagnostic codes without message parsing | Integration | P0 | FR-016-AC-2 | ✅ implemented |
-| TC-063 | Prove representable fixed points, exact fairness order and typed refusal of unrepresentable owner graphs | Property | P0 | FR-017-AC-1 | ✅ implemented |
+| TC-063 | Prove representable fixed points, exact fairness order and typed refusal of unrepresentable owner graphs | Unit | P0 | FR-017-AC-1 | ✅ implemented |
 | TC-064 | Check malformed/locus fixtures against their manifest and fail on one-axis mutation | Integration | P0 | FR-017-AC-2 | ✅ implemented |
 | TC-065 | Execute both named fuzz targets with checked seeds | Fuzz | P1 | FR-017-AC-3 | ✅ implemented |
-| TC-066 | Repeat deterministic reports and test every exact/one-over limit | Property | P0 | NFR-004-AC-1 | ✅ implemented |
+| TC-066 | Repeat deterministic reports and test every exact/one-over limit | Unit | P0 | NFR-004-AC-1 | ✅ implemented |
 
 ## Integration Test Matrix
 
