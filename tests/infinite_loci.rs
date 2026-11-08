@@ -43,7 +43,10 @@ fn parse(source: &str) -> tl_parse::InfiniteParseReport {
 fn every_unbounded_and_fairness_form_keeps_its_byte_loci_through_the_round_trip() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("corpus/infinite-loci/cases.json");
     let manifest: Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
-    assert_eq!(manifest["schemaVersion"], "tl-parse.infinite-loci-corpus/v1");
+    assert_eq!(
+        manifest["schemaVersion"],
+        "tl-parse.infinite-loci-corpus/v1"
+    );
     let (mut valid, mut refused) = (0, 0);
     let mut operators = std::collections::BTreeSet::new();
     for case in manifest["cases"].as_array().unwrap() {
@@ -90,23 +93,21 @@ fn every_unbounded_and_fairness_form_keeps_its_byte_loci_through_the_round_trip(
 
         // Fixed point: canonical text is the manifest's, re-parses to itself,
         // and its own loci slice out the same interval and premise text.
-        let canonical = format_clean_ascii_v4(
-            document,
-            report.fairness.as_ref(),
-            FormatLimits::default(),
-        )
-        .text
-        .unwrap();
-        assert_eq!(canonical, case["expectedCanonical"].as_str().unwrap(), "{id}");
+        let canonical =
+            format_clean_ascii_v4(document, report.fairness.as_ref(), FormatLimits::default())
+                .text
+                .unwrap();
+        assert_eq!(
+            canonical,
+            case["expectedCanonical"].as_str().unwrap(),
+            "{id}"
+        );
         let again = parse(&canonical);
         let again_doc = again.document.as_ref().expect(id);
-        let again_text = format_clean_ascii_v4(
-            again_doc,
-            again.fairness.as_ref(),
-            FormatLimits::default(),
-        )
-        .text
-        .unwrap();
+        let again_text =
+            format_clean_ascii_v4(again_doc, again.fairness.as_ref(), FormatLimits::default())
+                .text
+                .unwrap();
         assert_eq!(again_text, canonical, "{id}");
         let again_intervals: Vec<[u32; 2]> = again
             .interval_spans
@@ -140,5 +141,8 @@ fn every_unbounded_and_fairness_form_keeps_its_byte_loci_through_the_round_trip(
     for op in ['F', 'G', 'O', 'H', 'U', 'R', 'S', 'T'] {
         assert!(operators.contains(&op), "operator {op} has no locus case");
     }
-    assert!(valid >= 13 && refused >= 8, "valid={valid} refused={refused}");
+    assert!(
+        valid >= 13 && refused >= 8,
+        "valid={valid} refused={refused}"
+    );
 }
