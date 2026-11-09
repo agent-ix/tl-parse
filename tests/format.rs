@@ -62,14 +62,12 @@ fn canonical_format_is_parseable_and_idempotent() {
 
 // Trace: TC-016, FR-004-AC-2, StR-002-VC-1
 #[test]
-#[cfg_attr(
-    miri,
-    ignore = "builds graphs hundreds of nodes deep, which strict admission interprets far too slowly"
-)]
 fn accepted_depth_and_chain_boundaries_reparse_under_the_same_limits() {
+    // Miri shrinks the graphs; the native run keeps the 128-deep and 256-long boundaries.
+    let (depth, chain) = if cfg!(miri) { (8, 16) } else { (128, 256) };
     for source in [
-        format!("{}p0", "!".repeat(128)),
-        (0..256)
+        format!("{}p0", "!".repeat(depth)),
+        (0..chain)
             .map(|index| format!("p{}", index % 9))
             .collect::<Vec<_>>()
             .join("&"),
@@ -93,22 +91,21 @@ fn accepted_depth_and_chain_boundaries_reparse_under_the_same_limits() {
 
 // Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
 #[test]
-#[cfg_attr(
-    miri,
-    ignore = "builds graphs hundreds of nodes deep, which strict admission interprets far too slowly"
-)]
 fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     let mut nodes = vec![Node::new(NodeKind::True)];
-    for operand in 0..1_000 {
+    // Miri builds a shorter chain; the native run keeps the 1,000-deep graph.
+    let depth: u32 = if cfg!(miri) { 40 } else { 1_000 };
+    let width = depth as usize;
+    for operand in 0..depth {
         nodes.push(Node::new(NodeKind::Not {
             operand: NodeId(operand),
         }));
     }
-    let deep = FormulaDocument::new(SemanticProfile::ClosedTraceV1, NodeId(1_000), nodes).unwrap();
+    let deep = FormulaDocument::new(SemanticProfile::ClosedTraceV1, NodeId(depth), nodes).unwrap();
     let report = format_document(&deep, FormatLimits::default());
     assert!(report.error.is_none());
-    assert_eq!(report.stats.nodes, 1_001);
-    assert_eq!(report.stats.work, 2_005);
+    assert_eq!(report.stats.nodes, width + 1);
+    assert_eq!(report.stats.work, width * 2 + 5);
 
     let shared = FormulaDocument::new(
         SemanticProfile::ClosedTraceV1,

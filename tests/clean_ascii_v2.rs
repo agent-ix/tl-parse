@@ -542,7 +542,6 @@ fn v2_refusals_are_typed_and_located() {
 
 // Trace: TC-044, FR-008-AC-5
 #[test]
-#[cfg_attr(miri, ignore = "reads the checked-in fuzz corpus from disk")]
 fn every_checked_v2_fuzz_seed_is_bounded() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let seeds = root.join("fuzz/corpus/clean_ascii_v2");
@@ -588,7 +587,6 @@ fn every_checked_v2_fuzz_seed_is_bounded() {
 
 // Trace: TC-043, FR-008-AC-4
 #[test]
-#[cfg_attr(miri, ignore = "reads the checked-in fuzz corpus from disk")]
 fn v2_canonical_text_beyond_limits_is_refused_only_for_resources() {
     // Chained left operands double in canonical text. The checked growth seed
     // formats within fuzz output limits, but v1 refuses the reparse through a

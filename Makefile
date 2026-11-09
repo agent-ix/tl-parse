@@ -108,15 +108,17 @@ test:
 conformance:
 	$(CARGO) run --quiet --example corpus_conformance -- --manifest corpus/v1/manifest.json
 
-# Miri runs the pure-computation suites: the library tests, the NFR-005
-# boundary tests, and the example and property suites. Suites that spawn the
-# CLI or read the corpus from disk need the host and stay native. Property
-# suites lower their case count under `cfg(miri)`, and the owner-value boundary
-# tests substitute caller-lowered limits for the owner constants (NFR-005-AC-1,
-# NFR-005-AC-2). Isolation stays on, so a test that touches the host fails.
+# Miri runs every suite except `cli`, which spawns the CLI binary: the library
+# tests, the NFR-005 boundary tests, the example and property suites, and the
+# corpus and fuzz-seed replays. Isolation is disabled (-Zmiri-disable-isolation)
+# so the corpus replays can read the checked-in corpus files. Property suites
+# lower their case count under `cfg(miri)`, and the owner-value boundary tests
+# substitute caller-lowered limits for the owner constants (NFR-005-AC-1,
+# NFR-005-AC-2). The format.rs depth tests build smaller graphs under Miri, and
+# the owner depth-ceiling test stays native (NFR-005-AC-6).
 MIRI_TOOLCHAIN ?= nightly-2026-08-21
-MIRIFLAGS ?= -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
-MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes
+MIRIFLAGS ?= -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-disable-isolation
+MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes --test corpus --test infinite_loci --test infinite_trace_corpus --test owner_infinite_corpus --test past_history_corpus
 
 .PHONY: miri
 miri:
