@@ -27,8 +27,7 @@ the caller-selectable `ParseLimits`, `FormatLimits`, and `ParseArtifactLimits`
 fields, the fixed v4 canonical-text depth, and the bounded CLI input read. The
 public enums are `DiagnosticCode`, `FormatErrorCode`,
 `StrictParseArtifactReadError`, `ContextualParseError`, and
-`InfiniteDisposition`. tl-parse is a `std` crate and makes no `no_std` claim;
-the embedded build obligation belongs to tl-syntax.
+`InfiniteDisposition`. tl-parse is a `std` crate.
 
 ## Rationale
 
@@ -58,14 +57,14 @@ suites with reduced proptest case counts.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| NFR-005-AC-1 | Each `HARD_MAX_SOURCE_BYTES`, `HARD_MAX_TOKENS`, `HARD_MAX_NODES`, `HARD_MAX_DEPTH`, `HARD_MAX_DIAGNOSTICS`, `HARD_MAX_PARSE_WORK`, `HARD_MAX_OUTPUT_BYTES`, and `HARD_MAX_FORMAT_WORK` value is accepted at its declared size and refused at one above with the matching `DiagnosticCode` or `FormatErrorCode`, and a caller limit above the constant is clamped to it. | unit-testing |
-| NFR-005-AC-2 | Each strict-reader ceiling (`HARD_MAX_PARSE_ARTIFACT_BYTES`, `_DEPTH`, `_STRING_BYTES`, `_WORK`, and `OWNER_MAXIMA`) admits a document at the ceiling and refuses one above it with the matching `StrictParseArtifactReadError` variant, and no caller value raises a ceiling. | unit-testing |
-| NFR-005-AC-3 | The v4 canonical-text depth bound and the CLI bounded read admit input at the bound and refuse input one above with `FormatErrorCode::InvalidGraph` and a `source_limit` diagnostic respectively. | unit-testing |
-| NFR-005-AC-4 | Every variant of `DiagnosticCode`, `FormatErrorCode`, `StrictParseArtifactReadError`, `ContextualParseError`, and `InfiniteDisposition` is returned by at least one test through the public API. | unit-testing |
-| NFR-005-AC-5 | The unit and property suites complete under Miri with zero undefined-behavior reports, using a documented proptest case count and isolation setting. | unit-testing |
-| NFR-005-AC-6 | tl-parse documentation and manifest make no `no_std` claim and state that the crate requires `std`. | unit-testing |
+| NFR-005-AC-1 | For each of `HARD_MAX_SOURCE_BYTES`, `HARD_MAX_TOKENS`, `HARD_MAX_NODES`, `HARD_MAX_DEPTH`, `HARD_MAX_DIAGNOSTICS`, `HARD_MAX_PARSE_WORK`, `HARD_MAX_OUTPUT_BYTES`, and `HARD_MAX_FORMAT_WORK`, a value equal to the limit is accepted; a value one past the limit is refused with the typed error that names that limit. A caller value above the constant is clamped to the constant. The native run uses the owner value and is never skipped. The Miri run uses a caller-lowered limit for the same code path, for these limits: `HARD_MAX_SOURCE_BYTES`, `HARD_MAX_OUTPUT_BYTES`. The remaining limits here accept only a caller value at or below the constant (clamp down only), so the Miri run asserts the clamp and does not build the at-limit input. | unit-testing (TC-067) |
+| NFR-005-AC-2 | For each strict-reader ceiling (`HARD_MAX_PARSE_ARTIFACT_BYTES`, `HARD_MAX_PARSE_ARTIFACT_DEPTH`, `HARD_MAX_PARSE_ARTIFACT_STRING_BYTES`, `HARD_MAX_PARSE_ARTIFACT_WORK`, and `ParseArtifactLimits::OWNER_MAXIMA`), a value equal to the limit is accepted; a value one past the limit is refused with the typed error that names that limit. A caller value above a ceiling is clamped to it. The native run uses the owner value and is never skipped. The Miri run uses a caller-lowered limit for the same code path, for these limits: `HARD_MAX_PARSE_ARTIFACT_BYTES`, `HARD_MAX_PARSE_ARTIFACT_WORK`. Depth and string ceilings are small and run at the owner value under Miri. | unit-testing (TC-068) |
+| NFR-005-AC-3 | For the v4 canonical-text depth bound, a value equal to the limit is accepted; a value one past the limit is refused with the typed error that names that limit. The refusal is `FormatErrorCode::InvalidGraph`. | unit-testing (TC-069) |
+| NFR-005-AC-4 | For the CLI bounded input read, a value equal to the limit is accepted; a value one past the limit is refused with the typed error that names that limit. The refusal is a `source_limit` diagnostic. | unit-testing (TC-070) |
+| NFR-005-AC-5 | Every variant of `DiagnosticCode`, `FormatErrorCode`, `StrictParseArtifactReadError`, `ContextualParseError`, and `InfiniteDisposition` is either returned by at least one test through the public API or removed from the enum in the same change. | unit-testing (TC-071) |
+| NFR-005-AC-6 | The unit and property suites complete under Miri on the pinned nightly named in the Makefile, with zero undefined-behavior reports, using a documented proptest case count and isolation setting. | unit-testing (TC-072) |
 
 ## Dependencies
 
 NFR-001 and NFR-004 supply the limits being proved. tl-syntax owns the graph
-ceilings and the `no_std` build.
+ceilings.
