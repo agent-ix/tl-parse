@@ -218,4 +218,4 @@ coverage-branch:
 .PHONY: ci
 ci: fmt-check lint test conformance roundtrip \
 	fuzz-build fuzz-smoke deny test-execution-control-guard spec \
-	msrv rustdoc miri
+	msrv rustdoc miri mutants-diff

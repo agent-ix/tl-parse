@@ -16,6 +16,12 @@ no test and count on neither side (the same definition as FR-022). Mutants in
 files matched by an `exclude` glob of the thresholds file are ignored, which is
 how CI-plumbing modules are kept out of every threshold.
 
+Every missed or timed-out mutant must also be listed in a `[[survivor]]` table
+of the thresholds file (`file`, `names`, one-line `reason`; FR-022-AC-5). A
+survivor that is not listed, or is listed with an empty reason, fails the gate;
+a mutant is identified by its file and its name without the `file:line:col: `
+prefix, so a listing survives edits that move code.
+
 Exit status: 0 every group meets its minimum, 1 a group is below its minimum or
 the run is incomplete (an unmutated baseline failure, zero viable mutants in a
 group), 2 usage or input error. Python 3.11 or newer (tomllib), stdlib only.
@@ -23,6 +29,7 @@ The same script is used in tl-syntax, tl-parse, tl-rewrite and tl-mltl.
 """
 import fnmatch
 import json
+import re
 import sys
 import tomllib
 
@@ -62,6 +69,11 @@ def main(argv):
         ]
     counts = {g["name"]: {"caught": 0, "missed": 0, "timeout": 0, "unviable": 0} for g in groups}
     baseline_ok = True
+    listed = {}
+    for entry in thresholds.get("survivor", []):
+        for name in entry.get("names", []):
+            listed[(entry["file"], name)] = str(entry.get("reason", "")).strip()
+    unreasoned = []
     merged = {}
     for outcome in outcomes["outcomes"]:
         scenario = outcome["scenario"]
@@ -85,11 +97,17 @@ def main(argv):
         if key is None:
             print(f"mutation_gate: unexpected mutant summary {summary!r} for {path}", file=sys.stderr)
             return 1
+        if key in ("missed", "timeout"):
+            name = re.sub(r"^\S+:\d+:\d+: ", "", scenario["Mutant"]["name"])
+            if not listed.get((path, name)):
+                unreasoned.append(f"{path}: {name}")
         for group in groups:
             if any(fnmatch.fnmatch(path, pattern) for pattern in group["globs"]):
                 counts[group["name"]][key] += 1
 
-    failed = not baseline_ok
+    failed = not baseline_ok or bool(unreasoned)
+    for survivor in sorted(unreasoned):
+        print(f"FAIL survivor without a reason: {survivor}")
     if not baseline_ok:
         print("FAIL baseline: the unmutated tree did not pass its tests")
     for group in groups:

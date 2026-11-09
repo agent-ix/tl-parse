@@ -2,8 +2,10 @@
 # Kill rate = caught / (caught + missed + timeout); unviable mutants count on
 # neither side. `min_kill_percent` is the measured baseline floor (a ratchet:
 # raise it when survivors are killed, never lower it). The campaign targets are
-# 95% for the core group and 85% for the whole crate; a group whose floor is
-# below its target has recorded survivors listed in docs/verification-tooling.md.
+# 95% for the core group and 85% for the whole crate. Every mutant that is
+# missed or times out must be listed in a `[[survivor]]` table below with a
+# one-line reason (FR-022-AC-5); a survivor without one fails the gate. Equivalent
+# mutants are not listed here: they are excluded in .cargo/mutants.toml.
 # `diff_min_kill_percent` applies to `make mutants-diff`: every mutant in the
 # changed code must be killed.
 diff_min_kill_percent = 100.0
@@ -13,10 +15,45 @@ exclude = []
 [[group]]
 name = "core"
 globs = ["src/parser.rs", "src/lexer.rs"]
-min_kill_percent = 87.0
+min_kill_percent = 97.0
 
 # whole crate
 [[group]]
 name = "crate"
 globs = ["src/*.rs", "src/*/*.rs"]
-min_kill_percent = 78.0
+min_kill_percent = 98.8
+
+# Survivors: a mutant that was neither killed nor excluded as equivalent. The
+# `names` omit the `file:line:col:` prefix so a listing survives edits that move code.
+[[survivor]]
+file = "src/lexer.rs"
+reason = "non-terminating: the mutated offset never advances, so the suite hangs and the timeout is the detection; no assertion can run"
+names = [
+    "replace += with *= in Lexer<'_>::scan_identifier",
+    "replace += with *= in Lexer<'_>::scan_number",
+    "replace += with *= in Lexer<'_>::scan_token",
+]
+
+[[survivor]]
+file = "src/parser.rs"
+reason = "non-terminating: the parse loop or its work counter no longer advances, so the suite hangs and the timeout is the detection; no assertion can run"
+names = [
+    "delete ! in parse_dialect",
+    "replace Parser<'_>::advance with ()",
+    "replace Parser<'_>::charge_work -> bool with false",
+]
+
+[[survivor]]
+file = "src/diagnostic.rs"
+reason = "non-terminating: the string scanner returns an index that never moves forward, so the suite hangs and the timeout is the detection; no assertion can run"
+names = [
+    "replace scan_json_string -> Result<usize, StrictParseArtifactReadError> with Ok(0)",
+    "replace scan_json_string -> Result<usize, StrictParseArtifactReadError> with Ok(1)",
+]
+
+[[survivor]]
+file = "src/dialect/v4.rs"
+reason = "non-terminating: refusing every temporal prefix makes the parser loop without consuming input, so the suite hangs and the timeout is the detection; no assertion can run"
+names = [
+    "replace permits_temporal_prefix -> bool with false",
+]

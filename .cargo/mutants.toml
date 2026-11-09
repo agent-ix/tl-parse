@@ -3,11 +3,46 @@
 # The crate has no CI-plumbing module, so nothing is excluded.
 additional_cargo_args = ["--all-features"]
 
-minimum_test_timeout = 60
+# A timeout must mean a hang, not a loaded machine: the 2026-11-09 first full tl-parse run
+# at a 60 s floor counted 277 load-induced timeouts, so the floor is well above any loaded run.
+minimum_test_timeout = 300
 timeout_multiplier = 3.0
 
-# Equivalent mutants (one-line reason each).
+# Equivalent mutants (one-line reason each). A pattern that names a line
+# (`:92:`) pins one mutant; when the line moves the mutant resurfaces as a
+# survivor and needs a fresh justification.
 exclude_re = [
     # `minimum` returns the same value for `<` and `<=`: equal operands give equal results.
     'diagnostic\.rs:\d+:\d+: replace < with <= in minimum',
+    # Unreachable: each dialect lexer already refuses the temporal tokens its policy rejects, so the parser policy check never sees one.
+    'permits_temporal_prefix -> bool with true',
+    'parser\.rs:342:\d+: replace != with == in Parser<.*>::parse_prefix',
+    # Unreachable: only the v2 dialect lexes `W`/`M`, so `lower_future` never runs under another dialect.
+    'Dialect::permits_lowering -> bool with true',
+    # Redundant: `scan_token` recognises the `true` and `false` keywords before identifiers are classified.
+    'delete match arm "(true|false)" in classify_identifier',
+    # Unreachable: tl-syntax owner limits (100000 nodes, 4096 deep, 256Mi work) exceed the parser hard maxima, so strict admission never refuses a graph the parser built.
+    'replace match guard admitted == document with true in strictly_admit_document',
+    'delete match arm StrictDocumentReadError::ResourceLimitExceeded.*formula nodes.* in strictly_admit_document',
+    'delete match arm StrictDocumentReadError::WorkLimitExceeded.* in strictly_admit_document',
+    # Redundant: `parse_dialect` never builds a document after an error or a stop, and line 119 clears the document again.
+    'parser\.rs:92:\d+: replace && with \|\| in parse_dialect',
+    'parser\.rs:119:\d+: replace \|\| with && in parse_dialect',
+    # Equivalent: `current()` clamps the cursor to the final token, so letting `advance` step one past it changes nothing.
+    'parser\.rs:827:\d+: replace (\+ with \*|< with <=) in Parser<.*>::advance',
+    # Unreachable: the v4 parser only advances past a token that is not the final end-of-input token, so the bound never binds.
+    'infinite\.rs:564:\d+: replace (\+ with \*|< with <=) in Parser<.*>::advance',
+    # Unreachable: every v4 stop records a typed refusal, so the fallback diagnostic and its capacity guard never run.
+    'infinite\.rs:482:\d+: replace < with (==|>|<=) in parse_clean_ascii_v4',
+    # Unreachable: `InfiniteFormulaDocument` fixes the profile, there is one clock, and fairness roots are checked against the graph identity at construction, so these formatter identity checks never differ.
+    'infinite\.rs:(1081|1094):\d+: replace \|\| with && in format_clean_ascii_v4',
+    # Redundant: `derived_temporal` is called with `weak` matching the node kind, and a gapped layout fails later with the same typed error.
+    'infinite\.rs:(1296|1297):\d+: replace match guard !?weak with true in InfiniteFormatter',
+    'infinite\.rs:1300:\d+: replace \|\| with && in InfiniteFormatter<.*>::derived_temporal',
+    # Equivalent: for a byte that cannot continue an identifier the identifier scanner stops at the same offset and classifies the same lexeme.
+    'replace match guard !byte\.is_ascii_alphanumeric\(\) && \*byte != b.{1,3}_.{1,3} with false in Lexer<.*>::atom_keyword_boundary',
+    # Unreachable: no formatter selects dialect v2; v2 documents render through the v1 policy.
+    'dialect/v2\.rs:\d+:\d+: replace (unary|binary)_spelling -> Option<\w+> with None',
+    # Equivalent: formula-v2 documents exist only under the past profile, so the schema and profile conditions coincide.
+    'dialect/v3\.rs:208:\d+: replace \|\| with && in <impl TryFrom<PastParseReportWire>',
 ]
