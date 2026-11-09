@@ -45,6 +45,18 @@ jobs:
       - name: Install nightly fuzz toolchain
         uses: dtolnay/rust-toolchain@nightly
 
+      # `make miri` runs on the nightly named by MIRI_TOOLCHAIN in the Makefile.
+      # Read the name from the Makefile so there is no second copy to drift.
+      - name: Read Miri toolchain name
+        id: miri
+        run: echo "toolchain=$(sed -n 's/^MIRI_TOOLCHAIN ?= //p' Makefile)" >> "$GITHUB_OUTPUT"
+
+      - name: Install Miri toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.miri.outputs.toolchain }}
+          components: miri, rust-src
+
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 

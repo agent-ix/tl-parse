@@ -103,4 +103,4 @@ no classification of their own.
 | TC-069 | Accept the v4 canonical-text depth bound at its value and refuse one past it | Unit | P0 | NFR-005-AC-3 | ✅ implemented |
 | TC-070 | Accept the CLI bounded input read at its value and refuse one byte past it | Unit | P0 | NFR-005-AC-4 | ✅ implemented |
 | TC-071 | Produce every public error, code, and disposition variant through the public API, or remove it | Unit | P0 | NFR-005-AC-5 | ✅ implemented |
-| TC-072 | Run the unit and property suites under Miri with documented reduced settings | Unit | P1 | NFR-005-AC-6 | ✅ implemented |
+| TC-072 | Run the unit and property suites under Miri with documented reduced settings (the in-repo test proves wiring only) | Unit | P1 | NFR-005-AC-6 | ✅ implemented |

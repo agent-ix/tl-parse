@@ -474,7 +474,9 @@ fn v4_canonical_text_depth_accepts_the_limit_and_refuses_one_past() {
         None,
         FormatLimits::default(),
     );
-    assert_eq!(past.error.unwrap().code, FormatErrorCode::InvalidGraph);
+    let error = past.error.unwrap();
+    assert_eq!(error.code, FormatErrorCode::InvalidGraph);
+    assert_eq!(error.message, "v4 graph exceeds format depth");
     assert!(past.text.is_none());
 }
 
@@ -754,8 +756,8 @@ mod contextual {
                 .replace("\"signal\":10", "\"signal\":99"),
         );
         assert!(invalid.is_err());
-        // `parse` spans every node it emits, so the span error is reachable only
-        // through the strict wire reader. Strip a span and restore the request
+        // `parse` spans every node it emits, so a span-less node is reachable only
+        // through the strict wire reader, which refuses it with a string error. Strip a span and restore the request
         // digest so the reader reaches the binding check.
         let report = bind("p1").unwrap();
         let mut wire: Value = serde_json::to_value(&report).unwrap();

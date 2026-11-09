@@ -27,6 +27,9 @@ distributed as a git source release (`publish = false`); versions are git tags.
   construction and on deserialization, and the binding digests serialize derive
   trees to a `Vec`. This is a breaking change to an exhaustive `match` over the
   enum.
+- `ContextualParseError::MissingParserSpan`. `parse` spans every node it emits,
+  so no value is producible; the strict wire reader still refuses a span-less
+  node with a string error.
 
 ## 0.3.0
 

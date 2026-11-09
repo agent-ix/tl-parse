@@ -88,7 +88,12 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
             return Err("request digest does not match the retained inputs".into());
         }
         let expected_bindings = bindings_for(&wire.formula_document, &wire.signal_catalog)
-            .map_err(|error| error.to_string())?;
+            .map_err(|error| match error {
+                BindingFailure::MissingSpan(proposition) => {
+                    format!("missing parser span for proposition {}", proposition.0)
+                }
+                BindingFailure::Unbound(error) => error.to_string(),
+            })?;
         if wire.bindings != expected_bindings {
             return Err("bindings do not match the retained formula and catalog".into());
         }
@@ -109,8 +114,6 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
 pub enum ContextualParseError {
     /// The ordinary parser produced no valid formula document.
     ParseFailed,
-    /// A parsed proposition node had no parser span, which violates this API's contract.
-    MissingParserSpan { proposition: PropositionId },
     /// The shared catalog does not bind a proposition referenced by the formula.
     MissingProposition {
         /// Unresolved proposition identity.
@@ -124,13 +127,6 @@ impl fmt::Display for ContextualParseError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ParseFailed => formatter.write_str("parse failed"),
-            Self::MissingParserSpan { proposition } => {
-                write!(
-                    formatter,
-                    "missing parser span for proposition {}",
-                    proposition.0
-                )
-            }
             Self::MissingProposition {
                 proposition,
                 parser_span,
@@ -157,7 +153,13 @@ pub fn parse_with_context(
 ) -> Result<ContextualParseReport, ContextualParseError> {
     let report = parse(source, profile, limits);
     let formula_document = report.document.ok_or(ContextualParseError::ParseFailed)?;
-    let bindings = bindings_for(&formula_document, catalog_document)?;
+    let bindings =
+        bindings_for(&formula_document, catalog_document).map_err(|error| match error {
+            BindingFailure::Unbound(error) => error,
+            // `parse` spans every node it emits, so only a hand-built wire document can
+            // lack a span; refuse it as an unusable parse rather than a public variant.
+            BindingFailure::MissingSpan(_) => ContextualParseError::ParseFailed,
+        })?;
 
     let signal_catalog_sha256 = digest(catalog_document);
     let request_sha256 = request_digest(&formula_document, catalog_document, requirement_context);
@@ -172,10 +174,16 @@ pub fn parse_with_context(
     })
 }
 
+/// Why bindings could not be resolved; private because only the wire reader sees a span-less node.
+enum BindingFailure {
+    MissingSpan(PropositionId),
+    Unbound(ContextualParseError),
+}
+
 fn bindings_for(
     formula_document: &FormulaDocument,
     catalog_document: &SignalCatalogDocument,
-) -> Result<Vec<BoundProposition>, ContextualParseError> {
+) -> Result<Vec<BoundProposition>, BindingFailure> {
     // Catalog documents are validated by `new` and by deserialization, so a
     // document in hand always validates.
     let catalog = catalog_document
@@ -192,15 +200,15 @@ fn bindings_for(
         {
             continue;
         }
-        let parser_span = node
-            .span
-            .ok_or(ContextualParseError::MissingParserSpan { proposition })?;
-        let signal = catalog.signal_for_proposition(proposition).ok_or(
-            ContextualParseError::MissingProposition {
-                proposition,
-                parser_span,
-            },
-        )?;
+        let parser_span = node.span.ok_or(BindingFailure::MissingSpan(proposition))?;
+        let signal = catalog
+            .signal_for_proposition(proposition)
+            .ok_or(BindingFailure::Unbound(
+                ContextualParseError::MissingProposition {
+                    proposition,
+                    parser_span,
+                },
+            ))?;
         bindings.push(BoundProposition {
             proposition,
             parser_span,
@@ -216,6 +224,7 @@ fn request_digest(
     catalog_document: &SignalCatalogDocument,
     requirement_context: Option<&RequirementContextDocument>,
 ) -> String {
+    // The `json!` macro builds a `Value` map, which also serializes infallibly.
     digest(&serde_json::json!({
         "domain": "tl-parse.contextual-binding/request/v2",
         "formulaDocument": formula_document,
