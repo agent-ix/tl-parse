@@ -48,8 +48,13 @@ def main(argv):
     try:
         outcomes = {"outcomes": []}
         for directory in out_dir.split(","):
-            with open(f"{directory}/outcomes.json", "rb") as handle:
-                outcomes["outcomes"].extend(json.load(handle)["outcomes"])
+            try:
+                with open(f"{directory}/outcomes.json", "rb") as handle:
+                    outcomes["outcomes"].extend(json.load(handle)["outcomes"])
+            except FileNotFoundError:
+                # cargo-mutants writes no outcomes when the diff holds no mutable code.
+                if not diff_mode:
+                    raise
         with open(thresholds_path, "rb") as handle:
             thresholds = tomllib.load(handle)
     except (OSError, ValueError) as error:
