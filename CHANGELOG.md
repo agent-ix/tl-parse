@@ -3,6 +3,31 @@
 All notable user-visible changes to `tl-parse` are recorded here. The crate is
 distributed as a git source release (`publish = false`); versions are git tags.
 
+## Unreleased
+
+### Added
+
+- The `HARD_MAX_*` process-safe limit constants are re-exported from the crate
+  root, so callers can name the ceilings that clamp `ParseLimits`,
+  `FormatLimits`, and `ParseArtifactLimits`.
+- `make miri` runs the pure-computation suites under Miri on the pinned nightly
+  and is part of `make ci` (NFR-005).
+- Boundary tests accept each declared limit at its value and refuse one past it
+  with the typed error that names the limit.
+
+### Changed
+
+- The v4 canonical-text depth bound is `HARD_MAX_DEPTH` instead of a separate
+  literal `256`; the value is unchanged.
+
+### Removed
+
+- `ContextualParseError::InvalidCatalog` and `ContextualParseError::Identity`.
+  No input can produce either: `SignalCatalogDocument` is validated on
+  construction and on deserialization, and the binding digests serialize derive
+  trees to a `Vec`. This is a breaking change to an exhaustive `match` over the
+  enum.
+
 ## 0.3.0
 
 Part of the first coordinated release of the MLTL crates (`tl-syntax`,

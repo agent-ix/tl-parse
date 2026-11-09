@@ -360,7 +360,7 @@ fn past_source_strategy() -> impl Strategy<Value = String> {
 
 proptest! {
     #![proptest_config(ProptestConfig {
-        cases: 96,
+        cases: if cfg!(miri) { 4 } else { 96 },
         failure_persistence: None,
         ..ProptestConfig::default()
     })]

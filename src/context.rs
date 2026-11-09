@@ -75,8 +75,7 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
 
     fn try_from(wire: ContextualParseReportWire) -> Result<Self, Self::Error> {
         let requirement_context = wire.requirement_context.0;
-        let expected_catalog_digest =
-            digest(&wire.signal_catalog).map_err(|error| error.to_string())?;
+        let expected_catalog_digest = digest(&wire.signal_catalog);
         if wire.signal_catalog_sha256 != expected_catalog_digest {
             return Err("signal catalog digest does not match the retained catalog".into());
         }
@@ -84,8 +83,7 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
             &wire.formula_document,
             &wire.signal_catalog,
             requirement_context.as_ref(),
-        )
-        .map_err(|error| error.to_string())?;
+        );
         if wire.request_sha256 != expected_request_digest {
             return Err("request digest does not match the retained inputs".into());
         }
@@ -111,8 +109,6 @@ impl TryFrom<ContextualParseReportWire> for ContextualParseReport {
 pub enum ContextualParseError {
     /// The ordinary parser produced no valid formula document.
     ParseFailed,
-    /// The supplied shared signal catalog is invalid.
-    InvalidCatalog(String),
     /// A parsed proposition node had no parser span, which violates this API's contract.
     MissingParserSpan { proposition: PropositionId },
     /// The shared catalog does not bind a proposition referenced by the formula.
@@ -122,15 +118,12 @@ pub enum ContextualParseError {
         /// Exact source byte span on the first parser node.
         parser_span: SourceSpan,
     },
-    /// A deterministic identity could not be serialized.
-    Identity(String),
 }
 
 impl fmt::Display for ContextualParseError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ParseFailed => formatter.write_str("parse failed"),
-            Self::InvalidCatalog(error) => write!(formatter, "invalid signal catalog: {error}"),
             Self::MissingParserSpan { proposition } => {
                 write!(
                     formatter,
@@ -148,9 +141,6 @@ impl fmt::Display for ContextualParseError {
                 parser_span.start(),
                 parser_span.end()
             ),
-            Self::Identity(error) => {
-                write!(formatter, "binding identity serialization failed: {error}")
-            }
         }
     }
 }
@@ -169,8 +159,8 @@ pub fn parse_with_context(
     let formula_document = report.document.ok_or(ContextualParseError::ParseFailed)?;
     let bindings = bindings_for(&formula_document, catalog_document)?;
 
-    let signal_catalog_sha256 = digest(catalog_document)?;
-    let request_sha256 = request_digest(&formula_document, catalog_document, requirement_context)?;
+    let signal_catalog_sha256 = digest(catalog_document);
+    let request_sha256 = request_digest(&formula_document, catalog_document, requirement_context);
     Ok(ContextualParseReport {
         schema_version: ContextualParseSchemaVersion::V2,
         formula_document,
@@ -186,9 +176,11 @@ fn bindings_for(
     formula_document: &FormulaDocument,
     catalog_document: &SignalCatalogDocument,
 ) -> Result<Vec<BoundProposition>, ContextualParseError> {
+    // Catalog documents are validated by `new` and by deserialization, so a
+    // document in hand always validates.
     let catalog = catalog_document
         .validate()
-        .map_err(|error| ContextualParseError::InvalidCatalog(error.to_string()))?;
+        .expect("signal catalog documents are validated at construction");
     let mut bindings = Vec::new();
     for node in formula_document.nodes() {
         let NodeKind::Proposition { proposition } = node.kind else {
@@ -223,7 +215,7 @@ fn request_digest(
     formula_document: &FormulaDocument,
     catalog_document: &SignalCatalogDocument,
     requirement_context: Option<&RequirementContextDocument>,
-) -> Result<String, ContextualParseError> {
+) -> String {
     digest(&serde_json::json!({
         "domain": "tl-parse.contextual-binding/request/v2",
         "formulaDocument": formula_document,
@@ -232,8 +224,9 @@ fn request_digest(
     }))
 }
 
-fn digest(value: &impl Serialize) -> Result<String, ContextualParseError> {
-    let bytes = serde_json::to_vec(value)
-        .map_err(|error| ContextualParseError::Identity(error.to_string()))?;
-    Ok(format!("{:x}", Sha256::digest(bytes)))
+fn digest(value: &impl Serialize) -> String {
+    // Every digested value is a derive-`Serialize` tree of strings, integers and
+    // enums written to a `Vec`, which cannot fail.
+    let bytes = serde_json::to_vec(value).expect("binding documents serialize infallibly");
+    format!("{:x}", Sha256::digest(bytes))
 }

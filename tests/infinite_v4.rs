@@ -1177,6 +1177,7 @@ fn exact_v4_limits_admit_and_one_under_refuses_deterministically() {
 
 // Trace: TC-065, FR-017-AC-3
 #[test]
+#[cfg_attr(miri, ignore = "reads the checked-in fuzz corpus from disk")]
 fn checked_v4_and_v3_fuzz_seeds_execute_real_parser_paths() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("fuzz/corpus");
     for (target, files) in [

@@ -14,6 +14,7 @@ make clean          # cargo clean
 make deny           # cargo deny check licenses and sources
 make conformance    # replay the hostile-input corpus through the crate
 make roundtrip      # sweep the parse-format-parse fixed point
+make miri           # run the pure suites under Miri on the pinned nightly
 make fuzz-build     # compile the checked-in cargo-fuzz target locally
 make fuzz-smoke     # execute a bounded local libFuzzer seed smoke run
 make spec           # validate specifications and strict coverage

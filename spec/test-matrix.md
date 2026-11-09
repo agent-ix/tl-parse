@@ -55,7 +55,7 @@ no classification of their own.
 |---|---|---|---|
 | NFR-001 | deterministic and resource-bound tests | TC-011 through TC-017, TC-021 | ✅ covered |
 | NFR-002 | dialect and provenance inspection | TC-020 | ✅ covered |
-| NFR-005 | boundary, variant-production, and Miri tests | TC-067 through TC-072 | 🚧 planned |
+| NFR-005 | boundary, variant-production, and Miri tests | TC-067 through TC-072 | ✅ implemented |
 
 ## Test Case Summary
 
@@ -98,9 +98,9 @@ no classification of their own.
 | TC-045 | Serialize the derived report deterministically under a strict versioned identity that mutations change | Unit | P0 | FR-008-AC-6 | ✅ implemented |
 | TC-046 | Preserve all three dialects while separating their policies | Integration | P0 | FR-009-AC-1, FR-009-AC-2, FR-009-AC-3, FR-009-AC-4, FR-009-AC-5 | ✅ implemented |
 | TC-047 | Classify fuzz smoke outcomes from process status and artifacts, refuse unknown targets and ambient sanitizer overrides, and terminate a timed-out process group | Unit | P0 | FR-005-AC-2 | ✅ implemented |
-| TC-067 | Accept each parse and format hard limit at its value and refuse one past it with the typed code that names it; clamp larger caller values | Unit | P0 | NFR-005-AC-1 | 🚧 planned |
-| TC-068 | Accept each strict-reader ceiling at its value and refuse one past it with the typed error that names it; clamp larger caller values | Unit | P0 | NFR-005-AC-2 | 🚧 planned |
-| TC-069 | Accept the v4 canonical-text depth bound at its value and refuse one past it | Unit | P0 | NFR-005-AC-3 | 🚧 planned |
-| TC-070 | Accept the CLI bounded input read at its value and refuse one byte past it | Unit | P0 | NFR-005-AC-4 | 🚧 planned |
-| TC-071 | Produce every public error, code, and disposition variant through the public API, or remove it | Unit | P0 | NFR-005-AC-5 | 🚧 planned |
-| TC-072 | Run the unit and property suites under Miri with documented reduced settings | Unit | P1 | NFR-005-AC-6 | 🚧 planned |
+| TC-067 | Accept each parse and format hard limit at its value (recording the two shadowed limits) and refuse one past it with the typed code that names it; clamp larger caller values | Unit | P0 | NFR-005-AC-1 | ✅ implemented |
+| TC-068 | Accept each strict-reader ceiling at its value and refuse one past it with the typed error that names it; clamp larger caller values | Unit | P0 | NFR-005-AC-2 | ✅ implemented |
+| TC-069 | Accept the v4 canonical-text depth bound at its value and refuse one past it | Unit | P0 | NFR-005-AC-3 | ✅ implemented |
+| TC-070 | Accept the CLI bounded input read at its value and refuse one byte past it | Unit | P0 | NFR-005-AC-4 | ✅ implemented |
+| TC-071 | Produce every public error, code, and disposition variant through the public API, or remove it | Unit | P0 | NFR-005-AC-5 | ✅ implemented |
+| TC-072 | Run the unit and property suites under Miri with documented reduced settings | Unit | P1 | NFR-005-AC-6 | ✅ implemented |
