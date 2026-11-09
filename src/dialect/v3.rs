@@ -297,3 +297,19 @@ pub fn parse_clean_ascii_v3(source: &str, limits: ParseLimits) -> PastParseRepor
         diagnostics: report.diagnostics,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::permits_temporal_prefix;
+    use crate::lexer::TokenKind;
+
+    #[test]
+    fn temporal_prefix_policy_admits_exactly_this_dialects_prefix_operators() {
+        assert!(permits_temporal_prefix(TokenKind::Once));
+        assert!(permits_temporal_prefix(TokenKind::Historically));
+        assert!(permits_temporal_prefix(TokenKind::StrongPrevious));
+        assert!(!permits_temporal_prefix(TokenKind::Future));
+        assert!(!permits_temporal_prefix(TokenKind::Globally));
+        assert!(!permits_temporal_prefix(TokenKind::And));
+    }
+}
