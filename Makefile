@@ -116,7 +116,7 @@ conformance:
 # NFR-005-AC-2). Isolation stays on, so a test that touches the host fails.
 MIRI_TOOLCHAIN ?= nightly-2026-08-21
 MIRIFLAGS ?= -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
-MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects
+MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes
 
 .PHONY: miri
 miri:
