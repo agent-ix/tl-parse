@@ -140,3 +140,30 @@ impl Dialect {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Dialect;
+    use crate::lexer::TokenKind;
+
+    #[test]
+    fn each_dialect_dispatches_to_its_own_temporal_prefix_policy() {
+        assert!(Dialect::V1.permits_temporal_prefix(TokenKind::Future));
+        assert!(!Dialect::V1.permits_temporal_prefix(TokenKind::StrongPrevious));
+        assert!(Dialect::V2.permits_temporal_prefix(TokenKind::Globally));
+        assert!(!Dialect::V2.permits_temporal_prefix(TokenKind::Once));
+        assert!(Dialect::V3.permits_temporal_prefix(TokenKind::StrongPrevious));
+        assert!(!Dialect::V3.permits_temporal_prefix(TokenKind::Future));
+        assert!(Dialect::V4.permits_temporal_prefix(TokenKind::Future));
+        assert!(Dialect::V4.permits_temporal_prefix(TokenKind::StrongPrevious));
+        assert!(!Dialect::V4.permits_temporal_prefix(TokenKind::And));
+    }
+
+    #[test]
+    fn only_the_v2_dialect_lowers_derived_operators() {
+        assert!(Dialect::V2.permits_lowering());
+        for dialect in [Dialect::V1, Dialect::V3, Dialect::V4] {
+            assert!(!dialect.permits_lowering());
+        }
+    }
+}

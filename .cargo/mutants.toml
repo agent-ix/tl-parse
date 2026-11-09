@@ -14,13 +14,8 @@ timeout_multiplier = 3.0
 exclude_re = [
     # `minimum` returns the same value for `<` and `<=`: equal operands give equal results.
     'diagnostic\.rs:\d+:\d+: replace < with <= in minimum',
-    # Unreachable: each dialect lexer already refuses the temporal tokens its policy rejects, so the parser policy check never sees one.
-    '^src/dialect/(mod|v1|v2|v3)\.rs:\d+:\d+: replace (Dialect::)?permits_temporal_prefix -> bool with true$',
-    # Unreachable (TL-371 review): the v4 policy admits every temporal prefix token the v4 lexer produces, and the mutated refusal is only seen as a hang of the shared parse loop.
-    '^src/dialect/v4\.rs:\d+:\d+: replace permits_temporal_prefix -> bool with (true|false)$',
-    'parser\.rs:342:\d+: replace != with == in Parser<.*>::parse_prefix',
-    # Unreachable: only the v2 dialect lexes `W`/`M`, so `lower_future` never runs under another dialect.
-    '^src/dialect/mod\.rs:\d+:\d+: replace Dialect::permits_lowering -> bool with true$',
+    # Unreachable: each dialect lexer already refuses the temporal tokens its policy rejects, so the parser's policy check never sees one.
+    '^src/parser\.rs:342:\d+: replace != with == in Parser<.*>::parse_prefix$',
     # Redundant: `scan_token` recognises the `true` and `false` keywords before identifiers are classified.
     '^src/dialect/v(1|3|4)\.rs:\d+:\d+: delete match arm "(true|false)" in classify_identifier$',
     # Unreachable: re-admitting a document's own canonical bytes always yields an equal document, so the `admitted == document` guard is always true and its `Ok(_)` arm never runs.
