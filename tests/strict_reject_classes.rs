@@ -15,7 +15,7 @@ use tl_parse::{
     format_clean_ascii_v3, format_document, parse_clean_ascii_v3, parse_clean_ascii_v4,
     DiagnosticCode, FormatError, FormatErrorCode, FormatLimits, InfiniteParseReport,
     ParseArtifactLimits, ParseLimits, PastParseReport, StrictParseArtifactReadError,
-    HARD_MAX_TOKENS,
+    HARD_MAX_PARSE_ARTIFACT_DEPTH, HARD_MAX_TOKENS,
 };
 
 type ReadOutcome = Result<(), StrictParseArtifactReadError>;
@@ -148,7 +148,7 @@ fn every_report_reader_refuses_each_structural_and_encoding_class() {
                 Expect::Invalid(Category::Syntax, "invalid unicode code point"),
             ),
             (
-                "stray continuation byte after the document",
+                "trailing data: stray continuation byte after the document",
                 [valid, b"\x80"].concat(),
                 Expect::Invalid(Category::Syntax, "trailing characters"),
             ),
@@ -302,10 +302,16 @@ fn report_reader_preflight_scanner_edge_cases_are_exact() {
         );
 
         // Nesting past the owner ceiling is refused before any parsing.
-        let deep = format!("{}{}", "[".repeat(65), "]".repeat(65));
+        let nesting = HARD_MAX_PARSE_ARTIFACT_DEPTH + 1;
+        let deep = format!("{}{}", "[".repeat(nesting), "]".repeat(nesting));
         match (reader.read)(deep.as_bytes(), ParseArtifactLimits::default()) {
             Err(StrictParseArtifactReadError::DepthLimitExceeded { actual, limit }) => {
-                assert_eq!((actual, limit), (65, 64), "{}", reader.name);
+                assert_eq!(
+                    (actual, limit),
+                    (nesting, HARD_MAX_PARSE_ARTIFACT_DEPTH),
+                    "{}",
+                    reader.name
+                );
             }
             other => panic!("{} / over-depth: {other:?}", reader.name),
         }
@@ -327,7 +333,7 @@ fn report_reader_preflight_scanner_edge_cases_are_exact() {
             Expect::Invalid(Category::Eof, "EOF while parsing a string"),
         );
 
-        // The fixed admission charge is four work units per input byte.
+        // The fixed admission charge is four work units per input byte (no exported constant).
         let length = reader.valid.len();
         let tight = ParseArtifactLimits {
             document_bytes: length - 1,
@@ -389,6 +395,7 @@ fn past_report_reader_refuses_each_invariant_violation_with_its_message() {
         edit(&mut report);
         rows.push((name, report, expect));
     };
+    // Trips `limits != limits.clamped()`, which has one generic message for every field.
     row(
         "limits above the process-safe maximum",
         &|r| r.limits.max_tokens = HARD_MAX_TOKENS + 1,
@@ -396,7 +403,7 @@ fn past_report_reader_refuses_each_invariant_violation_with_its_message() {
         invariant("parse limits exceed the process-safe maximum"),
     );
     row(
-        "future semantic profile",
+        "wrong semantic profile",
         &|r| r.semantic_profile = SemanticProfile::ClosedTraceV1,
         &good,
         invariant("clean-ascii/v3 requires the origin-complete history profile"),
@@ -483,7 +490,7 @@ fn past_report_reader_refuses_each_invariant_violation_with_its_message() {
     }
 }
 
-// Trace: TC-062, FR-016-AC-2, TC-064, FR-017-AC-2
+// Trace: TC-062, FR-016-AC-2
 #[test]
 fn v4_report_reader_refuses_each_invariant_violation_with_its_message() {
     let good = infinite_report();
@@ -504,6 +511,7 @@ fn v4_report_reader_refuses_each_invariant_violation_with_its_message() {
         edit(&mut report);
         rows.push((name, report, expect));
     };
+    // Trips `limits != limits.clamped()`, which has one generic message for every field.
     row(
         "limits above the process-safe maximum",
         &|r| r.limits.max_tokens = HARD_MAX_TOKENS + 1,
@@ -639,7 +647,7 @@ fn read_errors_render_their_exact_diagnostics() {
     assert!(render(invalid).starts_with("invalid document: invalid type: integer `7`"));
 }
 
-// Trace: TC-004, FR-001-AC-2
+// Trace: TC-062, FR-016-AC-2
 #[test]
 fn diagnostic_and_format_codes_keep_their_exact_wire_spellings() {
     let diagnostics = [
@@ -714,7 +722,7 @@ fn diagnostic_and_format_codes_keep_their_exact_wire_spellings() {
     .is_err());
 }
 
-// Trace: TC-014, FR-004-AC-3
+// Trace: TC-046, FR-009-AC-3, FR-009-AC-4
 #[test]
 fn formatter_refuses_documents_outside_the_selected_dialect_with_the_exact_error() {
     let limits = FormatLimits::default();
