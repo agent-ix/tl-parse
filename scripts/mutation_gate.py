@@ -18,7 +18,8 @@ how CI-plumbing modules are kept out of every threshold.
 
 Exit status: 0 every group meets its minimum, 1 a group is below its minimum or
 the run is incomplete (an unmutated baseline failure, zero viable mutants in a
-group), 2 usage or input error. Stdlib only.
+group), 2 usage or input error. Python 3.11 or newer (tomllib), stdlib only.
+The same script is used in tl-syntax, tl-parse, tl-rewrite and tl-mltl.
 """
 import fnmatch
 import json

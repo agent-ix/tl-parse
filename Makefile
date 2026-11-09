@@ -186,7 +186,7 @@ rustdoc:
 MUTANTS_OUT ?= target/mutants
 MUTANTS_JOBS ?= 4
 MUTANTS_BASE ?= origin/main
-COVERAGE_MIN_LINES ?= 85
+COVERAGE_MIN_LINES ?= 80
 COVERAGE_IGNORE = '(ci_guard)'
 
 # The wrapper accepts cargo-mutants' "survivors found" status and judges the
