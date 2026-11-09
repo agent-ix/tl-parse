@@ -64,6 +64,7 @@ help:
 	@echo "  make test             - cargo test"
 	@echo "  make conformance      - Replay the hostile-input corpus through the crate"
 	@echo "  make roundtrip        - Sweep the parse-format-parse fixed point"
+	@echo "  make miri             - Run the pure suites under Miri on the pinned nightly"
 	@echo "  make fuzz-build       - Compile the checked-in cargo-fuzz target"
 	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
 	@echo "  make deny             - cargo deny check licenses and sources"
@@ -102,6 +103,20 @@ test:
 .PHONY: conformance
 conformance:
 	$(CARGO) run --quiet --example corpus_conformance -- --manifest corpus/v1/manifest.json
+
+# Miri runs the pure-computation suites: the library tests, the NFR-005
+# boundary tests, and the example and property suites. Suites that spawn the
+# CLI or read the corpus from disk need the host and stay native. Property
+# suites lower their case count under `cfg(miri)`, and the owner-value boundary
+# tests substitute caller-lowered limits for the owner constants (NFR-005-AC-1,
+# NFR-005-AC-2). Isolation stays on, so a test that touches the host fails.
+MIRI_TOOLCHAIN ?= nightly-2026-08-21
+MIRIFLAGS ?= -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check
+MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects
+
+.PHONY: miri
+miri:
+	MIRIFLAGS="$(MIRIFLAGS)" rustup run $(MIRI_TOOLCHAIN) $(CARGO) miri test $(MIRI_SUITES)
 
 .PHONY: roundtrip
 roundtrip:
@@ -166,4 +181,4 @@ rustdoc:
 .PHONY: ci
 ci: fmt-check lint test conformance roundtrip \
 	fuzz-build fuzz-smoke deny test-execution-control-guard spec \
-	msrv rustdoc
+	msrv rustdoc miri

@@ -251,6 +251,28 @@ mod tests {
         }
     }
 
+    // Trace: TC-070, NFR-005-AC-4
+    #[test]
+    fn bounded_reader_accepts_the_limit_and_refuses_one_byte_past() {
+        // Native: the CLI's owner limit. Miri: a caller-lowered limit on the same
+        // code path.
+        let limit = if cfg!(miri) {
+            4_096
+        } else {
+            tl_parse::HARD_MAX_SOURCE_BYTES
+        };
+        let at = read_bounded_reader(io::repeat(b'p').take(limit as u64), limit).unwrap();
+        assert!(matches!(at, BoundedInput::Source(text) if text.len() == limit));
+        let past = read_bounded_reader(io::repeat(b'p').take(limit as u64 + 1), limit).unwrap();
+        match past {
+            BoundedInput::SourceLimit {
+                source_bytes,
+                exact,
+            } => assert_eq!((source_bytes, exact), (limit + 1, false)),
+            BoundedInput::Source(_) => panic!("one byte past the limit was accepted"),
+        }
+    }
+
     // Trace: TC-021, FR-005-AC-3, NFR-001-AC-1
     #[test]
     fn reader_and_writer_errors_keep_their_fail_closed_classes() {

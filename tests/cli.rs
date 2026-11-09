@@ -241,3 +241,21 @@ fn cli_dispatch_read_and_render_failures_are_classified() {
     assert!(stderr.starts_with("error[invalid_interval] 1..6: "));
     assert!(stderr.contains("interval"));
 }
+
+// Trace: TC-070, NFR-005-AC-4
+#[test]
+#[cfg_attr(miri, ignore = "spawns the CLI binary")]
+fn cli_stdin_read_accepts_the_source_limit_and_refuses_one_byte_past() {
+    let limit = tl_parse::HARD_MAX_SOURCE_BYTES;
+    // A source of exactly the limit is not refused by the source limit. It costs
+    // more than the parse-work ceiling, so the work limit is the refusal.
+    let at = stdin_run(&["validate", "-"], &format!("p0{}", " ".repeat(limit - 2)));
+    let stderr = String::from_utf8(at.stderr).unwrap();
+    assert!(!stderr.contains("source_limit"), "{stderr}");
+    assert!(stderr.contains("work_limit"), "{stderr}");
+    let past = stdin_run(&["validate", "-"], &format!("p0{}", " ".repeat(limit - 1)));
+    assert_eq!(past.status.code(), Some(1));
+    assert!(String::from_utf8(past.stderr)
+        .unwrap()
+        .contains("source_limit"));
+}

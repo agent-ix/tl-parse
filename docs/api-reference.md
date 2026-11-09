@@ -47,7 +47,7 @@ Everything is exported from the crate root, and `tl_parse::tl_syntax` re-exports
 | `InfiniteRefusal` | The decisive v4 refusal: `code` and `span`. |
 | `InfiniteDisposition` | `Unsupported`, `ResourceIncomplete`, `Failed`, `NoTemporalVerdict`. |
 | `FormatError`, `FormatErrorCode` | Formatting failures. `as_str()`. |
-| `ContextualParseError` | `ParseFailed`, `InvalidCatalog`, `MissingParserSpan`, `MissingProposition`, `Identity`. |
+| `ContextualParseError` | `ParseFailed`, `MissingProposition`. |
 | `StrictParseArtifactReadError` | Strict reader failures. `#[non_exhaustive]`. |
 
 ## Limits

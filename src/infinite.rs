@@ -10,7 +10,7 @@ use tl_syntax::{
 };
 
 use crate::{
-    diagnostic::preflight_parse_artifact,
+    diagnostic::{preflight_parse_artifact, HARD_MAX_DEPTH},
     dialect::Dialect,
     lexer::{checked_span, lex, Token, TokenKind},
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
@@ -1189,7 +1189,7 @@ impl InfiniteFormatter<'_> {
         Ok(())
     }
     fn node(&mut self, id: NodeId, depth: usize) -> Result<(), FormatError> {
-        if depth > 256 {
+        if depth > HARD_MAX_DEPTH {
             return Err(format_error(
                 FormatErrorCode::InvalidGraph,
                 "v4 graph exceeds format depth",

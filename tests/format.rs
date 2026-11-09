@@ -62,6 +62,10 @@ fn canonical_format_is_parseable_and_idempotent() {
 
 // Trace: TC-016, FR-004-AC-2, StR-002-VC-1
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "builds graphs hundreds of nodes deep, which strict admission interprets far too slowly"
+)]
 fn accepted_depth_and_chain_boundaries_reparse_under_the_same_limits() {
     for source in [
         format!("{}p0", "!".repeat(128)),
@@ -89,6 +93,10 @@ fn accepted_depth_and_chain_boundaries_reparse_under_the_same_limits() {
 
 // Trace: TC-017, FR-004-AC-3, NFR-001-AC-2
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "builds graphs hundreds of nodes deep, which strict admission interprets far too slowly"
+)]
 fn deep_shared_graphs_and_formatter_limits_are_bounded() {
     let mut nodes = vec![Node::new(NodeKind::True)];
     for operand in 0..1_000 {
@@ -152,6 +160,10 @@ fn deep_shared_graphs_and_formatter_limits_are_bounded() {
 
 // Trace: TC-017, TC-046, FR-004-AC-3, FR-009-AC-4, NFR-001-AC-2
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "builds the 8191-node owner depth ceiling graph, which is far too slow to interpret"
+)]
 fn syntax_owner_graph_depth_ceiling_is_exact_and_formatting_remains_iterative() {
     let source = std::iter::repeat_n("p0", 4_096)
         .collect::<Vec<_>>()

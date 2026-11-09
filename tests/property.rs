@@ -77,7 +77,7 @@ fn structural(document: &FormulaDocument) -> (SemanticProfile, u32, Vec<NodeKind
 
 proptest! {
     #![proptest_config(ProptestConfig {
-        cases: 96,
+        cases: if cfg!(miri) { 4 } else { 96 },
         failure_persistence: None,
         ..ProptestConfig::default()
     })]
@@ -137,7 +137,7 @@ fn operator_name(kind: &NodeKind) -> &'static str {
 
 proptest! {
     #![proptest_config(ProptestConfig {
-        cases: 96,
+        cases: if cfg!(miri) { 4 } else { 96 },
         failure_persistence: None,
         ..ProptestConfig::default()
     })]

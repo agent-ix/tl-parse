@@ -21,7 +21,11 @@ pub use context::{
 pub use diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticSeverity, ExpectedToken, FormatError, FormatErrorCode,
     FormatLimits, FormatReport, FormatStats, InfiniteRefusal, ParseArtifactLimits, ParseLimits,
-    ParseReport, ParseStats, RecoveryAction, StrictParseArtifactReadError,
+    ParseReport, ParseStats, RecoveryAction, StrictParseArtifactReadError, HARD_MAX_DEPTH,
+    HARD_MAX_DIAGNOSTICS, HARD_MAX_FORMAT_WORK, HARD_MAX_NODES, HARD_MAX_OUTPUT_BYTES,
+    HARD_MAX_PARSE_ARTIFACT_BYTES, HARD_MAX_PARSE_ARTIFACT_DEPTH,
+    HARD_MAX_PARSE_ARTIFACT_STRING_BYTES, HARD_MAX_PARSE_ARTIFACT_WORK, HARD_MAX_PARSE_WORK,
+    HARD_MAX_SOURCE_BYTES, HARD_MAX_TOKENS,
 };
 pub use dialect::v2::{
     parse_clean_ascii_v2, DerivedDialectRevision, DerivedOperator, DerivedOperatorProfile,
