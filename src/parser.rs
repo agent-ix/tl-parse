@@ -860,3 +860,44 @@ fn checked_raw_bounds(start: usize, end: usize) -> Option<RawBounds> {
         u64::try_from(end).ok()?,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A temporal prefix the dialect refuses is skipped, but the end-of-input token never is.
+    #[test]
+    fn a_refused_temporal_prefix_is_skipped_and_the_cursor_stops_on_end_of_input() {
+        let tokens = vec![
+            Token {
+                kind: TokenKind::Once,
+                start: 0,
+                end: 1,
+            },
+            Token {
+                kind: TokenKind::Eof,
+                start: 1,
+                end: 1,
+            },
+        ];
+        let mut parser = Parser {
+            source: "O",
+            profile: SemanticProfile::ClosedTraceV1,
+            dialect: Dialect::V1,
+            limits: ParseLimits::default(),
+            tokens,
+            cursor: 0,
+            nodes: Vec::new(),
+            diagnostics: Vec::new(),
+            diagnostics_truncated: false,
+            had_error: false,
+            work: 0,
+            max_depth: 0,
+            stopped: false,
+            lowerings: Vec::new(),
+        };
+        assert!(parser.parse_prefix(1).is_none());
+        assert_eq!(parser.cursor, 1);
+        assert_eq!(parser.diagnostics.len(), 1);
+    }
+}
