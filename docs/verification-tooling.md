@@ -36,8 +36,9 @@ names the file and the mutant without its `file:line:col:` prefix, so it survive
 survivors listed today are non-terminating mutants: the suite hangs, the timeout is the detection, and no
 assertion can run.
 
-`minimum_test_timeout` in `.cargo/mutants.toml` is well above a loaded run, so a timeout means a hang and not a
-busy machine.
+The cargo-mutants test-timeout floor is 300 s (`minimum_test_timeout` in `.cargo/mutants.toml`); a mutant times out
+when its test run exceeds the larger of that floor and three times the baseline. The floor cannot tell a hang from a
+run that a loaded host slowed past it, so run `make mutants` on an unloaded machine. Timeouts count as unkilled.
 
 `scripts/run_mutants.py` accepts cargo-mutants exit statuses 0, 2 (survivors) and 3 (timeouts) so that
 the gate always runs and prints its table; any other status is passed on.

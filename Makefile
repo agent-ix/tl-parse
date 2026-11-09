@@ -197,6 +197,7 @@ mutants:
 
 .PHONY: mutants-diff
 mutants-diff:
+	rm -f $(MUTANTS_OUT)/mutants.out/outcomes.json
 	$(PYTHON) scripts/run_mutants.py --jobs $(MUTANTS_JOBS) --diff-base $(MUTANTS_BASE) $(MUTANTS_OUT)
 
 .PHONY: coverage

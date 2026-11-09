@@ -50,10 +50,3 @@ names = [
     "replace scan_json_string -> Result<usize, StrictParseArtifactReadError> with Ok(0)",
     "replace scan_json_string -> Result<usize, StrictParseArtifactReadError> with Ok(1)",
 ]
-
-[[survivor]]
-file = "src/dialect/v4.rs"
-reason = "non-terminating: refusing every temporal prefix makes the parser loop without consuming input, so the suite hangs and the timeout is the detection; no assertion can run"
-names = [
-    "replace permits_temporal_prefix -> bool with false",
-]
