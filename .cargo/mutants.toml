@@ -1,0 +1,13 @@
+# cargo-mutants configuration (TL-231). Run with `make mutants` or
+# `make mutants-diff`; see docs/verification-tooling.md for budgets.
+# The crate has no CI-plumbing module, so nothing is excluded.
+additional_cargo_args = ["--all-features"]
+
+minimum_test_timeout = 60
+timeout_multiplier = 3.0
+
+# Equivalent mutants (one-line reason each).
+exclude_re = [
+    # `minimum` returns the same value for `<` and `<=`: equal operands give equal results.
+    'diagnostic\.rs:\d+:\d+: replace < with <= in minimum',
+]
