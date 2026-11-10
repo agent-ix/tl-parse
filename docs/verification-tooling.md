@@ -6,7 +6,7 @@ the gates enforce; it carries no measured results. Floors live in `mutation-thre
 and the Linear tickets.
 
 Tools (inputs): cargo-mutants 27.0.0, cargo-llvm-cov 0.8.7 (branch coverage needs a nightly toolchain with
-llvm-tools), Python 3.11 or newer (the gate reads TOML with `tomllib`).
+llvm-tools).
 
 ## Targets
 

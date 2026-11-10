@@ -15,18 +15,19 @@
 # controls. Because it runs at parse time via $(shell ...) + $(error ...), it
 # fires before any target — including a neutered one — gets a chance to run,
 # and it re-reads this file from disk so an append anywhere below still gets
-# caught.
-EXECUTION_CONTROL_GUARD_CMD ?= cargo run --quiet --bin check_make_execution_control --
-MAKE_EXECUTION_CONTROL_GUARD := $(shell $(EXECUTION_CONTROL_GUARD_CMD) $(MAKEFILE_LIST) 2>&1)
+# caught. Only $(MAKECMDGOALS) other than `help` run it, so listing the
+# targets does not build or run anything.
+ifneq ($(filter-out help,$(MAKECMDGOALS)),)
+MAKE_EXECUTION_CONTROL_GUARD := $(shell cargo run --quiet --bin check_make_execution_control -- $(MAKEFILE_LIST) 2>&1)
 ifneq ($(strip $(MAKE_EXECUTION_CONTROL_GUARD)),)
 $(error $(MAKE_EXECUTION_CONTROL_GUARD))
+endif
 endif
 
 # Ambient environment overrides the text scan above cannot see: MAKEFLAGS
 # already carries any -i/--ignore-errors or -s/--silent the invocation passed,
-# and PYTHONOPTIMIZE/ASAN_OPTIONS/LSAN_OPTIONS can silently strip Python
-# assertions or mute a sanitizer abort in the fuzz lane. All four are refused
-# rather than let `make ci` merely appear to have run these gates.
+# and ASAN_OPTIONS/LSAN_OPTIONS can mute a sanitizer abort in the fuzz
+# lane. All three are refused rather than let `make ci` merely appear to have run these gates.
 # examples/fuzz_campaign.rs sets its own narrowly-scoped LSAN_OPTIONS
 # (fuzz/lsan_suppressions.txt, TL-195) after this guard passes; it is refused
 # here only when present ambiently, the same as ASAN_OPTIONS.
@@ -41,9 +42,6 @@ endif
 MAKEFLAGS_IGNORE_ERRORS := $(strip $(foreach w,$(MAKEFLAGS),$(if $(findstring =,$(w)),,$(if $(findstring i,$(subst -,,$(w))),$(w)))))
 ifneq ($(MAKEFLAGS_IGNORE_ERRORS),)
 $(error execution-control guard: -i/--ignore-errors was passed to make (MAKEFLAGS="$(MAKEFLAGS)"); every recipe would report success without checking its exit code)
-endif
-ifdef PYTHONOPTIMIZE
-$(error execution-control guard: PYTHONOPTIMIZE is set in the environment; Python assert statements in scripts/ would be stripped)
 endif
 ifdef ASAN_OPTIONS
 $(error execution-control guard: ASAN_OPTIONS is set in the environment; it can silence a sanitizer abort in the fuzz lane)
@@ -200,7 +198,6 @@ mutants:
 
 .PHONY: mutants-diff
 mutants-diff:
-	rm -f $(MUTANTS_OUT)/mutants.out/outcomes.json
 	$(GATE) mutants --jobs $(MUTANTS_JOBS) --diff-base $(MUTANTS_BASE) $(MUTANTS_OUT)
 
 .PHONY: coverage

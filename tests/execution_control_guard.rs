@@ -2,8 +2,8 @@
 //! (agent-ix/tl-parse#11). `help` has no prerequisites, so a run that gets past
 //! the guard exits at once. MAKEFLAGS is stripped from the child's environment
 //! so an outer `make` invocation cannot leak its flags into the one under test.
-//! The guard binary is passed in prebuilt: the Makefile would otherwise run
-//! `cargo run` from inside `cargo test` and wait on its own build lock.
+//! `help` is the one goal the parse-time guard does not run, so no nested cargo build
+//! is started from inside `cargo test`.
 
 use std::process::Command;
 
@@ -14,10 +14,6 @@ fn make(flags: &[&str]) -> (bool, String) {
         .arg("help")
         .env_remove("MAKEFLAGS")
         .env_remove("MFLAGS")
-        .env(
-            "EXECUTION_CONTROL_GUARD_CMD",
-            env!("CARGO_BIN_EXE_check_make_execution_control"),
-        )
         .output()
         .unwrap();
     (

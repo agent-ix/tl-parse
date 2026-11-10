@@ -60,5 +60,4 @@ tests/                 # unit, property, corpus, and CLI tests
 corpus/v1/             # hostile-input fixtures
 fuzz/                  # isolated cargo-fuzz target and checked seeds
 spec/                  # requirements artifacts (from /spec-create-spec)
-scripts/               # local tooling
 ```
