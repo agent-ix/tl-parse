@@ -1,5 +1,4 @@
-//! TL-371: behavior of `scripts/mutation_gate.py` on synthetic cargo-mutants outcomes. The
-//! script is a stopgap until its port to Rust (TL-370); these tests keep it honest meanwhile.
+//! TL-371: behavior of `tl-gate gate` (built through `tools/gate`) on synthetic cargo-mutants outcomes.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -42,7 +41,7 @@ fn thresholds(dir: &Path, floor: f64, survivors: &str) -> PathBuf {
     fs::write(
         &path,
         format!(
-            "diff_min_kill_percent = 100.0\n[[group]]\nname = \"crate\"\nglobs = [\"src/*.rs\"]\n\
+            "diff_min_kill_percent = 100.0\nrequire_survivor_reasons = true\n[[group]]\nname = \"crate\"\nglobs = [\"src/*.rs\"]\n\
              min_kill_percent = {floor}\n{survivors}"
         ),
     )
@@ -51,9 +50,12 @@ fn thresholds(dir: &Path, floor: f64, survivors: &str) -> PathBuf {
 }
 
 fn gate(diff: bool, dir: &Path, thresholds: &Path) -> Run {
-    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("scripts/mutation_gate.py");
-    let mut command = Command::new("python3");
-    command.arg(script);
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tools/gate/Cargo.toml");
+    let mut command = Command::new(env!("CARGO"));
+    command
+        .args(["run", "--quiet", "--manifest-path"])
+        .arg(manifest)
+        .args(["--", "gate"]);
     if diff {
         command.arg("--diff");
     }

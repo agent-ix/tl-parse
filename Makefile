@@ -9,14 +9,15 @@
 # agent-ix/tl-parse#11: the local evidence collector this guard used to
 # protect is gone, but the class it caught is real — a `-` prefix, `.IGNORE`,
 # or a `SHELL := /usr/bin/true` assignment can make `make ci` exit 0 having
-# executed nothing. scripts/check_make_execution_control.sh reinstates a
+# executed nothing. The check_make_execution_control binary reinstates a
 # minimal, collector-free version of that check: a parse-time scan (below) of
 # this file's own text for the constructs that neuter Make's execution
 # controls. Because it runs at parse time via $(shell ...) + $(error ...), it
 # fires before any target — including a neutered one — gets a chance to run,
 # and it re-reads this file from disk so an append anywhere below still gets
 # caught.
-MAKE_EXECUTION_CONTROL_GUARD := $(shell bash scripts/check_make_execution_control.sh $(MAKEFILE_LIST) 2>&1)
+EXECUTION_CONTROL_GUARD_CMD ?= cargo run --quiet --bin check_make_execution_control --
+MAKE_EXECUTION_CONTROL_GUARD := $(shell $(EXECUTION_CONTROL_GUARD_CMD) $(MAKEFILE_LIST) 2>&1)
 ifneq ($(strip $(MAKE_EXECUTION_CONTROL_GUARD)),)
 $(error $(MAKE_EXECUTION_CONTROL_GUARD))
 endif
@@ -52,7 +53,7 @@ $(error execution-control guard: LSAN_OPTIONS is set in the environment; it can 
 endif
 
 CARGO ?= cargo
-PYTHON ?= python3
+GATE ?= $(CARGO) run --quiet --manifest-path tools/gate/Cargo.toml --
 QUIRE ?= quire
 
 .PHONY: help
@@ -157,7 +158,7 @@ deny:
 	$(CARGO) deny check licenses
 	$(CARGO) deny check sources
 
-# Regression coverage for scripts/check_make_execution_control.sh and the
+# Regression coverage for the check_make_execution_control binary and the
 # MAKEFLAGS check above (agent-ix/tl-parse#11), reproducing each bypass an
 # independent review found plus a control per fix. This is the guard's own
 # self-test, not the guard itself — the guard runs unconditionally at parse
@@ -165,7 +166,7 @@ deny:
 # part of the gate set.
 .PHONY: test-execution-control-guard
 test-execution-control-guard:
-	bash scripts/check_make_execution_control.sh --self-test
+	$(CARGO) test --bin check_make_execution_control --test execution_control_guard
 
 .PHONY: spec
 spec:
@@ -192,15 +193,15 @@ COVERAGE_MIN_LINES ?= 80
 COVERAGE_IGNORE = '(ci_guard)'
 
 # The wrapper accepts cargo-mutants' "survivors found" status and judges the
-# result against mutation-thresholds.toml (see scripts/run_mutants.py).
+# result against mutation-thresholds.toml (see tools/gate).
 .PHONY: mutants
 mutants:
-	$(PYTHON) scripts/run_mutants.py --jobs $(MUTANTS_JOBS) $(MUTANTS_OUT)
+	$(GATE) mutants --jobs $(MUTANTS_JOBS) $(MUTANTS_OUT)
 
 .PHONY: mutants-diff
 mutants-diff:
 	rm -f $(MUTANTS_OUT)/mutants.out/outcomes.json
-	$(PYTHON) scripts/run_mutants.py --jobs $(MUTANTS_JOBS) --diff-base $(MUTANTS_BASE) $(MUTANTS_OUT)
+	$(GATE) mutants --jobs $(MUTANTS_JOBS) --diff-base $(MUTANTS_BASE) $(MUTANTS_OUT)
 
 .PHONY: coverage
 coverage:
