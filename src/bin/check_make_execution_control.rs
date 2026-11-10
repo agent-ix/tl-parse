@@ -267,6 +267,43 @@ mod tests {
         );
     }
 
+    #[test]
+    fn word_boundaries_keep_lookalike_names_from_being_flagged() {
+        for text in [
+            "define SHELLX\nendef\n",
+            "defineSHELL\n",
+            "export SHELLX\n",
+            "export XSHELL\n",
+            "export a=b SHELL\n",
+            "XSHELL = x\n",
+            "x := $(evaluate)\n",
+        ] {
+            assert!(messages(text).is_empty(), "{text:?}");
+        }
+    }
+
+    #[test]
+    fn assignment_prefixes_and_export_lists_are_recognised() {
+        for text in [
+            "all:SHELL = x\n",
+            "%SHELL = x\n",
+            "all: SHELL=x\n",
+            "export A,B SHELL\n",
+            "export A_B,C SHELL\n",
+            "export A1 SHELL=x\n",
+            "define\tSHELL\nendef\n",
+        ] {
+            assert!(!messages(text).is_empty(), "{text:?}");
+        }
+    }
+
+    #[test]
+    fn an_escaped_hash_does_not_start_a_comment() {
+        assert!(!messages("FOO = a\\#b\nSHELL := x\n").is_empty());
+        assert!(!messages("FOO = a\\# SHELL := x\n").is_empty());
+        assert!(messages("FOO = a # SHELL := x\n").is_empty());
+    }
+
     // Safety net: the shipped Makefile itself stays clean.
     #[test]
     fn the_repository_makefile_is_clean() {

@@ -41,3 +41,33 @@ fn flags_without_ignore_errors_are_not_blocked() {
         assert!(ok, "{flags:?}: {stderr}");
     }
 }
+
+fn guard(makefile: Option<&str>) -> (Option<i32>, String) {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_check_make_execution_control"));
+    if let Some(text) = makefile {
+        let dir =
+            std::env::temp_dir().join(format!("guard-bin-{}-{}", std::process::id(), text.len()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("Makefile");
+        std::fs::write(&path, text).unwrap();
+        command.arg(path);
+    }
+    let output = command.output().unwrap();
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+#[test]
+fn the_binary_exits_one_with_the_finding_on_a_neutered_makefile() {
+    let (code, stderr) = guard(Some("all:\n\t-false\n"));
+    assert_eq!(code, Some(1));
+    assert!(stderr.contains(":2: recipe line uses the '-'"), "{stderr}");
+}
+
+#[test]
+fn the_binary_exits_zero_on_a_clean_makefile_and_two_without_arguments() {
+    assert_eq!(guard(Some("all:\n\ttrue\n")).0, Some(0));
+    assert_eq!(guard(None).0, Some(2));
+}
