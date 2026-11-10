@@ -54,9 +54,8 @@ At this step, check that the document matches the requirement. `format` prints t
 $ printf 'F[0,3] p2' | tl-parse format --profile online -
 F[0,3]p2
 
-$ printf 'F[0,3] p2' | tl-parse validate --profile online --json - | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d['document']['nodes'])); print(d['diagnostics'])"
-[{"kind": "proposition", "proposition": 2, "span": {"start": 7, "end": 9}}, {"kind": "future", "interval": {"start": 0, "end": 3}, "operand": 0, "span": {"start": 0, "end": 9}}]
-[]
+$ printf 'F[0,3] p2' | tl-parse validate --profile online --json -
+{"schema_version":"tl-parse.diagnostics/v1", ... ,"document":{ ... ,"root":1,"nodes":[{"kind":"proposition","proposition":2,"span":{"start":7,"end":9}},{"kind":"future","interval":{"start":0,"end":3},"operand":0,"span":{"start":0,"end":9}}]},"diagnostics":[]}
 ```
 
 Node 0 is proposition 2 and node 1 is a `future` node over node 0. The `diagnostics` list is empty.

@@ -10,7 +10,7 @@ type: SuiteRegistry
 
 | ID | Name | Command | Tool | Evidence Kind |
 |---|---|---|---|---|
-| SUITE-001 | Complete local candidate gate | `make ci` | Rust/Cargo/Python/Quire tooling | Integration |
+| SUITE-001 | Complete local candidate gate | `make ci` | Rust/Cargo/Quire tooling | Integration |
 | SUITE-002 | Requirements validation | `quire validate --scope . 'spec/**/*.md' 'docs/*.md' --strict --summary` | Quire | Analysis |
 | SUITE-003 | Requirement coverage | `quire coverage --scope . --strict` | Quire | Analysis |
 | SUITE-004 | Rustdoc warnings | `RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features` | rustdoc | Analysis |

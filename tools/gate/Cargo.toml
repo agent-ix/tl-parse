@@ -1,0 +1,13 @@
+[package]
+name = "gate"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.98.1"
+description = "Builds the shared tl-gate mutation gate; the logic lives in tl-syntax."
+license = "MIT"
+publish = false
+
+[dependencies]
+tl-gate = { version = "=0.1.0", git = "https://github.com/agent-ix/tl-syntax.git", rev = "114672603f2acc662e3979d1fe0e0e14311dfde5" }
+
+[workspace]
