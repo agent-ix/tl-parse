@@ -51,6 +51,12 @@ break reported by `cargo-semver-checks` 0.50.0.
 - The compiled-in `tl-syntax` revision: `TL_SYNTAX_REVISION`, the
   `tl_syntax_revision` field of the report structs, and the document digest
   functions. The pinned revision is recorded in `Cargo.toml` only.
+- **Wire break:** serialized reports no longer carry `tl_syntax_revision`, and
+  the report types reject unknown fields, so 0.4.0 refuses reports written by
+  v0.3.0 that still contain it. Schema identities were not bumped, by decision
+  for the pre-release 0.x line.
+  - `tl-parse.diagnostics/v1`: Migration: regenerate reports; v0.3.0 reports carrying `tl_syntax_revision` are refused by 0.4.0. The release gate's legacy decoder replay proves this one for the parser report, and proves the refusal comes from that field alone.
+  - `tl-parse.past-parse-report/v1`, `tl-parse.contextual-binding/v2` and `tl-parse.derived-parse-report/v1`: Migration: regenerate reports; these carry the same removed field. This is reviewer-checked, not replay-proven.
 
 ### API migration inventory
 
@@ -69,11 +75,17 @@ break reported by `cargo-semver-checks` 0.50.0.
 - `enum_variant_missing` `ContextualParseError::Identity`: Migration: delete the match arm; no input could produce this variant.
 - `enum_variant_missing` `ContextualParseError::InvalidCatalog`: Migration: delete the match arm; no input could produce this variant.
 - `enum_variant_missing` `ContextualParseError::MissingParserSpan`: Migration: delete the match arm; no input could produce this variant.
-- `function_missing` `function`: Migration: the removed functions are `dialect_document_digest`, `dialect_v2_document_digest`, `dialect_v3_document_digest` and `attribution_document_digest`; delete calls and read the document text from the `DIALECT_*_DOCUMENT` constants if a digest is needed.
+- `function_missing` `tl_parse::attribution_document_digest`: Migration: delete calls and read the document text from the `DIALECT_*_DOCUMENT` constants if a digest is needed.
+- `function_missing` `tl_parse::dialect_document_digest`: Migration: delete calls and read the document text from the `DIALECT_*_DOCUMENT` constants if a digest is needed.
+- `function_missing` `tl_parse::dialect_v2_document_digest`: Migration: delete calls and read the document text from the `DIALECT_*_DOCUMENT` constants if a digest is needed.
+- `function_missing` `tl_parse::dialect_v3_document_digest`: Migration: delete calls and read the document text from the `DIALECT_*_DOCUMENT` constants if a digest is needed.
 - `partial_ord_enum_variants_reordered` `ExpectedToken::Comma`: Migration: do not rely on the derived `PartialOrd` order of `ExpectedToken`; sort by an explicit key.
 - `partial_ord_enum_variants_reordered` `ExpectedToken::EndOfInput`: Migration: do not rely on the derived `PartialOrd` order of `ExpectedToken`; sort by an explicit key.
 - `pub_module_level_const_missing` `TL_SYNTAX_REVISION`: Migration: delete uses; read the pinned `tl-syntax` revision from `Cargo.toml` or `Cargo.lock` instead.
-- `struct_pub_field_missing` `field`: Migration: the removed field is `tl_syntax_revision` of `ParseReport`, `ContextualParseReport`, `DerivedParseReport` and `PastParseReport`; stop reading it and ignore it in serialized reports.
+- `struct_pub_field_missing` `ContextualParseReport::tl_syntax_revision`: Migration: stop reading `ContextualParseReport.tl_syntax_revision`; serialized reports no longer carry it, and the report decoders refuse reports that still do (see the wire break above).
+- `struct_pub_field_missing` `DerivedParseReport::tl_syntax_revision`: Migration: stop reading `DerivedParseReport.tl_syntax_revision`; serialized reports no longer carry it, and the report decoders refuse reports that still do (see the wire break above).
+- `struct_pub_field_missing` `ParseReport::tl_syntax_revision`: Migration: stop reading `ParseReport.tl_syntax_revision`; serialized reports no longer carry it, and the report decoders refuse reports that still do (see the wire break above).
+- `struct_pub_field_missing` `PastParseReport::tl_syntax_revision`: Migration: stop reading `PastParseReport.tl_syntax_revision`; serialized reports no longer carry it, and the report decoders refuse reports that still do (see the wire break above).
 
 ## 0.3.0
 

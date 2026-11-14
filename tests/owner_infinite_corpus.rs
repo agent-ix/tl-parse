@@ -103,3 +103,57 @@ fn owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
     assert_eq!(admitted, 10);
     assert_eq!(unrepresentable, 6);
 }
+
+// Trace: TC-063, FR-017-AC-1
+#[test]
+fn guard_at_lower_bound_round_trips_when_operands_do_not_share_a_node() {
+    // The owner's `*-guard-starts-at-lower-bound` cases share one proposition
+    // node between the guard and the negated witness, which the clean-ascii
+    // grammar cannot spell. The same shapes with a separate guard node carry
+    // no shared topology and round-trip.
+    for (id, interval) in [
+        (
+            "until",
+            serde_json::json!({"kind": "unbounded", "start": 2}),
+        ),
+        (
+            "until-bounded",
+            serde_json::json!({"kind": "closed", "start": 1, "end": 4}),
+        ),
+    ] {
+        let formula: InfiniteFormulaDocument = serde_json::from_value(serde_json::json!({
+            "clock": "event_position",
+            "nodes": [
+                {"kind": "proposition", "proposition": 0},
+                {"kind": "proposition", "proposition": 0},
+                {"kind": "not", "operand": 1},
+                {"interval": interval, "kind": "until", "left": 0, "right": 2}
+            ],
+            "root": 3,
+            "schema_version": "tl-syntax.formula-unbounded/v1",
+            "semantic_profile": "mltl.infinite-trace/v1"
+        }))
+        .unwrap_or_else(|error| panic!("{id}: {error}"));
+        let first = format_clean_ascii_v4(&formula, None, FormatLimits::default());
+        let text = first
+            .text
+            .unwrap_or_else(|| panic!("{id} did not format: {:?}", first.error));
+        let parsed = parse_clean_ascii_v4(
+            &text,
+            SemanticProfile::InfiniteTraceV1,
+            "event_position",
+            ParseLimits::default(),
+        );
+        let document = parsed
+            .document
+            .as_ref()
+            .unwrap_or_else(|| panic!("{id} refused: {:?}", parsed.diagnostics));
+        assert_eq!(
+            document.content_identity().unwrap(),
+            formula.content_identity().unwrap(),
+            "{id}"
+        );
+        let again = format_clean_ascii_v4(document, None, FormatLimits::default());
+        assert_eq!(again.text.as_deref(), Some(text.as_str()), "{id}");
+    }
+}
