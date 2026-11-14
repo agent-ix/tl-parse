@@ -20,7 +20,7 @@ fn owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
     assert_eq!(manifest["corpus"], "tl-syntax.infinite-trace-corpus/v1");
     let cases: Value =
         serde_json::from_slice(&fs::read(directory.join("cases.json")).unwrap()).unwrap();
-    assert_eq!(cases["cases"].as_array().unwrap().len(), 15);
+    assert_eq!(cases["cases"].as_array().unwrap().len(), 18);
     let mut admitted = 0;
     let mut unrepresentable = 0;
     for case in cases["cases"].as_array().unwrap() {
@@ -61,6 +61,9 @@ fn owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
                     "fair-loop-satisfies-premise"
                         | "fairness-on-non-lasso-refuses"
                         | "unfair-loop-has-no-admitted-trace"
+                        | "until-guard-starts-at-lower-bound"
+                        | "release-guard-starts-at-lower-bound"
+                        | "until-bounded-guard-starts-at-lower-bound"
                 ),
                 "unexpected unrepresentable owner case {id}: {:?}",
                 first.error
@@ -98,5 +101,5 @@ fn owner_corpus_round_trips_or_refuses_unrepresentable_topology() {
         admitted += 1;
     }
     assert_eq!(admitted, 10);
-    assert_eq!(unrepresentable, 3);
+    assert_eq!(unrepresentable, 6);
 }
