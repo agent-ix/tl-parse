@@ -3,10 +3,22 @@
 All notable user-visible changes to `tl-parse` are recorded here. The crate is
 distributed as a git source release (`publish = false`); versions are git tags.
 
-## Unreleased
+## 0.4.0
+
+Part of the second coordinated release of the MLTL crates (`tl-syntax`,
+`tl-parse`, `tl-mltl`, `tl-rewrite`). All four crates move to 0.4.0 together,
+and this crate depends on `tl-syntax` 0.4.0. Changes are relative to v0.3.0.
+This is a breaking 0.x release; the API migration inventory below lists every
+break reported by `cargo-semver-checks` 0.50.0.
 
 ### Added
 
+- **clean-ascii v4: infinite-trace parsing (TL-14).** The parser accepts the
+  infinite-trace profile with exact loci (`DIALECT_V4_REVISION`,
+  `DIALECT_V4_DOCUMENT`, `docs/DIALECT-004-clean-ascii-v4.md`). New diagnostics:
+  `DiagnosticCode::{InfiniteProfileMismatch, InfiniteClockMismatch,
+  DuplicateFairnessPremise}`, `ExpectedToken::{LeftBrace, RightBrace, Semicolon,
+  Colon}` and `FormatErrorCode::UnrepresentableGraph`.
 - The `HARD_MAX_*` process-safe limit constants are re-exported from the crate
   root, so callers can name the ceilings that clamp `ParseLimits`,
   `FormatLimits`, and `ParseArtifactLimits`.
@@ -14,11 +26,17 @@ distributed as a git source release (`publish = false`); versions are git tags.
   and is part of `make ci` (NFR-005).
 - Boundary tests accept each declared limit at its value and refuse one past it
   with the typed error that names the limit.
+- A benchmark harness, a v4 locus corpus and parser fuzz run records (TL-235,
+  TL-220, TL-58), plus the cargo-mutants configuration and kill-rate gate
+  (TL-231, TL-234).
 
 ### Changed
 
 - The v4 canonical-text depth bound is `HARD_MAX_DEPTH` instead of a separate
   literal `256`; the value is unchanged.
+- Strict reader reject-class tables (TL-364).
+- The mutation gate is the shared Rust tool `tl-gate`, built from `tl-syntax`
+  (TL-370).
 
 ### Removed
 
@@ -30,6 +48,32 @@ distributed as a git source release (`publish = false`); versions are git tags.
 - `ContextualParseError::MissingParserSpan`. `parse` spans every node it emits,
   so no value is producible; the strict wire reader still refuses a span-less
   node with a string error.
+- The compiled-in `tl-syntax` revision: `TL_SYNTAX_REVISION`, the
+  `tl_syntax_revision` field of the report structs, and the document digest
+  functions. The pinned revision is recorded in `Cargo.toml` only.
+
+### API migration inventory
+
+- `enum_no_repr_variant_discriminant_changed` `ExpectedToken::Comma`: Migration: do not cast `ExpectedToken` variants to integers with `as`; discriminants shifted when variants were added, so match on the variant or use an explicit mapping.
+- `enum_no_repr_variant_discriminant_changed` `ExpectedToken::EndOfInput`: Migration: do not cast `ExpectedToken` variants to integers with `as`; discriminants shifted when variants were added, so match on the variant or use an explicit mapping.
+- `enum_no_repr_variant_discriminant_changed` `FormatErrorCode::OutputLimit`: Migration: do not cast `FormatErrorCode` variants to integers with `as`; discriminants shifted when variants were added, so match on the variant or use an explicit mapping.
+- `enum_no_repr_variant_discriminant_changed` `FormatErrorCode::WorkLimit`: Migration: do not cast `FormatErrorCode` variants to integers with `as`; discriminants shifted when variants were added, so match on the variant or use an explicit mapping.
+- `enum_variant_added` `DiagnosticCode:DuplicateFairnessPremise`: Migration: add a match arm for `DiagnosticCode::DuplicateFairnessPremise` or a wildcard arm to every exhaustive `match` over `DiagnosticCode`.
+- `enum_variant_added` `DiagnosticCode:InfiniteClockMismatch`: Migration: add a match arm for `DiagnosticCode::InfiniteClockMismatch` or a wildcard arm to every exhaustive `match` over `DiagnosticCode`.
+- `enum_variant_added` `DiagnosticCode:InfiniteProfileMismatch`: Migration: add a match arm for `DiagnosticCode::InfiniteProfileMismatch` or a wildcard arm to every exhaustive `match` over `DiagnosticCode`.
+- `enum_variant_added` `ExpectedToken:Colon`: Migration: add a match arm for `ExpectedToken::Colon` or a wildcard arm to every exhaustive `match` over `ExpectedToken`.
+- `enum_variant_added` `ExpectedToken:LeftBrace`: Migration: add a match arm for `ExpectedToken::LeftBrace` or a wildcard arm to every exhaustive `match` over `ExpectedToken`.
+- `enum_variant_added` `ExpectedToken:RightBrace`: Migration: add a match arm for `ExpectedToken::RightBrace` or a wildcard arm to every exhaustive `match` over `ExpectedToken`.
+- `enum_variant_added` `ExpectedToken:Semicolon`: Migration: add a match arm for `ExpectedToken::Semicolon` or a wildcard arm to every exhaustive `match` over `ExpectedToken`.
+- `enum_variant_added` `FormatErrorCode:UnrepresentableGraph`: Migration: add a match arm for `FormatErrorCode::UnrepresentableGraph` or a wildcard arm to every exhaustive `match` over `FormatErrorCode`.
+- `enum_variant_missing` `ContextualParseError::Identity`: Migration: delete the match arm; no input could produce this variant.
+- `enum_variant_missing` `ContextualParseError::InvalidCatalog`: Migration: delete the match arm; no input could produce this variant.
+- `enum_variant_missing` `ContextualParseError::MissingParserSpan`: Migration: delete the match arm; no input could produce this variant.
+- `function_missing` `function`: Migration: the removed functions are `dialect_document_digest`, `dialect_v2_document_digest`, `dialect_v3_document_digest` and `attribution_document_digest`; delete calls and read the document text from the `DIALECT_*_DOCUMENT` constants if a digest is needed.
+- `partial_ord_enum_variants_reordered` `ExpectedToken::Comma`: Migration: do not rely on the derived `PartialOrd` order of `ExpectedToken`; sort by an explicit key.
+- `partial_ord_enum_variants_reordered` `ExpectedToken::EndOfInput`: Migration: do not rely on the derived `PartialOrd` order of `ExpectedToken`; sort by an explicit key.
+- `pub_module_level_const_missing` `TL_SYNTAX_REVISION`: Migration: delete uses; read the pinned `tl-syntax` revision from `Cargo.toml` or `Cargo.lock` instead.
+- `struct_pub_field_missing` `field`: Migration: the removed field is `tl_syntax_revision` of `ParseReport`, `ContextualParseReport`, `DerivedParseReport` and `PastParseReport`; stop reading it and ignore it in serialized reports.
 
 ## 0.3.0
 
