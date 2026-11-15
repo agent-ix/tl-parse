@@ -36,7 +36,7 @@ an optional fairness-premises document in that same graph.
 
 V4 accepts F/G/U/R/O/H/S/T with `[a,b]` or `[a,)`, Y as the one-position
 past operator, W/M through the owner lowering, and the existing Boolean and
-atomic forms. The explicit interval spelling `[a,)` is TL-native; QSL's
+atomic forms. The explicit interval spelling `[a,)` is TL-native; FSL's
 `[a,*]` is never silently accepted as TL text. The v4 envelope is
 `fair { premise; ... } : formula` when premises are present, and `formula`
 when none are present. Each premise is a full v4 formula joined into the one
@@ -55,7 +55,7 @@ parser path evaluates fairness or liveness. The parse report records effective l
 |---|---|---|
 | FR-015-AC-1 | All eight bounded/unbounded future and past primitives, Y, and lowered W/M parse into the owner graph only under exact v4 and TL infinite-profile selection. | unit-testing (TC-058) |
 | FR-015-AC-2 | A fairness envelope yields ordered, unique validated roots in the same graph; absent and empty envelopes mean no assumptions and never decide fairness. | unit-testing (TC-059) |
-| FR-015-AC-3 | V1/v2/v3 bytes and admissions remain unchanged; each refuses v4-only syntax, while v4 refuses finite/QSL profile or non-event-position clocks. | integration-testing (TC-060) |
+| FR-015-AC-3 | V1/v2/v3 bytes and admissions remain unchanged; each refuses v4-only syntax, while v4 refuses finite/FSL profile or non-event-position clocks. | integration-testing (TC-060) |
 
 ## Dependencies
 
