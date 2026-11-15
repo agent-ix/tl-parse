@@ -25,7 +25,7 @@ through the tl-syntax `FutureLoweringRequest` into primitive nodes and
 report the exact operator and expression spans. If the source holds a
 malformed, unknown, or unsupported form, then the crate shall return a typed
 diagnostic and no document. The crate shall not add a derived node, a second
-AST, an evaluator branch, a user-authored Quire language, or a FRETish parser.
+AST, an evaluator branch, a user-authored FSL, or a FRETish parser.
 
 ## Behavior
 
