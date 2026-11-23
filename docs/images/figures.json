@@ -1,9 +1,9 @@
 {
   "style": "ix-docs",
   "data": {
-    "case_path": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "expectedCanonical", "field": "/path"},
-    "profile": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "expectedCanonical", "field": "/profile"},
-    "canonical": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "expectedCanonical", "field": "/expectedCanonical"},
+    "case_path": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "path", "equals": "valid-canonical.txt", "field": "/path"},
+    "profile": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "path", "equals": "valid-canonical.txt", "field": "/profile"},
+    "canonical": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "path", "equals": "valid-canonical.txt", "field": "/expectedCanonical"},
     "source": {"from": "read", "dir": "corpus/v1", "of": "case_path"},
     "codes": {"from": "enum-variants", "path": "src/diagnostic.rs", "name": "DiagnosticCode", "plain": true}
   },
