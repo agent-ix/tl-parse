@@ -9,7 +9,8 @@ use tl_parse::tl_syntax::{
     PropositionId, SemanticProfile, SignalCatalogDocument, SignalDomain, SignalId,
 };
 use tl_parse::{
-    format_clean_ascii_v5, parse_clean_ascii_v5, FormatLimits, ParseLimits, HARD_MAX_DEPTH,
+    format_clean_ascii_v5, parse_clean_ascii_v5, FormatErrorCode, FormatLimits, ParseLimits,
+    HARD_MAX_DEPTH,
     HARD_MAX_DIAGNOSTICS, HARD_MAX_NODES, HARD_MAX_PARSE_WORK, HARD_MAX_SOURCE_BYTES,
     HARD_MAX_TOKENS,
 };
@@ -64,8 +65,26 @@ fuzz_target!(|data: &[u8]| {
     let Some(document) = report.document.as_ref() else { return; };
     let formatted = format_clean_ascii_v5(document, report.predicate_table.as_ref(), &catalog,
         FormatLimits::default());
-    let Some(text) = formatted.text else { return; };
+    let Some(text) = formatted.text else {
+        // Every parsed graph formats, except for resource refusals and the
+        // FR-031 SPEC-GAP class: shared `W`/`M` operands that expand past the
+        // node limit.
+        let code = formatted.error.map(|error| error.code);
+        assert!(matches!(
+            code,
+            Some(FormatErrorCode::OutputLimit | FormatErrorCode::WorkLimit)
+        ) || (code == Some(FormatErrorCode::UnrepresentableGraph)
+            && formatted.stats.nodes > 0
+            && source.contains(['W', 'M'])),
+            "{code:?}");
+        return;
+    };
     let reparsed = parse_clean_ascii_v5(&text, &catalog, profile, limits);
+    if reparsed.refusal.is_some_and(|refusal| refusal.code.is_resource_limit()) {
+        // The canonical text of a lowered graph may exceed a resource limit
+        // that the source did not (FR-031 SPEC-GAP); not a fixed-point failure.
+        return;
+    }
     assert!(reparsed.document.is_some(), "{text}: {:?}", reparsed.diagnostics);
     let again = format_clean_ascii_v5(reparsed.document.as_ref().unwrap(),
         reparsed.predicate_table.as_ref(), &catalog, FormatLimits::default());

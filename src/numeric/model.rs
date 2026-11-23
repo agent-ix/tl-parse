@@ -1,26 +1,14 @@
 //! Internal expression arena and the single boundary to the tl-syntax numeric
 //! model (FR-302/FR-303).
 //!
-//! UNBUILT-PIN: every `tl_syntax` numeric item used here is the spec'd shape of
-//! tl-syntax FR-302/FR-303 (TL-420), written concurrently in TL-code-tl-syntax
-//! and not on the pinned rev `9607722`. Names and signatures below are guesses
-//! recorded in PLAN-015 "Deferred verification"; only this file must change
-//! when the merged tl-syntax rev is pinned:
-//!
-//! - `tl_syntax::PredicateTableDocument` (serde, `Clone + Debug + Eq`):
-//!   `new(&SignalCatalogDocument, Vec<ExpressionNode>, Vec<PredicateDefinition>)
-//!    -> Result<Self, PredicateTableError>`, `expressions() -> &[ExpressionNode]`,
-//!   `predicates() -> &[PredicateDefinition]`.
-//! - `tl_syntax::ExpressionNode::{Signal { signal }, Integer { value },
-//!   Decimal { coefficient, scale }, Neg { operand }, Abs { operand },
-//!   Add { left, right }, Sub { left, right }, Mul { left, right },
-//!   Rescale { operand, scale }}` with `tl_syntax::ExpressionId(pub u32)` operands.
-//! - `tl_syntax::ComparisonOperator::{Lt, Le, Gt, Ge, Eq, Ne}`.
-//! - `tl_syntax::PredicateDefinition::new(PropositionId, ComparisonOperator,
-//!   ExpressionId, ExpressionId)` with `proposition()`, `operator()`, `left()`,
-//!   `right()` accessors.
-//! - `tl_syntax::PredicateTableError::Expression(ExpressionError)` and the
-//!   FR-302 `ExpressionError` variants named in that requirement.
+//! UNBUILT-PIN: written against tl-syntax `TL-code-unbuilt` (TL-420), reached
+//! through the `[patch]` in `Cargo.toml`. Owner items used here:
+//! `PredicateTableDocument::{new(SignalCatalog, Vec<ExprNode>, Vec<Predicate>),
+//! expressions(), predicates()}`, `ExprNode` (non-exhaustive; `SlotSignal` is
+//! template-only), `ExprId(pub u32)`, `Predicate { proposition, operator, left,
+//! right }`, `ComparisonOperator`, `PredicateTableError`, `ExpressionError`,
+//! `ExpressionLimit` and `MAX_EXPRESSION_DEPTH`. Only this file must change if
+//! those names move before the merged rev is pinned.
 
 use std::collections::BTreeMap;
 
@@ -28,8 +16,8 @@ use tl_syntax::{PropositionId, SignalCatalogDocument, SignalDomain, SignalId};
 // UNBUILT-PIN: tl-syntax FR-302/FR-303 owner types (see module docs).
 pub use tl_syntax::PredicateTableDocument;
 use tl_syntax::{
-    ComparisonOperator, ExpressionError, ExpressionId, ExpressionNode, PredicateDefinition,
-    PredicateTableError,
+    ComparisonOperator, ExprId, ExprNode, ExpressionError, ExpressionLimit,
+    Predicate as OwnerPredicate, PredicateTableError, MAX_EXPRESSION_DEPTH,
 };
 
 use super::{NumericDiagnosticCode as Code, MAX_NUMERIC_SCALE};
@@ -155,17 +143,45 @@ fn fit(minimum: i128, maximum: i128, scale: u8) -> Result<ExprType, Code> {
 ///
 /// This mirrors tl-syntax FR-302 so that each refusal has the byte locus of the
 /// offending sub-expression; the tl-syntax constructor in [`build_table`]
-/// remains the authority and is always called afterwards.
+/// remains the authority and is always called afterwards. As in the owner,
+/// depth is checked before typing: a leaf has depth 1 and a node one more than
+/// its deepest operand, so a long left-associative chain such as
+/// `1 + 1 + ... + 1` is refused as `depth_limit` at the first node past
+/// `MAX_EXPRESSION_DEPTH` (FR-029: expression nesting counts toward 256).
 pub(crate) fn type_arena(
     arena: &[Expr],
     catalog: &CatalogView,
 ) -> Result<Vec<ExprType>, (Code, usize)> {
     let mut types: Vec<ExprType> = Vec::with_capacity(arena.len());
+    let mut depths: Vec<usize> = Vec::with_capacity(arena.len());
     for (index, node) in arena.iter().enumerate() {
+        let depth = operands(*node)
+            .into_iter()
+            .flatten()
+            .map(|operand| depths.get(operand).copied().unwrap_or(0))
+            .max()
+            .unwrap_or(0)
+            .saturating_add(1);
+        if depth > MAX_EXPRESSION_DEPTH {
+            return Err((Code::DepthLimit, index));
+        }
+        depths.push(depth);
         let typed = type_node(*node, &types, catalog).map_err(|code| (code, index))?;
         types.push(typed);
     }
     Ok(types)
+}
+
+const fn operands(node: Expr) -> [Option<usize>; 2] {
+    match node {
+        Expr::Signal(_) | Expr::Integer(_) | Expr::Decimal { .. } => [None, None],
+        Expr::Neg(operand) | Expr::Abs(operand) | Expr::Rescale(operand, _) => {
+            [Some(operand), None]
+        }
+        Expr::Add(left, right) | Expr::Sub(left, right) | Expr::Mul(left, right) => {
+            [Some(left), Some(right)]
+        }
+    }
 }
 
 fn type_node(node: Expr, types: &[ExprType], catalog: &CatalogView) -> Result<ExprType, Code> {
@@ -265,36 +281,34 @@ fn type_node(node: Expr, types: &[ExprType], catalog: &CatalogView) -> Result<Ex
     }
 }
 
-fn owner_id(index: usize) -> Result<ExpressionId, Code> {
-    u32::try_from(index)
-        .map(ExpressionId)
-        .map_err(|_| Code::NodeLimit)
+fn owner_id(index: usize) -> Result<ExprId, Code> {
+    u32::try_from(index).map(ExprId).map_err(|_| Code::NodeLimit)
 }
 
-fn to_owner(node: Expr) -> Result<ExpressionNode, Code> {
+fn to_owner(node: Expr) -> Result<ExprNode, Code> {
     Ok(match node {
-        Expr::Signal(signal) => ExpressionNode::Signal { signal },
-        Expr::Integer(value) => ExpressionNode::Integer { value },
-        Expr::Decimal { coefficient, scale } => ExpressionNode::Decimal { coefficient, scale },
-        Expr::Neg(operand) => ExpressionNode::Neg {
+        Expr::Signal(signal) => ExprNode::Signal { signal },
+        Expr::Integer(value) => ExprNode::Integer { value },
+        Expr::Decimal { coefficient, scale } => ExprNode::Decimal { coefficient, scale },
+        Expr::Neg(operand) => ExprNode::Neg {
             operand: owner_id(operand)?,
         },
-        Expr::Abs(operand) => ExpressionNode::Abs {
+        Expr::Abs(operand) => ExprNode::Abs {
             operand: owner_id(operand)?,
         },
-        Expr::Add(left, right) => ExpressionNode::Add {
+        Expr::Add(left, right) => ExprNode::Add {
             left: owner_id(left)?,
             right: owner_id(right)?,
         },
-        Expr::Sub(left, right) => ExpressionNode::Sub {
+        Expr::Sub(left, right) => ExprNode::Sub {
             left: owner_id(left)?,
             right: owner_id(right)?,
         },
-        Expr::Mul(left, right) => ExpressionNode::Mul {
+        Expr::Mul(left, right) => ExprNode::Mul {
             left: owner_id(left)?,
             right: owner_id(right)?,
         },
-        Expr::Rescale(operand, scale) => ExpressionNode::Rescale {
+        Expr::Rescale(operand, scale) => ExprNode::Rescale {
             operand: owner_id(operand)?,
             scale,
         },
@@ -323,8 +337,13 @@ const fn from_owner_operator(operator: ComparisonOperator) -> Cmp {
     }
 }
 
+/// Owner refusal of a table the local mirror admitted.
+///
+/// SPEC-GAP: the closed v5 code set has no `validation_failure`.
+/// `OperandNotPreceding` and `ScratchTooSmall` are internal faults of this
+/// parser; they map to `node_limit` (the nearest resource class) rather than
+/// to a typing code that would misdescribe the source.
 fn expression_code(error: &ExpressionError) -> Code {
-    // Variant names are FR-302's; `{ .. }` matches unit, tuple and struct shapes.
     match error {
         ExpressionError::UnknownSignal { .. } => Code::UnknownSignal,
         ExpressionError::NonNumericSignal { .. } => Code::NonNumericSignal,
@@ -332,22 +351,29 @@ fn expression_code(error: &ExpressionError) -> Code {
         ExpressionError::ScaleOverflow { .. } => Code::ScaleOverflow,
         ExpressionError::RescaleNarrowing { .. } => Code::RescaleNarrowing,
         ExpressionError::RangeOverflow { .. } => Code::RangeOverflow,
+        ExpressionError::ExpressionLimitExceeded {
+            resource: ExpressionLimit::Depth,
+            ..
+        } => Code::DepthLimit,
         ExpressionError::ExpressionLimitExceeded { .. } => Code::NodeLimit,
-        #[allow(unreachable_patterns)]
-        _ => Code::RangeOverflow,
+        ExpressionError::SlotOutsideTemplate { .. } => Code::SlotOutsideTemplate,
+        // `OperandNotPreceding`, `ScratchTooSmall`, and any later variant of
+        // the non-exhaustive owner enum.
+        _ => Code::NodeLimit,
     }
 }
 
 /// Builds the owner table through the tl-syntax constructor (the typing authority).
 ///
-/// SPEC-GAP: the closed v5 code set has no `validation_failure`. An owner
-/// refusal that the local FR-302 mirror did not predict maps to its typing
-/// code (or `range_overflow` for an unknown owner cause) at the root span.
+/// SPEC-GAP: a catalog that fails `validate()` here was already admitted by
+/// tl-syntax as a document; the failure is an internal fault and maps to
+/// `unknown_signal` at the root span.
 pub(crate) fn build_table(
     catalog: &SignalCatalogDocument,
     arena: &[Expr],
     predicates: &[Predicate],
 ) -> Result<PredicateTableDocument, Code> {
+    let view = catalog.validate().map_err(|_| Code::UnknownSignal)?;
     let expressions = arena
         .iter()
         .map(|node| to_owner(*node))
@@ -355,40 +381,42 @@ pub(crate) fn build_table(
     let definitions = predicates
         .iter()
         .map(|predicate| {
-            Ok(PredicateDefinition::new(
-                predicate.proposition,
-                owner_operator(predicate.operator),
-                owner_id(predicate.left)?,
-                owner_id(predicate.right)?,
-            ))
+            Ok(OwnerPredicate {
+                proposition: predicate.proposition,
+                operator: owner_operator(predicate.operator),
+                left: owner_id(predicate.left)?,
+                right: owner_id(predicate.right)?,
+            })
         })
         .collect::<Result<Vec<_>, Code>>()?;
-    PredicateTableDocument::new(catalog, expressions, definitions).map_err(|error| match error {
+    PredicateTableDocument::new(view, expressions, definitions).map_err(|error| match error {
         PredicateTableError::Expression(inner) => expression_code(&inner),
-        #[allow(unreachable_patterns)]
-        _ => Code::ScaleMismatch,
+        PredicateTableError::ScaleMismatch { .. } => Code::ScaleMismatch,
+        PredicateTableError::PredicateLimitExceeded { .. } => Code::NodeLimit,
+        // `PropositionNotIncreasing`, `RootOutOfRange` and later variants are
+        // faults of this parser, not properties of the source (SPEC-GAP above).
+        _ => Code::NodeLimit,
     })
 }
 
 /// Reads an owner table back into the internal arena.
-pub(crate) fn read_table(table: &PredicateTableDocument) -> Result<(Vec<Expr>, Vec<Predicate>), String> {
-    let index = |id: ExpressionId| usize::try_from(id.0).map_err(|_| "expression id".to_owned());
+pub(crate) fn read_table(
+    table: &PredicateTableDocument,
+) -> Result<(Vec<Expr>, Vec<Predicate>), String> {
+    let index = |id: ExprId| usize::try_from(id.0).map_err(|_| "expression id".to_owned());
     let mut arena = Vec::with_capacity(table.expressions().len());
     for node in table.expressions() {
-        let converted = match node {
-            ExpressionNode::Signal { signal } => Expr::Signal(*signal),
-            ExpressionNode::Integer { value } => Expr::Integer(*value),
-            ExpressionNode::Decimal { coefficient, scale } => Expr::Decimal {
-                coefficient: *coefficient,
-                scale: *scale,
-            },
-            ExpressionNode::Neg { operand } => Expr::Neg(index(*operand)?),
-            ExpressionNode::Abs { operand } => Expr::Abs(index(*operand)?),
-            ExpressionNode::Add { left, right } => Expr::Add(index(*left)?, index(*right)?),
-            ExpressionNode::Sub { left, right } => Expr::Sub(index(*left)?, index(*right)?),
-            ExpressionNode::Mul { left, right } => Expr::Mul(index(*left)?, index(*right)?),
-            ExpressionNode::Rescale { operand, scale } => Expr::Rescale(index(*operand)?, *scale),
-            #[allow(unreachable_patterns)]
+        let converted = match *node {
+            ExprNode::Signal { signal } => Expr::Signal(signal),
+            ExprNode::Integer { value } => Expr::Integer(value),
+            ExprNode::Decimal { coefficient, scale } => Expr::Decimal { coefficient, scale },
+            ExprNode::Neg { operand } => Expr::Neg(index(operand)?),
+            ExprNode::Abs { operand } => Expr::Abs(index(operand)?),
+            ExprNode::Add { left, right } => Expr::Add(index(left)?, index(right)?),
+            ExprNode::Sub { left, right } => Expr::Sub(index(left)?, index(right)?),
+            ExprNode::Mul { left, right } => Expr::Mul(index(left)?, index(right)?),
+            ExprNode::Rescale { operand, scale } => Expr::Rescale(index(operand)?, scale),
+            // `SlotSignal` is template-only and any later variant has no v5 text.
             _ => return Err("expression node outside tl-parse.clean-ascii/v5".to_owned()),
         };
         arena.push(converted);
@@ -396,15 +424,11 @@ pub(crate) fn read_table(table: &PredicateTableDocument) -> Result<(Vec<Expr>, V
     let mut predicates = Vec::with_capacity(table.predicates().len());
     for definition in table.predicates() {
         predicates.push(Predicate {
-            proposition: definition.proposition(),
-            operator: from_owner_operator(definition.operator()),
-            left: index(definition.left())?,
-            right: index(definition.right())?,
+            proposition: definition.proposition,
+            operator: from_owner_operator(definition.operator),
+            left: index(definition.left)?,
+            right: index(definition.right)?,
         });
     }
     Ok((arena, predicates))
-}
-
-pub(crate) fn predicate_count(table: &PredicateTableDocument) -> usize {
-    table.predicates().len()
 }

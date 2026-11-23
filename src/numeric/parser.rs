@@ -53,6 +53,8 @@ pub(crate) fn parse(
         return finish(report, sink);
     }
     let view = CatalogView::new(catalog);
+    // SPEC-GAP: FR-029 allocates from `1 + max(explicit, bindings)` and is
+    // silent on an empty set; with neither, allocation starts at `p0`.
     let first_fresh = match (lexed.max_explicit_proposition, view.max_binding) {
         (None, None) => Some(0),
         (left, right) => left.max(right).and_then(|max| max.checked_add(1)),
@@ -62,6 +64,8 @@ pub(crate) fn parse(
         profile,
         tokens: lexed.tokens,
         opens_comparison: lexed.opens_comparison,
+        mixed_formula: lexed.mixed_formula,
+        comparison_end: lexed.comparison_end,
         cursor: 0,
         nodes: Vec::new(),
         expression_nodes: 0,
@@ -206,6 +210,8 @@ struct Parser<'a> {
     profile: SemanticProfile,
     tokens: Vec<Token>,
     opens_comparison: Vec<bool>,
+    mixed_formula: Vec<bool>,
+    comparison_end: Vec<usize>,
     cursor: usize,
     nodes: Vec<Node>,
     expression_nodes: usize,
@@ -541,7 +547,24 @@ impl Parser<'_> {
 
     fn parse_comparison(&mut self, depth: usize) -> Option<Parsed> {
         let opening = self.current();
+        let opening_index = self.cursor;
         self.advance();
+        if self.mixed_formula.get(opening_index).copied().unwrap_or(false) {
+            // `(p1 & x > 0)`: a formula operator precedes the comparison at the
+            // same depth, so the comparison itself lacks its parentheses.
+            let first = self.current();
+            let end = self
+                .comparison_end
+                .get(opening_index)
+                .copied()
+                .unwrap_or(first.end);
+            return self.fail(
+                Code::UnparenthesizedComparison,
+                first.start,
+                end,
+                "a comparison inside a formula must have its own parentheses".to_owned(),
+            );
+        }
         let inner_depth = depth.saturating_add(1);
         let mut local: Vec<Expr> = Vec::new();
         let mut spans: Vec<(usize, usize)> = Vec::new();
@@ -626,6 +649,22 @@ impl Parser<'_> {
                     "fresh proposition identity exceeds u32".to_owned(),
                 );
             };
+            // Only the arena of a new (table) predicate counts toward the node
+            // limit; a repeated comparison reuses its identity and costs work only.
+            let total = self
+                .nodes
+                .len()
+                .saturating_add(self.expression_nodes)
+                .saturating_add(local.len());
+            if total > self.limits.max_nodes {
+                return self.fail(
+                    Code::NodeLimit,
+                    start,
+                    end,
+                    format!("node count exceeds effective limit {}", self.limits.max_nodes),
+                );
+            }
+            self.expression_nodes += local.len();
             self.next_fresh = fresh.checked_add(1);
             let proposition = PropositionId(fresh);
             let offset = self.arena.len();
@@ -783,6 +822,14 @@ impl Parser<'_> {
                             "scale target must be an unsigned integer".to_owned(),
                         );
                     };
+                    if coefficient < 0 {
+                        return self.fail(
+                            Code::UnexpectedToken,
+                            target.start,
+                            target.end,
+                            "scale target must be an unsigned integer".to_owned(),
+                        );
+                    }
                     let Some(target_scale) = u8::try_from(coefficient)
                         .ok()
                         .filter(|value| *value <= super::MAX_NUMERIC_SCALE)
@@ -861,10 +908,9 @@ impl Parser<'_> {
         start: usize,
         end: usize,
     ) -> Option<Local> {
-        if !self.charge_node(start, end) {
+        if !self.charge_work(1, start, end) {
             return None;
         }
-        self.expression_nodes += 1;
         local.push(node);
         spans.push((start, end));
         Some(Local {
@@ -935,9 +981,19 @@ impl Parser<'_> {
         if !self.charge_work(self.nodes.len(), start, end) {
             return None;
         }
-        let root_index = u32::try_from(self.nodes.len().saturating_sub(1)).ok()?;
-        let operator_span = raw_bounds(operator_start, operator_end)?;
-        let expression_span = raw_bounds(start, end)?;
+        let bounds = (
+            u32::try_from(self.nodes.len().saturating_sub(1)).ok(),
+            raw_bounds(operator_start, operator_end),
+            raw_bounds(start, end),
+        );
+        let (Some(root_index), Some(operator_span), Some(expression_span)) = bounds else {
+            return self.fail(
+                Code::NodeLimit,
+                start,
+                end,
+                "node identity or source offset exceeds the tl-syntax wire range".to_owned(),
+            );
+        };
         let lowered = Formula::new(self.profile, NodeId(root_index), &self.nodes)
             .map_err(|error| error.to_string())
             .and_then(|formula| {

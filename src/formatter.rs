@@ -370,7 +370,14 @@ fn operands(kind: NodeKind) -> [Option<NodeId>; 2] {
         | NodeKind::Globally { operand, .. }
         | NodeKind::Once { operand, .. }
         | NodeKind::Historically { operand, .. }
-        | NodeKind::StrongPrevious { operand } => [Some(operand), None],
+        | NodeKind::StrongPrevious { operand }
+        // LTLf-edition nodes (tl-syntax TL-428): reachable here only to be
+        // refused by `Dialect::precedence`, exactly as any other node outside
+        // the selected v1/v3 dialect. v1..v4 output is unchanged (FR-062).
+        | NodeKind::LtlfFuture { operand }
+        | NodeKind::LtlfGlobally { operand }
+        | NodeKind::StrongNext { operand }
+        | NodeKind::WeakNext { operand } => [Some(operand), None],
         NodeKind::And { left, right }
         | NodeKind::Or { left, right }
         | NodeKind::Implies { left, right }
@@ -378,7 +385,9 @@ fn operands(kind: NodeKind) -> [Option<NodeId>; 2] {
         | NodeKind::Until { left, right, .. }
         | NodeKind::Release { left, right, .. }
         | NodeKind::Since { left, right, .. }
-        | NodeKind::Triggered { left, right, .. } => [Some(left), Some(right)],
+        | NodeKind::Triggered { left, right, .. }
+        | NodeKind::LtlfUntil { left, right }
+        | NodeKind::LtlfRelease { left, right } => [Some(left), Some(right)],
     }
 }
 

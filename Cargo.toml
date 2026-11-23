@@ -24,9 +24,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
 # UNBUILT-PIN: TL-421 (src/numeric) and TL-429 (src/ltl) need the tl-syntax numeric
-# model (TL-420) and LTLf edition (TL-428); this is tl-syntax origin/main at authoring
-# time and must be replaced by the merged rev of those tickets (Cargo.lock not regenerated).
+# model (TL-420) and LTLf edition (TL-428). The rev is tl-syntax origin/main at
+# authoring time; the `[patch]` below makes the sibling worktree the single
+# tl-syntax source until the merged rev replaces both (Cargo.lock not regenerated).
 tl-syntax = { version = "=0.4.0", git = "https://github.com/agent-ix/tl-syntax.git", rev = "a80d09ed9f22c8b228c897cc2eac5b3feebd524e", features = ["serde"] }
+
+# UNBUILT-PIN: remove this patch and pin the merged tl-syntax rev above once
+# TL-420/TL-428 land; it points at the sibling tl-syntax `TL-code-unbuilt` worktree.
+[patch."https://github.com/agent-ix/tl-syntax.git"]
+tl-syntax = { path = "../TL-code-tl-syntax" }
 
 [dev-dependencies]
 command-group = "=5.0.1"

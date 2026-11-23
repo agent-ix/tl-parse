@@ -155,8 +155,8 @@ fn operands_precede(kinds: &[Kind]) -> bool {
 ///
 /// Refused as `not_expressible`: a document of the other profile's edition
 /// (for example an LTLf graph with `Xs` under `InfiniteTrace`), and under
-/// `InfiniteTrace` any closed interval other than `F[1,1]`, `G[1,1]`, any
-/// `[a,)` with `a > 0`, and past nodes.
+/// `InfiniteTrace` every closed interval except `F[1,1]` (spelled `X`; so
+/// `G[1,1]` is refused), any `[a,)` with `a > 0`, and past nodes.
 pub fn format_clean_ascii_v6(
     document: &LtlDocument,
     profile: LtlProfile,

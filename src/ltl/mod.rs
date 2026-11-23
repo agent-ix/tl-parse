@@ -20,7 +20,7 @@ mod parser;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use tl_syntax::{InfiniteFormulaDocument, SourceSpan};
+use tl_syntax::{InfiniteFormulaDocument, SourceSpan, SyntaxArtifactLimits};
 
 use crate::{
     diagnostic::preflight_parse_artifact, lexer::checked_span, ParseArtifactLimits, ParseLimits,
@@ -29,8 +29,8 @@ use crate::{
 
 pub use format::{format_clean_ascii_v6, LtlFormatError, LtlFormatErrorCode, LtlFormatReport};
 // UNBUILT-PIN: `LtlfFormulaDocument` is the tl-syntax FR-332/FR-333 edition
-// `tl-syntax.formula-ltlf/v1` (TL-428), written concurrently in
-// TL-code-tl-syntax and absent from the pinned rev.
+// `tl-syntax.formula-ltlf/v1` (TL-428), reached through the `[patch]` in
+// Cargo.toml until the merged rev is pinned.
 pub use model::LtlfFormulaDocument;
 
 /// Stable identity of the bracket-free LTL dialect.
@@ -60,7 +60,7 @@ impl LtlProfile {
     /// Stable profile identity string.
     pub const fn identity(self) -> &'static str {
         match self {
-            Self::LtlfFiniteTrace => "mltl.ltlf-finite-trace/v1",
+            Self::LtlfFiniteTrace => tl_syntax::LTLF_FINITE_TRACE_PROFILE,
             Self::InfiniteTrace => "mltl.infinite-trace/v1",
         }
     }
@@ -214,13 +214,63 @@ pub enum LtlDialectRevision {
 }
 
 /// The owner graph of one successful parse; its edition follows the profile.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
+///
+/// On the wire the LTLf arm carries the edition's own canonical JSON as a
+/// string (`LtlfFormulaDocument` has no serde derives; it is written by
+/// `canonical_json_bytes` and read back only through its strict
+/// `from_json_bytes`). The infinite arm uses the owner's serde encoding.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+#[serde(try_from = "LtlDocumentWire")]
 pub enum LtlDocument {
     /// `tl-syntax.formula-ltlf/v1` under `mltl.ltlf-finite-trace/v1`.
     Ltlf(LtlfFormulaDocument),
     /// `tl-syntax.formula-unbounded/v1` under `mltl.infinite-trace/v1`.
     Infinite(InfiniteFormulaDocument),
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+enum LtlDocumentWire {
+    Ltlf(String),
+    Infinite(InfiniteFormulaDocument),
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum LtlDocumentWireRef<'a> {
+    Ltlf(String),
+    Infinite(&'a InfiniteFormulaDocument),
+}
+
+impl TryFrom<LtlDocumentWire> for LtlDocument {
+    type Error = String;
+
+    fn try_from(wire: LtlDocumentWire) -> Result<Self, Self::Error> {
+        match wire {
+            LtlDocumentWire::Ltlf(text) => {
+                LtlfFormulaDocument::from_json_bytes(text.as_bytes(), SyntaxArtifactLimits::default())
+                    .map(Self::Ltlf)
+                    .map_err(|error| error.to_string())
+            }
+            LtlDocumentWire::Infinite(document) => Ok(Self::Infinite(document)),
+        }
+    }
+}
+
+impl Serialize for LtlDocument {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let wire = match self {
+            Self::Ltlf(document) => {
+                let bytes = document
+                    .canonical_json_bytes()
+                    .map_err(serde::ser::Error::custom)?;
+                let text = String::from_utf8(bytes).map_err(serde::ser::Error::custom)?;
+                LtlDocumentWireRef::Ltlf(text)
+            }
+            Self::Infinite(document) => LtlDocumentWireRef::Infinite(document),
+        };
+        wire.serialize(serializer)
+    }
 }
 
 impl LtlDocument {

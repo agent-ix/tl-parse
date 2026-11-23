@@ -95,6 +95,12 @@ pub(crate) struct Lexed {
     /// For each `(` token index: the matching `)` exists and a comparison occurs
     /// at that parenthesis's own depth before it. One pass, no backtracking.
     pub(crate) opens_comparison: Vec<bool>,
+    /// For each `(` token index: a formula operator occurs at its own depth
+    /// before the first comparison there (`(p1 & x > 0)`).
+    pub(crate) mixed_formula: Vec<bool>,
+    /// For each `(` token index: end offset of the first comparison operator
+    /// at its own depth (0 when there is none).
+    pub(crate) comparison_end: Vec<usize>,
     /// Largest explicit `p<digits>` identity in the source.
     pub(crate) max_explicit_proposition: Option<u32>,
     pub(crate) work: usize,
@@ -115,7 +121,7 @@ const RESERVED_AGGREGATION: [&str; 8] = [
 // SPEC-GAP: FR-029 lists the reserved words but not the single-letter operator
 // keywords. Since `F`, `G`, `U`, `R`, `W`, `M` lex as operators and `X`, `O`,
 // `H`, `Y`, `S`, `T` as refused operators, none of them can name a signal in v5.
-const UNSUPPORTED_WORDS: [&str; 7] = ["X", "O", "H", "Y", "S", "T", "fair"];
+const UNSUPPORTED_WORDS: [&str; 9] = ["X", "Xs", "Xw", "O", "H", "Y", "S", "T", "fair"];
 
 fn classify(lexeme: &str) -> Option<Keyword> {
     let keyword = match lexeme {
@@ -136,21 +142,9 @@ fn classify(lexeme: &str) -> Option<Keyword> {
     Some(keyword)
 }
 
-/// Whether `name` cannot be referenced as a signal in v5 (FR-029 "Reserved names").
-pub(crate) fn is_reserved_name(name: &str) -> bool {
-    if classify(name).is_some() {
-        return true;
-    }
-    match name.strip_prefix('p') {
-        Some(digits) => !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit()),
-        None => false,
-    }
-}
-
 struct Lexer<'a> {
     source: &'a str,
     bytes: &'a [u8],
-    limits: ParseLimits,
     offset: usize,
     tokens: Vec<Token>,
     work: usize,
@@ -162,7 +156,6 @@ pub(crate) fn lex(source: &str, limits: ParseLimits, sink: &mut Sink) -> Lexed {
     let mut lexer = Lexer {
         source,
         bytes: source.as_bytes(),
-        limits,
         offset: 0,
         tokens: Vec::new(),
         work: 0,
@@ -221,19 +214,53 @@ pub(crate) fn lex(source: &str, limits: ParseLimits, sink: &mut Sink) -> Lexed {
         start: eof,
         end: eof,
     });
-    let opens_comparison = comparison_parentheses(&lexer.tokens);
+    let marks = comparison_parentheses(&lexer.tokens);
     Lexed {
         tokens: lexer.tokens,
-        opens_comparison,
+        opens_comparison: marks.opens_comparison,
+        mixed_formula: marks.mixed_formula,
+        comparison_end: marks.comparison_end,
         max_explicit_proposition: lexer.max_explicit_proposition,
         work: lexer.work,
         stopped: lexer.stopped,
     }
 }
 
-/// One stack pass: marks each `(` whose own depth holds a comparison operator.
-fn comparison_parentheses(tokens: &[Token]) -> Vec<bool> {
-    let mut marks = vec![false; tokens.len()];
+struct ParenthesisMarks {
+    opens_comparison: Vec<bool>,
+    mixed_formula: Vec<bool>,
+    comparison_end: Vec<usize>,
+}
+
+const fn is_formula_operator(kind: Tok) -> bool {
+    matches!(
+        kind,
+        Tok::Not
+            | Tok::And
+            | Tok::Or
+            | Tok::Implies
+            | Tok::Equivalent
+            | Tok::Keyword(
+                Keyword::Future
+                    | Keyword::Globally
+                    | Keyword::Until
+                    | Keyword::Release
+                    | Keyword::WeakUntil
+                    | Keyword::StrongRelease
+            )
+    )
+}
+
+/// One stack pass: marks each `(` whose own depth holds a comparison operator,
+/// whether a formula operator precedes that comparison at the same depth, and
+/// where the first such comparison ends. No backtracking.
+fn comparison_parentheses(tokens: &[Token]) -> ParenthesisMarks {
+    let mut marks = ParenthesisMarks {
+        opens_comparison: vec![false; tokens.len()],
+        mixed_formula: vec![false; tokens.len()],
+        comparison_end: vec![0; tokens.len()],
+    };
+    let mut formula_seen = vec![false; tokens.len()];
     let mut open: Vec<usize> = Vec::new();
     for (index, token) in tokens.iter().enumerate() {
         match token.kind {
@@ -242,8 +269,19 @@ fn comparison_parentheses(tokens: &[Token]) -> Vec<bool> {
                 open.pop();
             }
             kind if kind.is_comparison() => {
-                if let Some(top) = open.last() {
-                    marks[*top] = true;
+                if let Some(top) = open.last().copied() {
+                    if !marks.opens_comparison[top] {
+                        marks.opens_comparison[top] = true;
+                        marks.comparison_end[top] = token.end;
+                        marks.mixed_formula[top] = formula_seen[top];
+                    }
+                }
+            }
+            kind if is_formula_operator(kind) => {
+                if let Some(top) = open.last().copied() {
+                    if !marks.opens_comparison[top] {
+                        formula_seen[top] = true;
+                    }
                 }
             }
             _ => {}

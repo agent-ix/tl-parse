@@ -23,7 +23,10 @@ mod parser;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use tl_syntax::{FormulaDocument, SemanticProfile, SignalCatalogDocument, SourceSpan};
+use tl_syntax::{
+    ExprNode, FormulaDocument, Predicate, PredicateTableSchemaVersion, SemanticProfile,
+    SignalCatalogDocument, SourceSpan,
+};
 
 use crate::{
     diagnostic::preflight_parse_artifact, lexer::checked_span, ParseArtifactLimits, ParseLimits,
@@ -32,11 +35,14 @@ use crate::{
 
 pub use format::format_clean_ascii_v5;
 // UNBUILT-PIN: `PredicateTableDocument` is the tl-syntax FR-303 owned document
-// written concurrently in TL-code-tl-syntax (TL-420). Replace the current
-// tl-syntax rev in Cargo.toml with the merged rev that exports it.
+// (TL-420), reached through the `[patch]` in Cargo.toml until the merged rev
+// is pinned.
 pub use model::PredicateTableDocument;
 
 /// Stable identity of the numeric predicate dialect.
+// SPEC-GAP: FR-028 calls `DIALECT_V5_REVISION` "an integer"; every earlier
+// `DIALECT_V*_REVISION` is the identity string, so the string keeps that name
+// and the integer is `DIALECT_V5_REVISION_NUMBER`.
 pub const DIALECT_V5_REVISION: &str = "tl-parse.clean-ascii/v5";
 
 /// Integer revision of the v5 dialect (no digest record, unlike v4; ADR-020).
@@ -52,7 +58,7 @@ pub const NUMERIC_DIAGNOSTICS_SCHEMA_VERSION: &str = "tl-parse.numeric-diagnosti
 pub const DIALECT_V5_DOCUMENT: &str = include_str!("../../docs/DIALECT-005-clean-ascii-v5.md");
 
 /// Maximum fractional digits (decimal scale) of a v5 literal.
-pub const MAX_NUMERIC_SCALE: u8 = 18;
+pub const MAX_NUMERIC_SCALE: u8 = tl_syntax::MAX_DECIMAL_SCALE;
 
 /// Maximum bytes of a v5 identifier (equal to the catalog signal-name bound).
 pub const MAX_NUMERIC_IDENTIFIER_BYTES: usize = 255;
@@ -288,6 +294,9 @@ pub struct NumericCatalogEcho {
     pub binding_count: usize,
 }
 
+// SPEC-GAP: FR-028 names `tl-syntax.signal-catalog/v1`; tl-syntax now also
+// admits v2 catalogs. v5 accepts any catalog tl-syntax validates, and the echo
+// records which schema it was.
 impl NumericCatalogEcho {
     pub(crate) fn of(catalog: &SignalCatalogDocument) -> Self {
         Self {
@@ -299,8 +308,12 @@ impl NumericCatalogEcho {
 }
 
 /// Result of one bounded v5 parse attempt (`tl-parse.numeric-parse-report/v1`).
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(try_from = "NumericParseReportWire")]
+///
+/// The report serializes through the owner encodings of its documents. It is
+/// read back only by [`NumericParseReport::from_json_bytes`], which needs the
+/// catalog: a predicate table is valid only against a catalog, so it is
+/// re-validated by the tl-syntax constructor rather than trusted (FR-030-AC-3).
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct NumericParseReport {
     /// Report wire identity.
     pub schema_version: NumericParseSchemaVersion,
@@ -312,7 +325,8 @@ pub struct NumericParseReport {
     pub semantic_profile: SemanticProfile,
     /// Effective limits after clamping.
     pub limits: ParseLimits,
-    /// Deterministic counters; `nodes` counts formula and expression nodes.
+    /// Deterministic counters; `nodes` counts formula nodes and the expression
+    /// nodes of distinct (table) predicates.
     pub stats: ParseStats,
     /// Structural echo of the catalog.
     pub catalog: NumericCatalogEcho,
@@ -328,6 +342,16 @@ pub struct NumericParseReport {
     pub refusal: Option<NumericRefusal>,
 }
 
+/// Report-local mirror of the owner predicate-table wire shape. It is never
+/// trusted: [`PredicateTableDocument::new`] re-types it against the catalog.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PredicateTableMirror {
+    schema_version: PredicateTableSchemaVersion,
+    expressions: Vec<ExprNode>,
+    predicates: Vec<Predicate>,
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NumericParseReportWire {
@@ -339,16 +363,15 @@ struct NumericParseReportWire {
     stats: ParseStats,
     catalog: NumericCatalogEcho,
     document: Option<FormulaDocument>,
-    predicate_table: Option<PredicateTableDocument>,
+    predicate_table: Option<PredicateTableMirror>,
     predicate_spans: Vec<SourceSpan>,
     diagnostics: Vec<NumericDiagnostic>,
     refusal: Option<NumericRefusal>,
 }
 
-impl TryFrom<NumericParseReportWire> for NumericParseReport {
-    type Error = &'static str;
-
-    fn try_from(wire: NumericParseReportWire) -> Result<Self, Self::Error> {
+impl NumericParseReportWire {
+    fn admit(self, catalog: &SignalCatalogDocument) -> Result<NumericParseReport, String> {
+        let wire = self;
         if wire.limits != wire.limits.clamped()
             || wire.stats.tokens > wire.limits.max_tokens
             || wire.stats.nodes > wire.limits.max_nodes
@@ -356,7 +379,10 @@ impl TryFrom<NumericParseReportWire> for NumericParseReport {
             || wire.stats.diagnostics != wire.diagnostics.len()
             || wire.stats.diagnostics > wire.limits.max_diagnostics
         {
-            return Err("v5 report counters exceed effective limits");
+            return Err("v5 report counters exceed effective limits".to_owned());
+        }
+        if wire.catalog != NumericCatalogEcho::of(catalog) {
+            return Err("v5 report catalog echo differs from the supplied catalog".to_owned());
         }
         let bounded = |span: &SourceSpan| {
             usize::try_from(span.end()).is_ok_and(|end| end <= wire.stats.source_bytes)
@@ -365,32 +391,42 @@ impl TryFrom<NumericParseReportWire> for NumericParseReport {
             || wire.diagnostics.iter().any(|item| !bounded(&item.span))
             || wire.refusal.is_some_and(|refusal| !bounded(&refusal.span))
         {
-            return Err("v5 report span exceeds source bytes");
+            return Err("v5 report span exceeds source bytes".to_owned());
         }
         if wire.document.is_some() == wire.refusal.is_some() {
-            return Err("v5 refusal must occur exactly when the graph is absent");
+            return Err("v5 refusal must occur exactly when the graph is absent".to_owned());
         }
         if wire.document.is_some() {
             if !wire.diagnostics.is_empty() || wire.stats.diagnostics_truncated {
-                return Err("successful v5 report carries diagnostics");
+                return Err("successful v5 report carries diagnostics".to_owned());
             }
             if !matches!(
                 wire.semantic_profile,
                 SemanticProfile::ClosedTraceV1 | SemanticProfile::OnlinePrefixV1
             ) {
-                return Err("successful v5 report has a non-v5 profile");
-            }
-            let entries = wire
-                .predicate_table
-                .as_ref()
-                .map_or(0, model::predicate_count);
-            if entries != wire.predicate_spans.len() {
-                return Err("v5 predicate spans differ from the table");
+                return Err("successful v5 report has a non-v5 profile".to_owned());
             }
         } else if wire.predicate_table.is_some() || !wire.predicate_spans.is_empty() {
-            return Err("failed v5 report carries a predicate table");
+            return Err("failed v5 report carries a predicate table".to_owned());
         }
-        Ok(Self {
+        let predicate_table = match wire.predicate_table {
+            None => None,
+            Some(mirror) => {
+                let _ = mirror.schema_version;
+                let view = catalog.validate().map_err(|error| error.to_string())?;
+                let table =
+                    PredicateTableDocument::new(view, mirror.expressions, mirror.predicates)
+                        .map_err(|error| error.to_string())?;
+                Some(table)
+            }
+        };
+        let entries = predicate_table
+            .as_ref()
+            .map_or(0, |table| table.predicates().len());
+        if entries != wire.predicate_spans.len() {
+            return Err("v5 predicate spans differ from the table".to_owned());
+        }
+        Ok(NumericParseReport {
             schema_version: wire.schema_version,
             diagnostics_schema: wire.diagnostics_schema,
             dialect_revision: wire.dialect_revision,
@@ -399,7 +435,7 @@ impl TryFrom<NumericParseReportWire> for NumericParseReport {
             stats: wire.stats,
             catalog: wire.catalog,
             document: wire.document,
-            predicate_table: wire.predicate_table,
+            predicate_table,
             predicate_spans: wire.predicate_spans,
             diagnostics: wire.diagnostics,
             refusal: wire.refusal,
@@ -408,17 +444,23 @@ impl TryFrom<NumericParseReportWire> for NumericParseReport {
 }
 
 impl NumericParseReport {
-    /// Strict-reads one canonical, bounded v5 report (FR-030-AC-3).
+    /// Strict-reads one canonical, bounded v5 report against `catalog`
+    /// (FR-030-AC-3).
     ///
-    /// Unknown fields, unknown codes, trailing data, non-canonical bytes and
-    /// over-limit documents are refused.
+    /// Unknown fields, unknown codes, trailing data, non-canonical bytes,
+    /// over-limit documents, a catalog echo that differs from `catalog`, and a
+    /// predicate table that does not type against `catalog` are refused.
     pub fn from_json_bytes(
         bytes: &[u8],
         limits: ParseArtifactLimits,
+        catalog: &SignalCatalogDocument,
     ) -> Result<Self, StrictParseArtifactReadError> {
         preflight_parse_artifact(bytes, limits)?;
-        let report: Self =
+        let wire: NumericParseReportWire =
             serde_json::from_slice(bytes).map_err(StrictParseArtifactReadError::InvalidDocument)?;
+        let report = wire.admit(catalog).map_err(|message| {
+            StrictParseArtifactReadError::InvalidDocument(serde::de::Error::custom(message))
+        })?;
         let encoded =
             serde_json::to_vec(&report).map_err(StrictParseArtifactReadError::InvalidDocument)?;
         if encoded != bytes {

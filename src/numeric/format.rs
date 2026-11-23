@@ -18,7 +18,10 @@ use super::{
     model::{read_table, CatalogView, Expr, Predicate, PredicateTableDocument},
     MAX_NUMERIC_SCALE,
 };
-use crate::{FormatError, FormatErrorCode, FormatLimits, FormatReport, FormatStats, HARD_MAX_DEPTH};
+use crate::{
+    FormatError, FormatErrorCode, FormatLimits, FormatReport, FormatStats, HARD_MAX_DEPTH,
+    HARD_MAX_NODES,
+};
 
 /// Renders one comparison as canonical text, or `None` if a signal is absent.
 pub(crate) fn render_predicate(
@@ -261,6 +264,11 @@ pub fn format_clean_ascii_v5(
     let mut explicit_max: Option<u32> = None;
     let mut predicate_order: Vec<u32> = Vec::new();
     let mut predicate_seen: BTreeSet<u32> = BTreeSet::new();
+    // Shared operands (from `W`/`M` lowering) print once per use, so the text
+    // can describe a tree far larger than the graph. `visits` counts the nodes
+    // a re-parse of the text would build; `reachable` is the graph's own count.
+    let mut visits = arena.len();
+    let mut reachable: BTreeSet<u32> = BTreeSet::new();
     let mut actions = vec![Action::Node(formula.root(), Context::Root)];
     while let Some(action) = actions.pop() {
         let piece = match action {
@@ -269,7 +277,19 @@ pub fn format_clean_ascii_v5(
                 let Some(node) = formula.node(id) else {
                     return refuse(limits, stats, FormatErrorCode::InvalidGraph, "absent node");
                 };
-                stats.nodes = stats.nodes.saturating_add(1);
+                reachable.insert(id.0);
+                stats.nodes = reachable.len();
+                visits = visits.saturating_add(1);
+                if visits > HARD_MAX_NODES {
+                    // SPEC-GAP (FR-031): a graph whose shared operands expand
+                    // past the node limit has no text that re-parses to it.
+                    return refuse(
+                        limits,
+                        stats,
+                        FormatErrorCode::UnrepresentableGraph,
+                        "the expanded text would exceed the parser node limit",
+                    );
+                }
                 if let Err(error) = charge(&mut stats, 1, limits) {
                     return FormatReport {
                         limits,

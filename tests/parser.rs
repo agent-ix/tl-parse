@@ -134,7 +134,11 @@ fn graph_is_topological_and_nodes_retain_full_source_spans() {
             | NodeKind::Globally { operand, .. }
             | NodeKind::Once { operand, .. }
             | NodeKind::Historically { operand, .. }
-            | NodeKind::StrongPrevious { operand } => assert!((operand.0 as usize) < index),
+            | NodeKind::StrongPrevious { operand }
+            | NodeKind::LtlfFuture { operand }
+            | NodeKind::LtlfGlobally { operand }
+            | NodeKind::StrongNext { operand }
+            | NodeKind::WeakNext { operand } => assert!((operand.0 as usize) < index),
             NodeKind::And { left, right }
             | NodeKind::Or { left, right }
             | NodeKind::Implies { left, right }
@@ -142,7 +146,9 @@ fn graph_is_topological_and_nodes_retain_full_source_spans() {
             | NodeKind::Until { left, right, .. }
             | NodeKind::Release { left, right, .. }
             | NodeKind::Since { left, right, .. }
-            | NodeKind::Triggered { left, right, .. } => {
+            | NodeKind::Triggered { left, right, .. }
+            | NodeKind::LtlfUntil { left, right }
+            | NodeKind::LtlfRelease { left, right } => {
                 assert!((left.0 as usize) < index);
                 assert!((right.0 as usize) < index);
             }

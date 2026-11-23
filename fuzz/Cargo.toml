@@ -16,6 +16,11 @@ libfuzzer-sys = "0.4"
 serde_json = "1"
 tl-parse = { path = ".." }
 
+# UNBUILT-PIN: the fuzz package is its own workspace, so it repeats the root
+# patch; remove both when the merged tl-syntax rev is pinned.
+[patch."https://github.com/agent-ix/tl-syntax.git"]
+tl-syntax = { path = "../../TL-code-tl-syntax" }
+
 [workspace]
 
 [[bin]]

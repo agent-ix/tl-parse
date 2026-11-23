@@ -1,28 +1,20 @@
 //! Internal v6 graph and the single boundary to the tl-syntax editions.
 //!
-//! The infinite edition (`InfiniteFormulaDocument`) is on the pinned tl-syntax
-//! rev. UNBUILT-PIN: the LTLf edition `tl-syntax.formula-ltlf/v1` (tl-syntax
-//! FR-332/FR-333, TL-428) is written concurrently in TL-code-tl-syntax; the
-//! names below are guesses recorded in PLAN-045 "Deferred verification":
-//!
-//! - `tl_syntax::LtlfFormulaDocument` (serde, `Clone + Debug + Eq`):
-//!   `new(SemanticProfile, NodeId, Vec<LtlfNode>) -> Result<Self, E: Display>`,
-//!   `root() -> NodeId`, `nodes() -> &[LtlfNode]`, `semantic_profile()`.
-//! - `tl_syntax::LtlfNode { pub kind: LtlfNodeKind, pub span: Option<SourceSpan> }`
-//!   with `LtlfNode::with_span(kind, span)`.
-//! - `tl_syntax::LtlfNodeKind::{False, True, Proposition { proposition },
-//!   Not { operand }, And/Or/Implies/Equivalent { left, right },
-//!   Future { operand }, Globally { operand }, Until { left, right },
-//!   Release { left, right }, StrongNext { operand }, WeakNext { operand }}`.
-//! - `tl_syntax::SemanticProfile::LtlfFiniteTraceV1`.
+//! UNBUILT-PIN: written against tl-syntax `TL-code-unbuilt` (TL-428), reached
+//! through the `[patch]` in `Cargo.toml`. The LTLf edition
+//! `tl-syntax.formula-ltlf/v1` stores ordinary [`Node`]s whose [`NodeKind`]
+//! gained the interval-free variants `LtlfFuture`, `LtlfGlobally`, `LtlfUntil`,
+//! `LtlfRelease`, `StrongNext` and `WeakNext`;
+//! `LtlfFormulaDocument::new(SemanticProfile, NodeId, Vec<Node>)` admits it.
+//! The infinite edition is `InfiniteFormulaDocument`.
 
 use tl_syntax::{
-    InfiniteClock, InfiniteFormulaDocument, InfiniteNode, InfiniteNodeKind, Interval, NodeId,
-    PropositionId, SemanticProfile, SourceSpan, TemporalInterval, UnboundedInterval,
+    InfiniteClock, InfiniteFormulaDocument, InfiniteNode, InfiniteNodeKind, Interval, Node,
+    NodeId, NodeKind, PropositionId, SemanticProfile, SourceSpan, TemporalInterval,
+    UnboundedInterval,
 };
 // UNBUILT-PIN: tl-syntax FR-332/FR-333 LTLf edition (see module docs).
 pub use tl_syntax::LtlfFormulaDocument;
-use tl_syntax::{LtlfNode, LtlfNodeKind};
 
 /// One v6 node; operands are indices of earlier nodes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -139,47 +131,56 @@ pub(crate) fn to_ltlf(root: usize, items: &[Item]) -> Result<LtlfFormulaDocument
     let mut nodes = Vec::with_capacity(items.len());
     for item in items {
         let kind = match item.kind {
-            Kind::False => LtlfNodeKind::False,
-            Kind::True => LtlfNodeKind::True,
-            Kind::Proposition(value) => LtlfNodeKind::Proposition {
+            Kind::False => NodeKind::False,
+            Kind::True => NodeKind::True,
+            Kind::Proposition(value) => NodeKind::Proposition {
                 proposition: PropositionId(value),
             },
-            Kind::Not(operand) => LtlfNodeKind::Not { operand: id(operand)? },
-            Kind::And(left, right) => LtlfNodeKind::And {
+            Kind::Not(operand) => NodeKind::Not {
+                operand: id(operand)?,
+            },
+            Kind::And(left, right) => NodeKind::And {
                 left: id(left)?,
                 right: id(right)?,
             },
-            Kind::Or(left, right) => LtlfNodeKind::Or {
+            Kind::Or(left, right) => NodeKind::Or {
                 left: id(left)?,
                 right: id(right)?,
             },
-            Kind::Implies(left, right) => LtlfNodeKind::Implies {
+            Kind::Implies(left, right) => NodeKind::Implies {
                 left: id(left)?,
                 right: id(right)?,
             },
-            Kind::Equivalent(left, right) => LtlfNodeKind::Equivalent {
+            Kind::Equivalent(left, right) => NodeKind::Equivalent {
                 left: id(left)?,
                 right: id(right)?,
             },
-            Kind::Future(operand) => LtlfNodeKind::Future { operand: id(operand)? },
-            Kind::Globally(operand) => LtlfNodeKind::Globally { operand: id(operand)? },
-            Kind::Until(left, right) => LtlfNodeKind::Until {
+            Kind::Future(operand) => NodeKind::LtlfFuture {
+                operand: id(operand)?,
+            },
+            Kind::Globally(operand) => NodeKind::LtlfGlobally {
+                operand: id(operand)?,
+            },
+            Kind::Until(left, right) => NodeKind::LtlfUntil {
                 left: id(left)?,
                 right: id(right)?,
             },
-            Kind::Release(left, right) => LtlfNodeKind::Release {
+            Kind::Release(left, right) => NodeKind::LtlfRelease {
                 left: id(left)?,
                 right: id(right)?,
             },
-            Kind::StrongNext(operand) => LtlfNodeKind::StrongNext { operand: id(operand)? },
-            Kind::WeakNext(operand) => LtlfNodeKind::WeakNext { operand: id(operand)? },
+            Kind::StrongNext(operand) => NodeKind::StrongNext {
+                operand: id(operand)?,
+            },
+            Kind::WeakNext(operand) => NodeKind::WeakNext {
+                operand: id(operand)?,
+            },
             Kind::Next(_) => return Err("bare X has no LTLf node".to_owned()),
         };
-        let node = match item.span {
-            Some(span) => LtlfNode::with_span(kind, span),
-            None => LtlfNode::new(kind),
-        };
-        nodes.push(node);
+        nodes.push(match item.span {
+            Some(span) => Node::with_span(kind, span),
+            None => Node::new(kind),
+        });
     }
     LtlfFormulaDocument::new(SemanticProfile::LtlfFiniteTraceV1, id(root)?, nodes)
         .map_err(|error| error.to_string())
@@ -190,23 +191,24 @@ pub(crate) fn from_ltlf(document: &LtlfFormulaDocument) -> Result<(usize, Vec<Ki
     let mut kinds = Vec::with_capacity(document.nodes().len());
     for node in document.nodes() {
         kinds.push(match node.kind {
-            LtlfNodeKind::False => Kind::False,
-            LtlfNodeKind::True => Kind::True,
-            LtlfNodeKind::Proposition { proposition } => Kind::Proposition(proposition.0),
-            LtlfNodeKind::Not { operand } => Kind::Not(index(operand)?),
-            LtlfNodeKind::And { left, right } => Kind::And(index(left)?, index(right)?),
-            LtlfNodeKind::Or { left, right } => Kind::Or(index(left)?, index(right)?),
-            LtlfNodeKind::Implies { left, right } => Kind::Implies(index(left)?, index(right)?),
-            LtlfNodeKind::Equivalent { left, right } => {
+            NodeKind::False => Kind::False,
+            NodeKind::True => Kind::True,
+            NodeKind::Proposition { proposition } => Kind::Proposition(proposition.0),
+            NodeKind::Not { operand } => Kind::Not(index(operand)?),
+            NodeKind::And { left, right } => Kind::And(index(left)?, index(right)?),
+            NodeKind::Or { left, right } => Kind::Or(index(left)?, index(right)?),
+            NodeKind::Implies { left, right } => Kind::Implies(index(left)?, index(right)?),
+            NodeKind::Equivalent { left, right } => {
                 Kind::Equivalent(index(left)?, index(right)?)
             }
-            LtlfNodeKind::Future { operand } => Kind::Future(index(operand)?),
-            LtlfNodeKind::Globally { operand } => Kind::Globally(index(operand)?),
-            LtlfNodeKind::Until { left, right } => Kind::Until(index(left)?, index(right)?),
-            LtlfNodeKind::Release { left, right } => Kind::Release(index(left)?, index(right)?),
-            LtlfNodeKind::StrongNext { operand } => Kind::StrongNext(index(operand)?),
-            LtlfNodeKind::WeakNext { operand } => Kind::WeakNext(index(operand)?),
-            #[allow(unreachable_patterns)]
+            NodeKind::LtlfFuture { operand } => Kind::Future(index(operand)?),
+            NodeKind::LtlfGlobally { operand } => Kind::Globally(index(operand)?),
+            NodeKind::LtlfUntil { left, right } => Kind::Until(index(left)?, index(right)?),
+            NodeKind::LtlfRelease { left, right } => Kind::Release(index(left)?, index(right)?),
+            NodeKind::StrongNext { operand } => Kind::StrongNext(index(operand)?),
+            NodeKind::WeakNext { operand } => Kind::WeakNext(index(operand)?),
+            // Interval-bearing and past nodes are refused by the LTLf edition
+            // and cannot occur in an admitted document.
             _ => return Err("LTLf node outside tl-parse.clean-ascii/v6".to_owned()),
         });
     }
