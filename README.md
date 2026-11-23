@@ -121,6 +121,8 @@ The hostile-input corpus is in `corpus/` and the fuzz package is in `fuzz/`.
 
 ## Contributing
 
+Before merging a change to a figure or to the data a figure reads, run `make figures-check`; it writes nothing and fails when a file in `docs/images` is missing, stale or orphaned, and `make figures` regenerates them. Both need `ixd`: `cargo install --locked --git https://github.com/agent-ix/ix-diagrams ix-diagrams`, or set `IXD=<path>`. Hosted CI is manual-only and does not run them.
+
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](CLA.md). The change history is in
 [CHANGELOG.md](CHANGELOG.md).
 
