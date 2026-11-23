@@ -240,11 +240,16 @@ fn campaign(root: &Path, target: Target) -> Result<Outcome, String> {
 fn main() -> ExitCode {
     let mut arguments = env::args_os().skip(1);
     let (Some(raw_target), None) = (arguments.next(), arguments.next()) else {
-        eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2|numeric_v5_roundtrip|clean_ascii_v6>");
+        eprintln!(
+            "usage: fuzz_campaign <parser|clean_ascii_v2|numeric_v5_roundtrip|clean_ascii_v6>"
+        );
         return ExitCode::from(64);
     };
     let Some(target) = Target::parse(&raw_target) else {
-        eprintln!("unknown fuzz target {raw_target:?}; expected parser, clean_ascii_v2, numeric_v5_roundtrip or clean_ascii_v6");
+        eprintln!(
+            "unknown fuzz target {raw_target:?}; expected parser, clean_ascii_v2, \
+             numeric_v5_roundtrip or clean_ascii_v6"
+        );
         return ExitCode::from(64);
     };
     match campaign(Path::new(env!("CARGO_MANIFEST_DIR")), target) {

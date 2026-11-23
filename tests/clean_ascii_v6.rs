@@ -227,21 +227,45 @@ fn no_v6_entry_point_lacks_a_profile_and_the_profile_has_no_default() {
     let _parse: fn(&str, LtlProfile, ParseLimits) -> LtlParseReport = parse_clean_ascii_v6;
     let _format: fn(&LtlDocument, LtlProfile, FormatLimits) -> tl_parse::LtlFormatReport =
         format_clean_ascii_v6;
-    // Every public v6 function names its profile (typed or explicit identity).
+    let _by_identity: fn(&str, &str, ParseLimits) -> Result<LtlParseReport, _> =
+        parse_clean_ascii_v6_with_profile_identity;
+    // The complete public function surface of the v6 module: every entry point
+    // that parses or formats takes the profile (typed, or as an explicit
+    // identity string); the rest are report readers and accessors, which read
+    // a profile already recorded and never choose one.
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/ltl");
-    for file in ["mod.rs", "format.rs"] {
+    let mut names = Vec::new();
+    for file in ["mod.rs", "format.rs", "parser.rs", "model.rs"] {
         let source = fs::read_to_string(root.join(file)).unwrap();
-        let mut rest = source.as_str();
-        while let Some(at) = rest.find("pub fn ") {
-            let signature_end = rest[at..].find('{').map_or(rest.len(), |end| at + end);
-            let signature = &rest[at..signature_end];
-            let takes_profile = signature.contains("profile: LtlProfile")
-                || signature.contains("profile_identity: &str")
-                || signature.contains("&self");
-            assert!(takes_profile, "{file}: {signature}");
-            rest = &rest[signature_end..];
+        for line in source.lines() {
+            let line = line.trim_start();
+            for prefix in ["pub fn ", "pub const fn "] {
+                if let Some(rest) = line.strip_prefix(prefix) {
+                    let name: String = rest
+                        .chars()
+                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                        .collect();
+                    names.push(format!("{file}:{name}"));
+                }
+            }
         }
     }
+    names.sort();
+    assert_eq!(
+        names,
+        vec![
+            "format.rs:as_str",
+            "format.rs:format_clean_ascii_v6",
+            "mod.rs:as_str",
+            "mod.rs:from_json_bytes",
+            "mod.rs:identity",
+            "mod.rs:parse_clean_ascii_v6",
+            "mod.rs:parse_clean_ascii_v6_with_profile_identity",
+            "mod.rs:profile",
+            "mod.rs:refusal_priority",
+            "mod.rs:to_json",
+        ]
+    );
     // The identity-string selector refuses anything but the two v6 identities.
     for identity in ["", "ltlf", "mltl.closed-trace/v1", "mltl.ltlf-finite-trace/v2"] {
         let refused =
@@ -275,11 +299,22 @@ const PRECEDENCE: [(&str, &str); 10] = [
     ("!G p0 & F !p1 U p2", "!G p0 & F !p1 U p2"),
 ];
 
-fn kinds(report: &LtlParseReport) -> String {
-    // Graph identity without spans, via the canonical serialization of the
-    // owner document with spans stripped by re-parsing canonical text.
-    format!("{:?}", report.document.as_ref().map(LtlDocument::profile))
-        + &text(report)
+/// Graph identity without spans: profile, root and node kinds in order.
+/// Spans of non-canonical source differ from those of its canonical text.
+fn shape(report: &LtlParseReport) -> String {
+    match report.document.as_ref() {
+        Some(LtlDocument::Ltlf(document)) => format!(
+            "ltlf {:?} {:?}",
+            document.root(),
+            document.nodes().iter().map(|node| node.kind).collect::<Vec<_>>()
+        ),
+        Some(LtlDocument::Infinite(document)) => format!(
+            "infinite {:?} {:?}",
+            document.root(),
+            document.nodes().iter().map(|node| node.kind).collect::<Vec<_>>()
+        ),
+        None => "none".to_owned(),
+    }
 }
 
 // Trace: TC-118, FR-060-AC-1
@@ -301,11 +336,9 @@ fn every_population_and_precedence_formula_round_trips_to_a_fixed_point() {
             let formatted = text(&first);
             assert_eq!(formatted, canonical, "{source}");
             let second = v6(&formatted, profile);
-            // Canonical text re-parses to itself, so its graph (spans included)
-            // is a fixed point.
+            // parse(format(g)) = g up to spans, and the text is a fixed point.
+            assert_eq!(shape(&second), shape(&first), "{source}");
             assert_eq!(text(&second), formatted, "{source}");
-            assert_eq!(v6(&formatted, profile).document, second.document);
-            assert_eq!(kinds(&first), kinds(&second));
             checked += 1;
         }
     }
@@ -489,13 +522,21 @@ fn the_hostile_corpus_matches_its_manifest_under_each_profile() {
 
 // Trace: TC-121, FR-061-AC-2
 #[test]
-fn the_fuzz_target_and_its_twenty_nine_seeds_are_checked_in() {
+fn the_fuzz_target_and_its_seeds_cover_both_profile_bits() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     assert!(root.join("fuzz/fuzz_targets/clean_ascii_v6.rs").is_file());
-    let seeds = fs::read_dir(root.join("fuzz/corpus/clean_ascii_v6"))
-        .unwrap()
-        .count();
-    assert_eq!(seeds, 29);
+    let (directory, manifest) = corpus();
+    let seeds = root.join("fuzz/corpus/clean_ascii_v6");
+    assert_eq!(fs::read_dir(&seeds).unwrap().count(), 2 * manifest.cases.len());
+    // Each of the 29 corpus cases is seeded once per profile bit.
+    for case in &manifest.cases {
+        let source = fs::read(directory.join(&case.path)).unwrap();
+        for (suffix, bit) in [("ltlf", 0_u8), ("infinite", 1_u8)] {
+            let seed = fs::read(seeds.join(format!("{}-{suffix}.txt", case.id))).unwrap();
+            assert_eq!(seed.first(), Some(&bit), "{}", case.id);
+            assert_eq!(&seed[1..], source.as_slice(), "{}", case.id);
+        }
+    }
 }
 
 // Trace: TC-122, FR-061-AC-1
@@ -508,7 +549,10 @@ fn the_report_reader_is_strict() {
     let text = String::from_utf8(bytes).unwrap();
     let unknown = text.replacen('{', "{\"extra\":0,", 1);
     assert!(LtlParseReport::from_json_bytes(unknown.as_bytes(), limits).is_err());
-    let flipped = text.replace("mltl.infinite-trace/v1\",\"limits", "mltl.ltlf-finite-trace/v1\",\"limits");
+    let flipped = text.replace(
+        "mltl.infinite-trace/v1\",\"limits",
+        "mltl.ltlf-finite-trace/v1\",\"limits",
+    );
     assert!(LtlParseReport::from_json_bytes(flipped.as_bytes(), limits).is_err());
 }
 
@@ -517,11 +561,10 @@ fn the_report_reader_is_strict() {
 // Trace: TC-123, FR-062-AC-1, StR-044-VC-2
 #[test]
 fn dialect_identities_v1_to_v4_are_unchanged() {
-    // Byte identity of v1..v4 records, documents and corpora: this change edits
-    // none of them, and their existing suites (corpus, format,
-    // versioned_dialects, clean_ascii_v2/v3, infinite_v4) are unchanged.
-    // Decision 7 forbids registering new digest pins, so no digest literal is
-    // added here.
+    // Byte identity of the v1..v4 records, digests, documents, corpora and
+    // seeds is checked against pre-change copies in
+    // tests/existing_dialects_unchanged.rs (no digest literal is pinned,
+    // decision 7). Here: the identities, and that v6 is a distinct dialect.
     assert_eq!(tl_parse::DIALECT_REVISION, "tl-parse.clean-ascii/v1");
     assert_eq!(tl_parse::DIALECT_V2_REVISION, "tl-parse.clean-ascii/v2");
     assert_eq!(tl_parse::DIALECT_V3_REVISION, "tl-parse.clean-ascii/v3");

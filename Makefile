@@ -121,7 +121,7 @@ conformance:
 # the owner depth-ceiling test stays native (NFR-005-AC-6).
 MIRI_TOOLCHAIN ?= nightly-2026-08-21
 MIRIFLAGS ?= -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-disable-isolation
-MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes --test corpus --test infinite_loci --test infinite_trace_corpus --test owner_infinite_corpus --test past_history_corpus --test numeric_v5 --test clean_ascii_v6
+MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes --test corpus --test infinite_loci --test infinite_trace_corpus --test owner_infinite_corpus --test past_history_corpus --test numeric_v5 --test clean_ascii_v6 --test existing_dialects_unchanged
 
 .PHONY: miri
 miri:

@@ -1,0 +1,262 @@
+{
+  "schemaVersion": "tl-parse.infinite-loci-corpus/v1",
+  "profile": "mltl.infinite-trace/v1",
+  "clock": "event_position",
+  "dialect": "tl-parse.clean-ascii/v4",
+  "cases": [
+    {
+      "id": "loci-future-unbounded",
+      "source": "F[2,)p0",
+      "expectedCanonical": "F[2,)p0",
+      "intervalSpans": [
+        [
+          1,
+          5
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-globally-unbounded",
+      "source": "G[0,)p0",
+      "expectedCanonical": "G[0,)p0",
+      "intervalSpans": [
+        [
+          1,
+          5
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-once-unbounded",
+      "source": "O[3,)p0",
+      "expectedCanonical": "O[3,)p0",
+      "intervalSpans": [
+        [
+          1,
+          5
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-historically-unbounded",
+      "source": "H[1,)p0",
+      "expectedCanonical": "H[1,)p0",
+      "intervalSpans": [
+        [
+          1,
+          5
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-until-unbounded",
+      "source": "p0 U[1,) p1",
+      "expectedCanonical": "(p0 U[1,) p1)",
+      "intervalSpans": [
+        [
+          4,
+          8
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-release-unbounded",
+      "source": "p0 R[1,) p1",
+      "expectedCanonical": "(p0 R[1,) p1)",
+      "intervalSpans": [
+        [
+          4,
+          8
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-since-unbounded",
+      "source": "p0 S[1,) p1",
+      "expectedCanonical": "(p0 S[1,) p1)",
+      "intervalSpans": [
+        [
+          4,
+          8
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-triggered-unbounded",
+      "source": "p0 T[1,) p1",
+      "expectedCanonical": "(p0 T[1,) p1)",
+      "intervalSpans": [
+        [
+          4,
+          8
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-closed-then-unbounded",
+      "source": "G[0,3]F[1,)p0",
+      "expectedCanonical": "G[0,3]F[1,)p0",
+      "intervalSpans": [
+        [
+          1,
+          6
+        ],
+        [
+          7,
+          11
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-u32-max-lower-bound",
+      "source": "F[4294967295,)p0",
+      "expectedCanonical": "F[4294967295,)p0",
+      "intervalSpans": [
+        [
+          1,
+          14
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-empty-fairness-envelope",
+      "source": "fair {}: F[0,)p0",
+      "expectedCanonical": "F[0,)p0",
+      "intervalSpans": [
+        [
+          10,
+          14
+        ]
+      ],
+      "premiseSpans": []
+    },
+    {
+      "id": "loci-one-premise-trailing-semicolon",
+      "source": "fair {G[0,)p0;}: p1",
+      "expectedCanonical": "fair {G[0,)p0}: p1",
+      "intervalSpans": [
+        [
+          7,
+          11
+        ]
+      ],
+      "premiseSpans": [
+        [
+          6,
+          13
+        ]
+      ]
+    },
+    {
+      "id": "loci-two-premises",
+      "source": "fair { G[0,)p0; O[1,)p1 } : F[0,)p2",
+      "expectedCanonical": "fair {G[0,)p0; O[1,)p1}: F[0,)p2",
+      "intervalSpans": [
+        [
+          8,
+          12
+        ],
+        [
+          17,
+          21
+        ],
+        [
+          29,
+          33
+        ]
+      ],
+      "premiseSpans": [
+        [
+          7,
+          14
+        ],
+        [
+          16,
+          23
+        ]
+      ]
+    },
+    {
+      "id": "loci-integer-overflow-lower-bound",
+      "source": "F[4294967296,)p0",
+      "expectedCode": "integer_overflow",
+      "expectedSpan": [
+        2,
+        12
+      ]
+    },
+    {
+      "id": "loci-inverted-closed-interval",
+      "source": "F[3,1]p0",
+      "expectedCode": "invalid_interval",
+      "expectedSpan": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "loci-missing-lower-bound",
+      "source": "F[,)p0",
+      "expectedCode": "unexpected_token",
+      "expectedSpan": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "loci-missing-operand-at-end",
+      "source": "F[2,)",
+      "expectedCode": "unexpected_token",
+      "expectedSpan": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "loci-star-upper-bound-outside-dialect",
+      "source": "p0 U[1,*] p1",
+      "expectedCode": "unexpected_character",
+      "expectedSpan": [
+        7,
+        8
+      ]
+    },
+    {
+      "id": "loci-missing-premise-separator",
+      "source": "fair {G[0,)p0 O[1,)p1}: p2",
+      "expectedCode": "missing_token",
+      "expectedSpan": [
+        14,
+        15
+      ]
+    },
+    {
+      "id": "loci-missing-brace",
+      "source": "fair G[0,)p0: p1",
+      "expectedCode": "missing_token",
+      "expectedSpan": [
+        5,
+        6
+      ]
+    },
+    {
+      "id": "loci-duplicate-premise",
+      "source": "fair {G[0,)p0; G[0,)p0}: p1",
+      "expectedCode": "duplicate_fairness_premise",
+      "expectedSpan": [
+        15,
+        22
+      ]
+    }
+  ]
+}

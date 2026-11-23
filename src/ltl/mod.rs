@@ -247,11 +247,12 @@ impl TryFrom<LtlDocumentWire> for LtlDocument {
 
     fn try_from(wire: LtlDocumentWire) -> Result<Self, Self::Error> {
         match wire {
-            LtlDocumentWire::Ltlf(text) => {
-                LtlfFormulaDocument::from_json_bytes(text.as_bytes(), SyntaxArtifactLimits::default())
-                    .map(Self::Ltlf)
-                    .map_err(|error| error.to_string())
-            }
+            LtlDocumentWire::Ltlf(text) => LtlfFormulaDocument::from_json_bytes(
+                text.as_bytes(),
+                SyntaxArtifactLimits::default(),
+            )
+            .map(Self::Ltlf)
+            .map_err(|error| error.to_string()),
             LtlDocumentWire::Infinite(document) => Ok(Self::Infinite(document)),
         }
     }
@@ -404,7 +405,13 @@ impl Sink {
         }
     }
 
-    pub(crate) fn push(&mut self, code: LtlDiagnosticCode, start: usize, end: usize, message: String) {
+    pub(crate) fn push(
+        &mut self,
+        code: LtlDiagnosticCode,
+        start: usize,
+        end: usize,
+        message: String,
+    ) {
         let span = checked_span(start, end);
         self.refusal = match self.refusal {
             Some(previous) if previous.code.refusal_priority() >= code.refusal_priority() => {
@@ -433,7 +440,11 @@ impl Sink {
 /// Under `LtlfFiniteTrace` the graph is `tl-syntax.formula-ltlf/v1`; under
 /// `InfiniteTrace` it is `tl-syntax.formula-unbounded/v1`, where `F p` is
 /// `F[0,) p` (likewise `G`, `U`, `R`) and `X p` is `F[1,1] p`.
-pub fn parse_clean_ascii_v6(source: &str, profile: LtlProfile, limits: ParseLimits) -> LtlParseReport {
+pub fn parse_clean_ascii_v6(
+    source: &str,
+    profile: LtlProfile,
+    limits: ParseLimits,
+) -> LtlParseReport {
     parser::parse(source, profile, limits)
 }
 

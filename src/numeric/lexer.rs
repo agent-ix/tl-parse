@@ -382,7 +382,10 @@ impl Lexer<'_> {
             Code::UnexpectedCharacter,
             start,
             self.offset,
-            format!("character {:?} is outside the ASCII dialect", &self.source[start..self.offset]),
+            format!(
+                "character {:?} is outside the ASCII dialect",
+                &self.source[start..self.offset]
+            ),
         );
         self.push(Tok::Invalid, start);
     }

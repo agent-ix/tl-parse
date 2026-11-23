@@ -12,7 +12,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use tl_syntax::{FormulaDocument, NodeId, NodeKind, SemanticProfile, SignalCatalogDocument, SignalDomain};
+use tl_syntax::{
+    FormulaDocument, NodeId, NodeKind, SemanticProfile, SignalCatalogDocument, SignalDomain,
+};
 
 use super::{
     model::{read_table, CatalogView, Expr, Predicate, PredicateTableDocument},
@@ -154,7 +156,12 @@ enum Action {
     Text(String),
 }
 
-fn refuse(limits: FormatLimits, stats: FormatStats, code: FormatErrorCode, message: &str) -> FormatReport {
+fn refuse(
+    limits: FormatLimits,
+    stats: FormatStats,
+    code: FormatErrorCode,
+    message: &str,
+) -> FormatReport {
     FormatReport {
         limits,
         stats,

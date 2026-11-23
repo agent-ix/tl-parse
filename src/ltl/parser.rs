@@ -210,7 +210,8 @@ pub(crate) fn lex(source: &str, limits: ParseLimits, sink: &mut Sink) -> Lexed {
         let constant = [("true", Tok::True), ("false", Tok::False)]
             .into_iter()
             .find(|(word, _)| {
-                rest.starts_with(word) && !bytes.get(start + word.len()).is_some_and(|b| is_word(*b))
+                rest.starts_with(word)
+                    && !bytes.get(start + word.len()).is_some_and(|b| is_word(*b))
             });
         if let Some((word, kind)) = constant {
             offset = push(kind, start + word.len(), &mut tokens);
@@ -447,7 +448,8 @@ impl Parser {
                             Code::NextStrengthUndefined,
                             token.start,
                             token.end,
-                            "Xs and Xw are LTLf-only; the infinite profile has no end of trace, write X"
+                            "Xs and Xw are LTLf-only; the infinite profile has no end of \
+                             trace, write X"
                                 .to_owned(),
                         )
                     }

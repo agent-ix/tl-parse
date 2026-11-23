@@ -64,8 +64,8 @@ layer 2  TL-429
 | Dialect renumbered to `tl-parse.clean-ascii/v6` | TL program decision 2026-11-23 item 2 (numeric P-TL-150 keeps v5) | ADR-041, FR-058..FR-062, TM-043 and DIALECT document name updated from v5 to v6 |
 | No v6 dialect record or digest | ADR-041 asks for one; decision 7 forbids new digest/pin registrations | Human confirmation that v6 stays digest-free like numeric v5 |
 | TL-429 UNBUILT: no `cargo`/`rustc`/`make` was run (branch `TL-code-unbuilt`) | Program rule for unbuilt code | `make ci` at the TL-429 head after the tl-syntax pin below lands |
-| UNBUILT-PIN tl-syntax rev | `Cargo.toml` pins tl-syntax origin/main `a80d09e`, which lacks the FR-332/FR-333 LTLf edition (TL-428) | Replace with the merged tl-syntax rev of TL-428; then fix `src/ltl/model.rs` only |
-| Guessed tl-syntax LTLf API (all in `src/ltl/model.rs`) | Edition written concurrently, not merged | Confirm `LtlfFormulaDocument::{new(SemanticProfile, NodeId, Vec<LtlfNode>), root(), nodes(), semantic_profile()}` with serde; `LtlfNode { kind, span }` with `new`/`with_span`; `LtlfNodeKind` variants `False True Proposition Not And Or Implies Equivalent Future Globally Until Release StrongNext WeakNext` with interval-free fields; `SemanticProfile::LtlfFiniteTraceV1` |
+| UNBUILT-PIN tl-syntax rev | `Cargo.toml` pins tl-syntax origin/main `a80d09e` and a `[patch]` (root and `fuzz/`) points at the sibling `../TL-code-tl-syntax` worktree; locks not regenerated | Merge TL-428, pin its rev, delete both `[patch]` sections, regenerate locks |
+| tl-syntax LTLf API (all in `src/ltl/model.rs`) | Written against tl-syntax `TL-code-unbuilt`: plain `Node` with `NodeKind::{LtlfFuture, LtlfGlobally, LtlfUntil, LtlfRelease, StrongNext, WeakNext}`, `LtlfFormulaDocument::new(SemanticProfile, NodeId, Vec<Node>)`; the report carries the LTLf arm as the edition's canonical JSON string (the document has no serde derives) | Re-read those signatures at the merged rev |
 | TC-112 FR-058-AC-1 | unbuilt; population read as 4 leaves {p0, p1, true, false} + unary over leaves + binary over leaf pairs (120 = 4 + 5x4 + 6x16, 116 = 4 + 4x4 + 6x16) | `the_depth_one_population_parses_under_its_profile` |
 | TC-113 FR-058-AC-2 | unbuilt; all of `W M O H Y S T` share `unsupported_operator` (one code per refusal class, read of "its own code") | `intervals_and_out_of_dialect_operators_have_their_own_codes` |
 | TC-114 FR-059-AC-1, StR-044-VC-1 | unbuilt | `one_text_two_profiles_two_graphs` |
@@ -74,11 +74,12 @@ layer 2  TL-429
 | TC-118 FR-060-AC-1 | unbuilt; graph equality is asserted on canonical text (spans differ between non-canonical source and its canonical text) | `every_population_and_precedence_formula_round_trips_to_a_fixed_point` |
 | TC-119 FR-060-AC-2 | unbuilt | `graphs_outside_the_image_are_not_expressible` |
 | TC-120, TC-122 FR-061-AC-1 | unbuilt; FR-061 says "3 parse, 26 refused under each profile", but bare `X` parses under the infinite profile and `Xs`/`Xw` under LTLf, so the manifest records 5 (LTLf) and 4 (infinite) parses; expectations derived from source, not run | `the_hostile_corpus_matches_its_manifest_under_each_profile` |
-| TC-121 FR-061-AC-2 | unbuilt; `fuzz/Cargo.lock` not regenerated | `make fuzz-build fuzz-smoke` |
-| TC-123 FR-062-AC-1, StR-044-VC-2 | no digest literals pinned (decision 7); byte identity argued from untouched v1..v4 sources, records and corpora | existing v1..v4 suites green at head |
+| TC-121 FR-061-AC-2 | unbuilt; 58 seeds (each case under both profile bits); `fuzz/Cargo.lock` not regenerated | `make fuzz-build fuzz-smoke` |
+| TC-123 FR-062-AC-1, StR-044-VC-2 | unbuilt; byte identity checked against pre-change copies in `tests/fixtures/pre-v5` (no digest literals, decision 7). v1..v4 code touched only for the six new `NodeKind` arms in `src/formatter.rs::operands` and `tests/parser.rs` (behaviour-neutral) | `tests/existing_dialects_unchanged.rs` green at head |
 | TC-124 FR-062-AC-2 | unbuilt | `dialects_v1_to_v4_still_refuse_bracket_free_temporal_text` |
 | TC-125 NFR-046-AC-1 | unbuilt | `each_ceiling_accepts_at_its_value_and_refuses_one_past_it` |
 | TC-126 NFR-046-AC-2 | unbuilt; Miri list extended with `--test clean_ascii_v6` but not run | `two_runs_produce_byte_equal_reports`, `make miri` |
+| Corpus provenance | The Python generator was removed (Rust-only repository); fixtures, manifest and seeds are hand-maintained data checked by the tests | none |
 
 ## Ungrounded items
 

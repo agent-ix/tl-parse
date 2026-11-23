@@ -20,9 +20,13 @@ use tl_parse::{
 fn catalog(selector: u8) -> Option<SignalCatalogDocument> {
     let mut signals = vec![
         ("speed", SignalDomain::Integer(IntegerSignalDomain::new(-1_000, 1_000).ok()?)),
-        ("temp", SignalDomain::FixedDecimal(FixedDecimalSignalDomain::new(-10_000, 10_000, 2).ok()?)),
+        ("temp", SignalDomain::FixedDecimal(
+            FixedDecimalSignalDomain::new(-10_000, 10_000, 2).ok()?,
+        )),
         ("door", SignalDomain::Boolean),
-        ("tenth", SignalDomain::FixedDecimal(FixedDecimalSignalDomain::new(-1_000, 1_000, 1).ok()?)),
+        ("tenth", SignalDomain::FixedDecimal(
+            FixedDecimalSignalDomain::new(-1_000, 1_000, 1).ok()?,
+        )),
     ];
     if selector & 1 == 1 {
         signals.push(("each", SignalDomain::Integer(IntegerSignalDomain::new(0, 9).ok()?)));

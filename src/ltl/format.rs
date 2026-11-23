@@ -173,7 +173,9 @@ pub fn format_clean_ascii_v6(
         );
     }
     let read = match document {
-        LtlDocument::Ltlf(ltlf) => from_ltlf(ltlf).map(|(root, kinds)| Image::Expressible(root, kinds)),
+        LtlDocument::Ltlf(ltlf) => {
+            from_ltlf(ltlf).map(|(root, kinds)| Image::Expressible(root, kinds))
+        }
         LtlDocument::Infinite(infinite) => from_infinite(infinite),
     };
     let (root, kinds) = match read {

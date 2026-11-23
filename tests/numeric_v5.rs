@@ -113,8 +113,12 @@ fn span(report: &NumericParseReport) -> (u32, u32) {
 #[test]
 fn dialect_profile_and_catalog_are_explicit_and_refused_before_lexing() {
     // The catalog is a required argument: a v5 call without one does not compile.
-    let _entry: fn(&str, &SignalCatalogDocument, SemanticProfile, ParseLimits) -> NumericParseReport =
-        parse_clean_ascii_v5;
+    let _entry: fn(
+        &str,
+        &SignalCatalogDocument,
+        SemanticProfile,
+        ParseLimits,
+    ) -> NumericParseReport = parse_clean_ascii_v5;
     assert_eq!(DIALECT_V5_REVISION, "tl-parse.clean-ascii/v5");
     for profile in [
         SemanticProfile::OriginCompleteHistoryV1,
@@ -122,7 +126,12 @@ fn dialect_profile_and_catalog_are_explicit_and_refused_before_lexing() {
     ] {
         // `=` would be a lexical error; the profile refusal precedes lexing.
         let report =
-            parse_clean_ascii_v5("(speed = 5)", &standard_catalog(), profile, ParseLimits::default());
+            parse_clean_ascii_v5(
+                "(speed = 5)",
+                &standard_catalog(),
+                profile,
+                ParseLimits::default(),
+            );
         assert_eq!(first_code(&report), Some(NumericDiagnosticCode::ProfileMismatch));
         assert_eq!(report.diagnostics.len(), 1);
         assert_eq!(report.stats.tokens, 0);
@@ -130,7 +139,12 @@ fn dialect_profile_and_catalog_are_explicit_and_refused_before_lexing() {
     }
     for profile in [SemanticProfile::ClosedTraceV1, SemanticProfile::OnlinePrefixV1] {
         let report =
-            parse_clean_ascii_v5("(speed > 5)", &standard_catalog(), profile, ParseLimits::default());
+            parse_clean_ascii_v5(
+                "(speed > 5)",
+                &standard_catalog(),
+                profile,
+                ParseLimits::default(),
+            );
         assert!(report.document.is_some(), "{:?}", report.diagnostics);
         assert_eq!(report.semantic_profile, profile);
     }
@@ -164,9 +178,8 @@ fn existing_dialects_reject_every_v5_only_form() {
             "v4 {form}"
         );
     }
-    // Byte identity of v1..v4 outputs is carried by the unchanged suites
-    // (corpus, format, versioned_dialects, infinite_v4); this change edits none
-    // of their sources, records or corpora.
+    // Byte identity of v1..v4 records, documents, corpora and seeds is checked
+    // against pre-change copies in tests/existing_dialects_unchanged.rs.
 }
 
 // Trace: TC-1542, FR-028-AC-3
@@ -311,7 +324,9 @@ proptest! {
 
     // Trace: TC-1545, FR-029-AC-3
     #[test]
-    fn arbitrary_bytes_never_panic_and_yield_graph_xor_refusal(bytes in proptest::collection::vec(any::<u8>(), 0..256)) {
+    fn arbitrary_bytes_never_panic_and_yield_graph_xor_refusal(
+        bytes in proptest::collection::vec(any::<u8>(), 0..256),
+    ) {
         let source = String::from_utf8_lossy(&bytes);
         let report = v5(&source);
         prop_assert!(report.document.is_some() != report.refusal.is_some());
@@ -416,26 +431,78 @@ fn more_than_sixty_four_diagnostics_keep_the_first_and_the_decisive_refusal() {
 // Trace: TC-1548, FR-030-AC-3
 #[test]
 fn the_report_reader_is_strict() {
+    let catalog = standard_catalog();
+    let read = |bytes: &[u8], limits: ParseArtifactLimits| {
+        NumericParseReport::from_json_bytes(bytes, limits, &catalog)
+    };
     let report = v5("(speed > 0) & p0");
     let bytes = report.to_json().unwrap().into_bytes();
     let limits = ParseArtifactLimits::default();
-    assert_eq!(
-        NumericParseReport::from_json_bytes(&bytes, limits).unwrap(),
-        report
-    );
+    assert_eq!(read(&bytes, limits).unwrap(), report);
     let text = String::from_utf8(bytes.clone()).unwrap();
     let unknown_field = text.replacen('{', "{\"extra\":1,", 1);
-    assert!(NumericParseReport::from_json_bytes(unknown_field.as_bytes(), limits).is_err());
+    assert!(read(unknown_field.as_bytes(), limits).is_err());
     let refused = v5("(nope > 0)").to_json().unwrap();
     let unknown_code = refused.replace("unknown_signal", "made_up_code");
-    assert!(NumericParseReport::from_json_bytes(unknown_code.as_bytes(), limits).is_err());
+    assert!(read(unknown_code.as_bytes(), limits).is_err());
     let trailing = format!("{text} ");
-    assert!(NumericParseReport::from_json_bytes(trailing.as_bytes(), limits).is_err());
+    assert!(read(trailing.as_bytes(), limits).is_err());
     let small = ParseArtifactLimits {
         document_bytes: 8,
         ..limits
     };
-    assert!(NumericParseReport::from_json_bytes(&bytes, small).is_err());
+    assert!(read(&bytes, small).is_err());
+    // The table is re-typed against the supplied catalog, not trusted: a
+    // different catalog (other echo, other signals) is refused.
+    let other = reserved_catalog();
+    assert!(NumericParseReport::from_json_bytes(&bytes, limits, &other).is_err());
+}
+
+// Trace: TC-1544, FR-029-AC-2
+#[test]
+fn chained_arithmetic_counts_toward_the_expression_depth_limit() {
+    let ok = format!("(1{} > 0)", " + 1".repeat(255));
+    assert!(v5(&ok).document.is_some());
+    let over = format!("(1{} > 0)", " + 1".repeat(256));
+    let report = v5(&over);
+    assert_eq!(first_code(&report), Some(NumericDiagnosticCode::DepthLimit));
+    let last = u32::try_from(over.rfind('1').unwrap()).unwrap();
+    assert_eq!(span(&report), (1, last + 1));
+}
+
+// Trace: TC-1544, FR-029-AC-2
+#[test]
+fn edge_spellings_have_their_closest_codes() {
+    for (source, code, locus) in [
+        ("(p1 & speed > 0)", NumericDiagnosticCode::UnparenthesizedComparison, "p1 & speed >"),
+        ("(scale(speed, -1) > 0)", NumericDiagnosticCode::UnexpectedToken, "-1"),
+        ("Xs p1", NumericDiagnosticCode::UnsupportedOperator, "Xs"),
+        ("Xw p1", NumericDiagnosticCode::UnsupportedOperator, "Xw"),
+    ] {
+        let report = v5(source);
+        assert_eq!(first_code(&report), Some(code), "{source}");
+        let start = u32::try_from(source.find(locus).unwrap()).unwrap();
+        let end = start + u32::try_from(locus.len()).unwrap();
+        assert_eq!(span(&report), (start, end), "{source}");
+    }
+}
+
+// Trace: TC-1543, FR-029-AC-1, NFR-016-AC-1
+#[test]
+fn repeated_comparisons_cost_no_extra_nodes() {
+    // 3 formula nodes (p, p, &) plus 3 expression nodes of one table predicate.
+    let limits = ParseLimits {
+        max_nodes: 6,
+        ..ParseLimits::default()
+    };
+    let report = parse_clean_ascii_v5(
+        "(speed + 1 > 0) & (speed+1>0)",
+        &standard_catalog(),
+        CLOSED,
+        limits,
+    );
+    assert!(report.document.is_some(), "{:?}", report.diagnostics);
+    assert_eq!(report.stats.nodes, 6);
 }
 
 // ------------------------------------------------------------------ FR-031
@@ -530,13 +597,15 @@ fn case_limits(case: &Case) -> ParseLimits {
     }
 }
 
-fn replay(case: &Case) -> Option<NumericParseReport> {
+fn replay(case: &Case) -> NumericParseReport {
     let bytes = fs::read(corpus_dir().join(&case.path)).unwrap();
-    let Ok(source) = std::str::from_utf8(&bytes) else {
-        // Byte-level case: invalid UTF-8 is refused before the parser.
+    // Byte-level case: a front end decodes invalid UTF-8 lossily (U+FFFD),
+    // which v5 then refuses at the replacement character's bytes.
+    let decoded = String::from_utf8_lossy(&bytes);
+    if std::str::from_utf8(&bytes).is_err() {
         assert_eq!(case.class, "invalid-utf8", "{}", case.id);
-        return None;
-    };
+    }
+    let source: &str = &decoded;
     let catalog = match case.catalog.as_str() {
         "standard" => standard_catalog(),
         "reserved" => reserved_catalog(),
@@ -573,7 +642,7 @@ fn replay(case: &Case) -> Option<NumericParseReport> {
         }
         _ => panic!("case {} has no single expected outcome", case.id),
     }
-    Some(report)
+    report
 }
 
 // Trace: TC-1549, FR-031-AC-1, StR-014-VC-1, TC-1559
@@ -692,13 +761,12 @@ fn fuzz_target_and_seeds_are_checked_in() {
 #[test]
 fn hostile_corpus_stays_within_the_hard_maxima() {
     for case in &load_manifest().cases {
-        if let Some(report) = replay(case) {
-            assert!(report.stats.work <= HARD_MAX_PARSE_WORK, "{}", case.id);
-            assert!(report.stats.work <= report.limits.max_work, "{}", case.id);
-            assert!(report.stats.tokens <= report.limits.max_tokens, "{}", case.id);
-            assert!(report.stats.nodes <= report.limits.max_nodes, "{}", case.id);
-            assert!(report.stats.max_depth <= report.limits.max_depth + 1, "{}", case.id);
-        }
+        let report = replay(case);
+        assert!(report.stats.work <= HARD_MAX_PARSE_WORK, "{}", case.id);
+        assert!(report.stats.work <= report.limits.max_work, "{}", case.id);
+        assert!(report.stats.tokens <= report.limits.max_tokens, "{}", case.id);
+        assert!(report.stats.nodes <= report.limits.max_nodes, "{}", case.id);
+        assert!(report.stats.max_depth <= report.limits.max_depth + 1, "{}", case.id);
     }
 }
 
@@ -708,8 +776,8 @@ fn repeated_runs_are_byte_identical() {
     for case in &load_manifest().cases {
         let first = replay(case);
         let second = replay(case);
-        let first_json = first.map(|report| report.to_json().unwrap());
-        let second_json = second.map(|report| report.to_json().unwrap());
+        let first_json = first.to_json().unwrap();
+        let second_json = second.to_json().unwrap();
         assert_eq!(first_json, second_json, "{}", case.id);
     }
 }

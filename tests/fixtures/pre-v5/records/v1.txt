@@ -1,0 +1,1 @@
+false|true|p<canonical-u32>|!|&|||->|<->|F[canonical-u32,canonical-u32]|G[canonical-u32,canonical-u32]|U[canonical-u32,canonical-u32]|R[canonical-u32,canonical-u32]|precedence:prefix>UR>&>|>implies-right>equivalent-left|whitespace:space,tab,cr,lf|profile:external

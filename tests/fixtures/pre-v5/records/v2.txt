@@ -1,0 +1,1 @@
+tl-parse.clean-ascii/v1|W[canonical-u32,canonical-u32]|M[canonical-u32,canonical-u32]|precedence:WM=UR,left|unsupported:X,Y,O,H,S,T|lowering:tl-syntax.future-lowering-request/v1|operators:tl-syntax.future-operators/v1

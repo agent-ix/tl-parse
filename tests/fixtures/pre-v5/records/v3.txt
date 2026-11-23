@@ -1,0 +1,1 @@
+boolean:tl-parse.clean-ascii/v1|O[canonical-u32,canonical-u32]|H[canonical-u32,canonical-u32]|Y|S[canonical-u32,canonical-u32]|T[canonical-u32,canonical-u32]|precedence:prefix>ST>&>|>implies-right>equivalent-left|associativity:ST-left|profile:mltl.origin-complete-history/v1|operators:tl-syntax.past-operators/v1|unsupported:X,F,G,U,R,W,M,weak-previous,long-names
