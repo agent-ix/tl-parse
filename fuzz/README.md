@@ -7,7 +7,9 @@ is the v2 lowering and primitive-text path. `clean_ascii_v3` exercises the
 past-time regression, and `unbounded_parse_roundtrip` exercises the v4 parser,
 formatter, and canonical fixed point. `numeric_v5_roundtrip` (TL-421, unbuilt)
 splits a catalog/profile selector byte from the source and asserts the v5
-parse-format fixed point under the hard maxima. Each target has checked seeds.
+parse-format fixed point under the hard maxima. `clean_ascii_v6` (TL-429,
+unbuilt) takes a profile bit and asserts the v6 round trip; its 29 seeds are
+the `corpus/v6` hostile cases. Each target has checked seeds.
 Their checked seeds are independently authored under `MIT OR Apache-2.0`.
 
 Seed consumption is part of the normal Rust test suite. `make fuzz-smoke`

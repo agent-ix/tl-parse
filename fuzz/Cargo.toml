@@ -52,3 +52,10 @@ path = "fuzz_targets/numeric_v5_roundtrip.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "clean_ascii_v6"
+path = "fuzz_targets/clean_ascii_v6.rs"
+test = false
+doc = false
+bench = false

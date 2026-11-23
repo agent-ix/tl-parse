@@ -1,0 +1,564 @@
+{
+  "schemaVersion": "tl-parse.corpus/v1",
+  "revision": "tl-parse-corpus/v1",
+  "family": "v6",
+  "dialect": "tl-parse.clean-ascii/v6",
+  "cases": [
+    {
+      "id": "empty",
+      "class": "empty",
+      "path": "empty.txt",
+      "ltlf": {
+        "code": "unexpected_token",
+        "span": [
+          0,
+          0
+        ]
+      },
+      "infinite": {
+        "code": "unexpected_token",
+        "span": [
+          0,
+          0
+        ]
+      },
+      "reason": "empty source"
+    },
+    {
+      "id": "whitespace",
+      "class": "whitespace",
+      "path": "whitespace.txt",
+      "ltlf": {
+        "code": "unexpected_token",
+        "span": [
+          5,
+          5
+        ]
+      },
+      "infinite": {
+        "code": "unexpected_token",
+        "span": [
+          5,
+          5
+        ]
+      },
+      "reason": "whitespace only"
+    },
+    {
+      "id": "leading-zero-atom",
+      "class": "leading-zero",
+      "path": "leading-zero-atom.txt",
+      "ltlf": {
+        "code": "non_canonical_number",
+        "span": [
+          2,
+          5
+        ]
+      },
+      "infinite": {
+        "code": "non_canonical_number",
+        "span": [
+          2,
+          5
+        ]
+      },
+      "reason": "leading-zero atom"
+    },
+    {
+      "id": "u32-overflow-atom",
+      "class": "u32-overflow",
+      "path": "u32-overflow-atom.txt",
+      "ltlf": {
+        "code": "integer_overflow",
+        "span": [
+          0,
+          11
+        ]
+      },
+      "infinite": {
+        "code": "integer_overflow",
+        "span": [
+          0,
+          11
+        ]
+      },
+      "reason": "atom beyond u32"
+    },
+    {
+      "id": "non-ascii",
+      "class": "non-ascii",
+      "path": "non-ascii.txt",
+      "ltlf": {
+        "code": "unexpected_character",
+        "span": [
+          3,
+          6
+        ]
+      },
+      "infinite": {
+        "code": "unexpected_character",
+        "span": [
+          3,
+          6
+        ]
+      },
+      "reason": "non-ASCII conjunction"
+    },
+    {
+      "id": "interval-future-closed",
+      "class": "interval",
+      "path": "interval-future-closed.txt",
+      "ltlf": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          1,
+          6
+        ]
+      },
+      "infinite": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          1,
+          6
+        ]
+      },
+      "reason": "intervals are spelled in v1 to v4"
+    },
+    {
+      "id": "interval-globally-open",
+      "class": "interval",
+      "path": "interval-globally-open.txt",
+      "ltlf": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          1,
+          5
+        ]
+      },
+      "infinite": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          1,
+          5
+        ]
+      },
+      "reason": "intervals are spelled in v1 to v4"
+    },
+    {
+      "id": "interval-until",
+      "class": "interval",
+      "path": "interval-until.txt",
+      "ltlf": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          4,
+          9
+        ]
+      },
+      "infinite": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          4,
+          9
+        ]
+      },
+      "reason": "intervals are spelled in v1 to v4"
+    },
+    {
+      "id": "interval-release",
+      "class": "interval",
+      "path": "interval-release.txt",
+      "ltlf": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          4,
+          9
+        ]
+      },
+      "infinite": {
+        "code": "interval_not_in_dialect",
+        "span": [
+          4,
+          9
+        ]
+      },
+      "reason": "intervals are spelled in v1 to v4"
+    },
+    {
+      "id": "bare-next",
+      "class": "next-strength",
+      "path": "bare-next.txt",
+      "ltlf": {
+        "code": "next_strength_required",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "infinite": {
+        "canonical": "X p0"
+      },
+      "reason": "bare X: refused under LTLf, F[1,1] under infinite"
+    },
+    {
+      "id": "strong-next",
+      "class": "next-strength",
+      "path": "strong-next.txt",
+      "ltlf": {
+        "canonical": "Xs p0"
+      },
+      "infinite": {
+        "code": "next_strength_undefined",
+        "span": [
+          0,
+          2
+        ]
+      },
+      "reason": "Xs: LTLf only"
+    },
+    {
+      "id": "weak-next",
+      "class": "next-strength",
+      "path": "weak-next.txt",
+      "ltlf": {
+        "canonical": "Xw p0"
+      },
+      "infinite": {
+        "code": "next_strength_undefined",
+        "span": [
+          0,
+          2
+        ]
+      },
+      "reason": "Xw by maximal munch: LTLf only"
+    },
+    {
+      "id": "unbalanced-open",
+      "class": "unbalanced",
+      "path": "unbalanced-open.txt",
+      "ltlf": {
+        "code": "missing_token",
+        "span": [
+          8,
+          8
+        ]
+      },
+      "infinite": {
+        "code": "missing_token",
+        "span": [
+          8,
+          8
+        ]
+      },
+      "reason": "missing )"
+    },
+    {
+      "id": "unbalanced-close",
+      "class": "unbalanced",
+      "path": "unbalanced-close.txt",
+      "ltlf": {
+        "code": "trailing_input",
+        "span": [
+          7,
+          8
+        ]
+      },
+      "infinite": {
+        "code": "trailing_input",
+        "span": [
+          7,
+          8
+        ]
+      },
+      "reason": "extra )"
+    },
+    {
+      "id": "depth-exact",
+      "class": "depth",
+      "path": "depth-exact.txt",
+      "ltlf": {
+        "canonical": "p0"
+      },
+      "infinite": {
+        "canonical": "p0"
+      },
+      "reason": "nesting at the 256 depth limit"
+    },
+    {
+      "id": "depth-over",
+      "class": "depth",
+      "path": "depth-over.txt",
+      "ltlf": {
+        "code": "depth_limit",
+        "span": [
+          256,
+          258
+        ]
+      },
+      "infinite": {
+        "code": "depth_limit",
+        "span": [
+          256,
+          258
+        ]
+      },
+      "reason": "nesting one past the limit"
+    },
+    {
+      "id": "token-exact",
+      "class": "tokens",
+      "path": "token-exact.txt",
+      "limits": {
+        "maxTokens": 4
+      },
+      "ltlf": {
+        "canonical": "!p0 & p1"
+      },
+      "infinite": {
+        "canonical": "!p0 & p1"
+      },
+      "reason": "exactly max_tokens"
+    },
+    {
+      "id": "token-over",
+      "class": "tokens",
+      "path": "token-over.txt",
+      "limits": {
+        "maxTokens": 4
+      },
+      "ltlf": {
+        "code": "token_limit",
+        "span": [
+          6,
+          7
+        ]
+      },
+      "infinite": {
+        "code": "token_limit",
+        "span": [
+          6,
+          7
+        ]
+      },
+      "reason": "max_tokens plus one"
+    },
+    {
+      "id": "unsupported-W",
+      "class": "unsupported",
+      "path": "unsupported-W.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "reason": "derived W is outside v6"
+    },
+    {
+      "id": "unsupported-M",
+      "class": "unsupported",
+      "path": "unsupported-M.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "reason": "derived M is outside v6"
+    },
+    {
+      "id": "unsupported-O",
+      "class": "unsupported",
+      "path": "unsupported-O.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "reason": "past O is outside v6"
+    },
+    {
+      "id": "unsupported-H",
+      "class": "unsupported",
+      "path": "unsupported-H.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "reason": "past H is outside v6"
+    },
+    {
+      "id": "unsupported-Y",
+      "class": "unsupported",
+      "path": "unsupported-Y.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          0,
+          1
+        ]
+      },
+      "reason": "past Y is outside v6"
+    },
+    {
+      "id": "unsupported-S",
+      "class": "unsupported",
+      "path": "unsupported-S.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "reason": "past S is outside v6"
+    },
+    {
+      "id": "unsupported-T",
+      "class": "unsupported",
+      "path": "unsupported-T.txt",
+      "ltlf": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "infinite": {
+        "code": "unsupported_operator",
+        "span": [
+          3,
+          4
+        ]
+      },
+      "reason": "past T is outside v6"
+    },
+    {
+      "id": "unknown-prefix",
+      "class": "unknown-prefix",
+      "path": "unknown-prefix.txt",
+      "ltlf": {
+        "code": "unknown_identifier",
+        "span": [
+          0,
+          2
+        ]
+      },
+      "infinite": {
+        "code": "unknown_identifier",
+        "span": [
+          0,
+          2
+        ]
+      },
+      "reason": "Xx is not a keyword"
+    },
+    {
+      "id": "nul-byte",
+      "class": "nul",
+      "path": "nul-byte.txt",
+      "ltlf": {
+        "code": "unexpected_character",
+        "span": [
+          2,
+          3
+        ]
+      },
+      "infinite": {
+        "code": "unexpected_character",
+        "span": [
+          2,
+          3
+        ]
+      },
+      "reason": "NUL byte"
+    },
+    {
+      "id": "source-exact",
+      "class": "source",
+      "path": "source-exact.txt",
+      "limits": {
+        "maxSourceBytes": 5
+      },
+      "ltlf": {
+        "canonical": "p0 & p1"
+      },
+      "infinite": {
+        "canonical": "p0 & p1"
+      },
+      "reason": "exactly max_source_bytes"
+    },
+    {
+      "id": "source-over",
+      "class": "source",
+      "path": "source-over.txt",
+      "limits": {
+        "maxSourceBytes": 5
+      },
+      "ltlf": {
+        "code": "source_limit",
+        "span": [
+          5,
+          6
+        ]
+      },
+      "infinite": {
+        "code": "source_limit",
+        "span": [
+          5,
+          6
+        ]
+      },
+      "reason": "max_source_bytes plus one"
+    }
+  ]
+}

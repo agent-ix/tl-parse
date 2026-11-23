@@ -26,6 +26,7 @@ enum Target {
     Parser,
     CleanAsciiV2,
     NumericV5Roundtrip,
+    CleanAsciiV6,
 }
 
 impl Target {
@@ -34,6 +35,7 @@ impl Target {
             Some("parser") => Some(Self::Parser),
             Some("clean_ascii_v2") => Some(Self::CleanAsciiV2),
             Some("numeric_v5_roundtrip") => Some(Self::NumericV5Roundtrip),
+            Some("clean_ascii_v6") => Some(Self::CleanAsciiV6),
             _ => None,
         }
     }
@@ -43,6 +45,7 @@ impl Target {
             Self::Parser => "parser",
             Self::CleanAsciiV2 => "clean_ascii_v2",
             Self::NumericV5Roundtrip => "numeric_v5_roundtrip",
+            Self::CleanAsciiV6 => "clean_ascii_v6",
         }
     }
 }
@@ -237,11 +240,11 @@ fn campaign(root: &Path, target: Target) -> Result<Outcome, String> {
 fn main() -> ExitCode {
     let mut arguments = env::args_os().skip(1);
     let (Some(raw_target), None) = (arguments.next(), arguments.next()) else {
-        eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2|numeric_v5_roundtrip>");
+        eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2|numeric_v5_roundtrip|clean_ascii_v6>");
         return ExitCode::from(64);
     };
     let Some(target) = Target::parse(&raw_target) else {
-        eprintln!("unknown fuzz target {raw_target:?}; expected parser, clean_ascii_v2 or numeric_v5_roundtrip");
+        eprintln!("unknown fuzz target {raw_target:?}; expected parser, clean_ascii_v2, numeric_v5_roundtrip or clean_ascii_v6");
         return ExitCode::from(64);
     };
     match campaign(Path::new(env!("CARGO_MANIFEST_DIR")), target) {
@@ -284,6 +287,11 @@ mod tests {
         assert_eq!(
             Target::parse(OsStr::new("numeric_v5_roundtrip")),
             Some(Target::NumericV5Roundtrip)
+        );
+        // Trace: TC-121, FR-061-AC-2
+        assert_eq!(
+            Target::parse(OsStr::new("clean_ascii_v6")),
+            Some(Target::CleanAsciiV6)
         );
         assert_eq!(Target::parse(OsStr::new("../parser")), None);
         assert!(ambient_sanitizer_override(Some(OsStr::new("")), None, None));
