@@ -1,0 +1,1 @@
+(speed + temp > 0)

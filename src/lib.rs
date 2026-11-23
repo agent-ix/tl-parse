@@ -12,6 +12,7 @@ mod dialect;
 mod formatter;
 mod infinite;
 mod lexer;
+mod numeric;
 mod parser;
 
 pub use context::{
@@ -39,6 +40,13 @@ pub use formatter::{format_clean_ascii_v3, format_document, format_formula};
 pub use infinite::{
     format_clean_ascii_v4, parse_clean_ascii_v4, InfiniteDialectRevision, InfiniteDisposition,
     InfiniteParseReport, InfiniteParseSchemaVersion,
+};
+pub use numeric::{
+    format_clean_ascii_v5, parse_clean_ascii_v5, NumericCatalogEcho, NumericDiagnostic,
+    NumericDiagnosticCode, NumericDiagnosticsSchemaVersion, NumericDialectRevision,
+    NumericParseReport, NumericParseSchemaVersion, NumericRefusal, PredicateTableDocument,
+    DIALECT_V5_DOCUMENT, DIALECT_V5_REVISION, DIALECT_V5_REVISION_NUMBER, MAX_NUMERIC_SCALE,
+    NUMERIC_DIAGNOSTICS_SCHEMA_VERSION, NUMERIC_PARSE_REPORT_SCHEMA_VERSION,
 };
 pub use parser::{parse, source_limit_report};
 pub use tl_syntax;

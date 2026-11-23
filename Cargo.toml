@@ -23,7 +23,10 @@ path = "src/lib.rs"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
-tl-syntax = { version = "=0.4.0", git = "https://github.com/agent-ix/tl-syntax.git", rev = "9607722f24ac1978b5e0e0ceeb0cb2a828e10177", features = ["serde"] }
+# UNBUILT-PIN: TL-421 (src/numeric) and TL-429 (src/ltl) need the tl-syntax numeric
+# model (TL-420) and LTLf edition (TL-428); this is tl-syntax origin/main at authoring
+# time and must be replaced by the merged rev of those tickets (Cargo.lock not regenerated).
+tl-syntax = { version = "=0.4.0", git = "https://github.com/agent-ix/tl-syntax.git", rev = "a80d09ed9f22c8b228c897cc2eac5b3feebd524e", features = ["serde"] }
 
 [dev-dependencies]
 command-group = "=5.0.1"

@@ -108,6 +108,7 @@ test:
 .PHONY: conformance
 conformance:
 	$(CARGO) run --quiet --example corpus_conformance -- --manifest corpus/v1/manifest.json
+	$(CARGO) test --quiet --test numeric_v5 hostile_corpus_covers_every_class_and_matches_the_parser
 
 # Miri runs every suite except `cli`, which spawns the CLI binary: the library
 # tests, the NFR-005 boundary tests, the example and property suites, and the
@@ -119,7 +120,7 @@ conformance:
 # the owner depth-ceiling test stays native (NFR-005-AC-6).
 MIRI_TOOLCHAIN ?= nightly-2026-08-21
 MIRIFLAGS ?= -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-disable-isolation
-MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes --test corpus --test infinite_loci --test infinite_trace_corpus --test owner_infinite_corpus --test past_history_corpus
+MIRI_SUITES ?= --lib --bins --test robustness --test parser --test format --test property --test contextual --test clean_ascii_v2 --test clean_ascii_v3 --test infinite_v4 --test versioned_dialects --test strict_reject_classes --test corpus --test infinite_loci --test infinite_trace_corpus --test owner_infinite_corpus --test past_history_corpus --test numeric_v5
 
 .PHONY: miri
 miri:
@@ -133,11 +134,13 @@ roundtrip:
 fuzz-build:
 	rustup run nightly cargo fuzz build parser --target-dir "$${CARGO_TARGET_DIR:-target}/fuzz"
 	rustup run nightly cargo fuzz build clean_ascii_v2 --target-dir "$${CARGO_TARGET_DIR:-target}/fuzz"
+	rustup run nightly cargo fuzz build numeric_v5_roundtrip --target-dir "$${CARGO_TARGET_DIR:-target}/fuzz"
 
 .PHONY: fuzz-smoke
 fuzz-smoke:
 	$(CARGO) run --quiet --example fuzz_campaign -- parser
 	$(CARGO) run --quiet --example fuzz_campaign -- clean_ascii_v2
+	$(CARGO) run --quiet --example fuzz_campaign -- numeric_v5_roundtrip
 
 .PHONY: build
 build:

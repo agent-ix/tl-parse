@@ -25,6 +25,7 @@ const DEADLINE: Duration = Duration::from_secs(300);
 enum Target {
     Parser,
     CleanAsciiV2,
+    NumericV5Roundtrip,
 }
 
 impl Target {
@@ -32,6 +33,7 @@ impl Target {
         match value.to_str() {
             Some("parser") => Some(Self::Parser),
             Some("clean_ascii_v2") => Some(Self::CleanAsciiV2),
+            Some("numeric_v5_roundtrip") => Some(Self::NumericV5Roundtrip),
             _ => None,
         }
     }
@@ -40,6 +42,7 @@ impl Target {
         match self {
             Self::Parser => "parser",
             Self::CleanAsciiV2 => "clean_ascii_v2",
+            Self::NumericV5Roundtrip => "numeric_v5_roundtrip",
         }
     }
 }
@@ -234,11 +237,11 @@ fn campaign(root: &Path, target: Target) -> Result<Outcome, String> {
 fn main() -> ExitCode {
     let mut arguments = env::args_os().skip(1);
     let (Some(raw_target), None) = (arguments.next(), arguments.next()) else {
-        eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2>");
+        eprintln!("usage: fuzz_campaign <parser|clean_ascii_v2|numeric_v5_roundtrip>");
         return ExitCode::from(64);
     };
     let Some(target) = Target::parse(&raw_target) else {
-        eprintln!("unknown fuzz target {raw_target:?}; expected parser or clean_ascii_v2");
+        eprintln!("unknown fuzz target {raw_target:?}; expected parser, clean_ascii_v2 or numeric_v5_roundtrip");
         return ExitCode::from(64);
     };
     match campaign(Path::new(env!("CARGO_MANIFEST_DIR")), target) {
@@ -276,6 +279,11 @@ mod tests {
         assert_eq!(
             Target::parse(OsStr::new("clean_ascii_v2")),
             Some(Target::CleanAsciiV2)
+        );
+        // Trace: TC-1556, FR-033-AC-2
+        assert_eq!(
+            Target::parse(OsStr::new("numeric_v5_roundtrip")),
+            Some(Target::NumericV5Roundtrip)
         );
         assert_eq!(Target::parse(OsStr::new("../parser")), None);
         assert!(ambient_sanitizer_override(Some(OsStr::new("")), None, None));

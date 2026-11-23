@@ -1,0 +1,1 @@
+(scale(temp, 1) > tenth)

@@ -1,0 +1,934 @@
+{
+  "schemaVersion": "tl-parse.numeric-corpus/v1",
+  "revision": "tl-parse-corpus/v1",
+  "dialect": "tl-parse.clean-ascii/v5",
+  "cases": [
+    {
+      "id": "valid-op-lt",
+      "class": "valid-operator",
+      "path": "valid-op-lt.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed < 5)",
+      "reason": "comparison <"
+    },
+    {
+      "id": "valid-op-le",
+      "class": "valid-operator",
+      "path": "valid-op-le.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed <= 5)",
+      "reason": "comparison <="
+    },
+    {
+      "id": "valid-op-gt",
+      "class": "valid-operator",
+      "path": "valid-op-gt.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed > 5)",
+      "reason": "comparison >"
+    },
+    {
+      "id": "valid-op-ge",
+      "class": "valid-operator",
+      "path": "valid-op-ge.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed >= 5)",
+      "reason": "comparison >="
+    },
+    {
+      "id": "valid-op-eq",
+      "class": "valid-operator",
+      "path": "valid-op-eq.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed == 5)",
+      "reason": "comparison =="
+    },
+    {
+      "id": "valid-op-ne",
+      "class": "valid-operator",
+      "path": "valid-op-ne.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed != 5)",
+      "reason": "comparison !="
+    },
+    {
+      "id": "valid-node-add",
+      "class": "valid-node-kind",
+      "path": "valid-node-add.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed + 1 > 0)",
+      "reason": "add"
+    },
+    {
+      "id": "valid-node-sub",
+      "class": "valid-node-kind",
+      "path": "valid-node-sub.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed - 1 > 0)",
+      "reason": "sub"
+    },
+    {
+      "id": "valid-node-mul",
+      "class": "valid-node-kind",
+      "path": "valid-node-mul.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed * 2 > 0)",
+      "reason": "mul"
+    },
+    {
+      "id": "valid-node-neg",
+      "class": "valid-node-kind",
+      "path": "valid-node-neg.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(-speed > 0)",
+      "reason": "neg"
+    },
+    {
+      "id": "valid-node-neg-literal",
+      "class": "valid-node-kind",
+      "path": "valid-node-neg-literal.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(-(5) < speed)",
+      "reason": "neg of a literal stays a node"
+    },
+    {
+      "id": "valid-node-abs",
+      "class": "valid-node-kind",
+      "path": "valid-node-abs.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(abs(speed) > 0)",
+      "reason": "abs"
+    },
+    {
+      "id": "valid-node-rescale",
+      "class": "valid-node-kind",
+      "path": "valid-node-rescale.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(scale(speed, 2) > temp)",
+      "reason": "explicit widening"
+    },
+    {
+      "id": "valid-nested-binary",
+      "class": "valid-node-kind",
+      "path": "valid-nested-binary.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "((speed + 1) + 2 > 0)",
+      "reason": "nested binary parenthesized"
+    },
+    {
+      "id": "valid-scale-0",
+      "class": "scale-0",
+      "path": "valid-scale-0.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed == 5)",
+      "reason": "scale 0 literal"
+    },
+    {
+      "id": "valid-scale-1",
+      "class": "scale-1",
+      "path": "valid-scale-1.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(tenth == 1.5)",
+      "reason": "scale 1 literal"
+    },
+    {
+      "id": "valid-scale-2",
+      "class": "scale-2",
+      "path": "valid-scale-2.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(temp == 5.00)",
+      "reason": "scale 2 keeps trailing zeros"
+    },
+    {
+      "id": "valid-scale-9",
+      "class": "scale-9",
+      "path": "valid-scale-9.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(fine == 0.000000001)",
+      "reason": "scale 9 literal"
+    },
+    {
+      "id": "valid-scale-18",
+      "class": "scale-18",
+      "path": "valid-scale-18.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(micro == 0.000000000000000001)",
+      "reason": "scale 18 literal"
+    },
+    {
+      "id": "valid-skeleton",
+      "class": "valid-operator",
+      "path": "valid-skeleton.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "G[0,5]((speed > 0)->F[1,2](temp < 1.00))&p0",
+      "reason": "temporal skeleton as v2"
+    },
+    {
+      "id": "valid-until-release",
+      "class": "valid-operator",
+      "path": "valid-until-release.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed > 0)U[0,2]p0|(speed > 0)R[1,3]p0",
+      "reason": "U and R"
+    },
+    {
+      "id": "valid-weak-until",
+      "class": "valid-operator",
+      "path": "valid-weak-until.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectFixedPoint": true,
+      "reason": "W lowered by tl-syntax; canonical is the expansion"
+    },
+    {
+      "id": "valid-strong-release",
+      "class": "valid-operator",
+      "path": "valid-strong-release.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectFixedPoint": true,
+      "reason": "M lowered by tl-syntax; canonical is the expansion"
+    },
+    {
+      "id": "valid-dedup",
+      "class": "valid-node-kind",
+      "path": "valid-dedup.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed > 0)&(speed > 0)",
+      "reason": "structurally identical comparisons share one identity"
+    },
+    {
+      "id": "minus-x-5",
+      "class": "minus-forms",
+      "path": "minus-x-5.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed - 5 > 0)",
+      "reason": "x -5 is one subtraction"
+    },
+    {
+      "id": "minus-x-minus-5",
+      "class": "minus-forms",
+      "path": "minus-x-minus-5.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed - -5 > 0)",
+      "reason": "x - -5 subtracts the literal -5"
+    },
+    {
+      "id": "minus-neg-x",
+      "class": "minus-forms",
+      "path": "minus-neg-x.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(-speed < 1)",
+      "reason": "-x is neg"
+    },
+    {
+      "id": "paren-p1",
+      "class": "paren-forms",
+      "path": "paren-p1.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "p1",
+      "reason": "(p1) is a parenthesised formula"
+    },
+    {
+      "id": "paren-x",
+      "class": "paren-forms",
+      "path": "paren-x.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "missing_token",
+      "expectedSpan": [
+        6,
+        7
+      ],
+      "reason": "(x) at formula position lacks its comparison"
+    },
+    {
+      "id": "reserved-catalog-unreferenced",
+      "class": "reserved-catalog",
+      "path": "reserved-catalog-unreferenced.txt",
+      "catalog": "reserved",
+      "profile": "closed",
+      "expectedCanonical": "(speed > 0)",
+      "reason": "catalog with reserved names serves a source that does not reference them"
+    },
+    {
+      "id": "reserved-catalog-referenced",
+      "class": "reserved-catalog",
+      "path": "reserved-catalog-referenced.txt",
+      "catalog": "reserved",
+      "profile": "closed",
+      "expectedCode": "reserved_identifier",
+      "expectedSpan": [
+        1,
+        5
+      ],
+      "reason": "reserved word as signal name"
+    },
+    {
+      "id": "reserved-p17",
+      "class": "reserved-signal-names",
+      "path": "reserved-p17.txt",
+      "catalog": "reserved",
+      "profile": "closed",
+      "expectedCode": "reserved_identifier",
+      "expectedSpan": [
+        1,
+        4
+      ],
+      "reason": "p<digits> as signal name"
+    },
+    {
+      "id": "literal-minus-zero",
+      "class": "literal-forms",
+      "path": "literal-minus-zero.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "non_canonical_number",
+      "expectedSpan": [
+        9,
+        11
+      ],
+      "reason": "-0 is not canonical"
+    },
+    {
+      "id": "literal-leading-zero",
+      "class": "literal-forms",
+      "path": "literal-leading-zero.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "non_canonical_number",
+      "expectedSpan": [
+        9,
+        12
+      ],
+      "reason": "leading zero"
+    },
+    {
+      "id": "literal-trailing-dot",
+      "class": "literal-forms",
+      "path": "literal-trailing-dot.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "non_canonical_number",
+      "expectedSpan": [
+        9,
+        11
+      ],
+      "reason": "missing fraction digits"
+    },
+    {
+      "id": "literal-leading-dot",
+      "class": "literal-forms",
+      "path": "literal-leading-dot.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unexpected_character",
+      "expectedSpan": [
+        8,
+        9
+      ],
+      "reason": "missing integer digits"
+    },
+    {
+      "id": "literal-exponent",
+      "class": "literal-forms",
+      "path": "literal-exponent.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        9,
+        12
+      ],
+      "reason": "exponent"
+    },
+    {
+      "id": "literal-hex",
+      "class": "literal-forms",
+      "path": "literal-hex.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        9,
+        13
+      ],
+      "reason": "hexadecimal"
+    },
+    {
+      "id": "literal-19-digit",
+      "class": "literal-forms",
+      "path": "literal-19-digit.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "integer_overflow",
+      "expectedSpan": [
+        9,
+        28
+      ],
+      "reason": "i64 overflow"
+    },
+    {
+      "id": "literal-scale-19",
+      "class": "literal-forms",
+      "path": "literal-scale-19.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "scale_overflow",
+      "expectedSpan": [
+        8,
+        29
+      ],
+      "reason": "scale 19"
+    },
+    {
+      "id": "literal-4096-digit",
+      "class": "literal-forms",
+      "path": "literal-4096-digit.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "integer_overflow",
+      "expectedSpan": [
+        9,
+        4105
+      ],
+      "reason": "4,096-digit literal is bounded"
+    },
+    {
+      "id": "unicode-minus",
+      "class": "non-ascii",
+      "path": "unicode-minus.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unexpected_character",
+      "expectedSpan": [
+        9,
+        12
+      ],
+      "reason": "U+2212 minus"
+    },
+    {
+      "id": "fullwidth-digit",
+      "class": "non-ascii",
+      "path": "fullwidth-digit.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unexpected_character",
+      "expectedSpan": [
+        9,
+        12
+      ],
+      "reason": "fullwidth digit"
+    },
+    {
+      "id": "nul-byte",
+      "class": "non-ascii",
+      "path": "nul-byte.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unexpected_character",
+      "expectedSpan": [
+        9,
+        10
+      ],
+      "reason": "NUL"
+    },
+    {
+      "id": "invalid-utf8",
+      "class": "invalid-utf8",
+      "path": "invalid-utf8.bin",
+      "catalog": "standard",
+      "profile": "closed",
+      "reason": "byte-level case: not UTF-8, refused before the parser"
+    },
+    {
+      "id": "identifier-255",
+      "class": "identifier-length",
+      "path": "identifier-255.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa > 0)",
+      "reason": "255-byte identifier is a catalog name"
+    },
+    {
+      "id": "identifier-256",
+      "class": "identifier-length",
+      "path": "identifier-256.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unknown_signal",
+      "expectedSpan": [
+        1,
+        257
+      ],
+      "reason": "256-byte identifier exceeds every catalog name"
+    },
+    {
+      "id": "chained-comparison",
+      "class": "chained-comparison",
+      "path": "chained-comparison.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "non_associative_comparison",
+      "expectedSpan": [
+        7,
+        12
+      ],
+      "reason": "non-associative"
+    },
+    {
+      "id": "single-equals",
+      "class": "single-equals",
+      "path": "single-equals.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unexpected_character",
+      "expectedSpan": [
+        7,
+        8
+      ],
+      "reason": "= is not =="
+    },
+    {
+      "id": "division",
+      "class": "division-modulo",
+      "path": "division.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        7,
+        8
+      ],
+      "reason": "division"
+    },
+    {
+      "id": "modulo",
+      "class": "division-modulo",
+      "path": "modulo.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        7,
+        8
+      ],
+      "reason": "modulo"
+    },
+    {
+      "id": "paren-depth-255",
+      "class": "nesting",
+      "path": "paren-depth-255.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "p1",
+      "reason": "formula nesting at the depth limit"
+    },
+    {
+      "id": "paren-depth-256",
+      "class": "nesting",
+      "path": "paren-depth-256.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "depth_limit",
+      "expectedSpan": [
+        256,
+        258
+      ],
+      "reason": "formula nesting one past the limit"
+    },
+    {
+      "id": "paren-depth-257",
+      "class": "nesting",
+      "path": "paren-depth-257.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "depth_limit",
+      "expectedSpan": [
+        256,
+        257
+      ],
+      "reason": "formula nesting two past the limit"
+    },
+    {
+      "id": "arith-depth-255",
+      "class": "nesting",
+      "path": "arith-depth-255.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed > 0)",
+      "reason": "arithmetic nesting within the limit"
+    },
+    {
+      "id": "arith-depth-256",
+      "class": "nesting",
+      "path": "arith-depth-256.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCanonical": "(speed > 0)",
+      "reason": "arithmetic nesting within the limit"
+    },
+    {
+      "id": "arith-depth-257",
+      "class": "nesting",
+      "path": "arith-depth-257.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "depth_limit",
+      "expectedSpan": [
+        256,
+        261
+      ],
+      "reason": "arithmetic nesting past the limit"
+    },
+    {
+      "id": "token-limit-exact",
+      "class": "token-flood",
+      "path": "token-limit-exact.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "limits": {
+        "maxTokens": 8
+      },
+      "expectedCanonical": "!p1&p1&p1&p1",
+      "reason": "exactly max_tokens tokens"
+    },
+    {
+      "id": "token-limit-plus-one",
+      "class": "token-flood",
+      "path": "token-limit-plus-one.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "limits": {
+        "maxTokens": 8
+      },
+      "expectedCode": "token_limit",
+      "expectedSpan": [
+        12,
+        13
+      ],
+      "reason": "max_tokens plus one"
+    },
+    {
+      "id": "code-source-limit",
+      "class": "diagnostic-code",
+      "path": "code-source-limit.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "limits": {
+        "maxSourceBytes": 4
+      },
+      "expectedCode": "source_limit",
+      "expectedSpan": [
+        4,
+        5
+      ],
+      "reason": "source limit"
+    },
+    {
+      "id": "code-node-limit",
+      "class": "diagnostic-code",
+      "path": "code-node-limit.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "limits": {
+        "maxNodes": 3
+      },
+      "expectedCode": "node_limit",
+      "expectedSpan": [
+        6,
+        8
+      ],
+      "reason": "node limit"
+    },
+    {
+      "id": "code-work-limit",
+      "class": "diagnostic-code",
+      "path": "code-work-limit.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "limits": {
+        "maxWork": 5
+      },
+      "expectedCode": "work_limit",
+      "expectedSpan": [
+        0,
+        2
+      ],
+      "reason": "work limit"
+    },
+    {
+      "id": "code-unexpected-token",
+      "class": "diagnostic-code",
+      "path": "code-unexpected-token.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unexpected_token",
+      "expectedSpan": [
+        5,
+        6
+      ],
+      "reason": "operator where an operand is expected"
+    },
+    {
+      "id": "code-missing-token",
+      "class": "diagnostic-code",
+      "path": "code-missing-token.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "missing_token",
+      "expectedSpan": [
+        8,
+        8
+      ],
+      "reason": "missing )"
+    },
+    {
+      "id": "code-trailing-input",
+      "class": "diagnostic-code",
+      "path": "code-trailing-input.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "trailing_input",
+      "expectedSpan": [
+        3,
+        5
+      ],
+      "reason": "trailing input"
+    },
+    {
+      "id": "code-profile-mismatch",
+      "class": "diagnostic-code",
+      "path": "code-profile-mismatch.txt",
+      "catalog": "standard",
+      "profile": "infinite",
+      "expectedCode": "profile_mismatch",
+      "expectedSpan": [
+        0,
+        0
+      ],
+      "reason": "infinite profile is not a v5 profile"
+    },
+    {
+      "id": "code-unknown-signal",
+      "class": "diagnostic-code",
+      "path": "code-unknown-signal.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unknown_signal",
+      "expectedSpan": [
+        1,
+        5
+      ],
+      "reason": "unknown signal"
+    },
+    {
+      "id": "code-non-numeric-signal",
+      "class": "diagnostic-code",
+      "path": "code-non-numeric-signal.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "non_numeric_signal",
+      "expectedSpan": [
+        1,
+        5
+      ],
+      "reason": "Boolean signal read as a number"
+    },
+    {
+      "id": "code-scale-mismatch",
+      "class": "diagnostic-code",
+      "path": "code-scale-mismatch.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "scale_mismatch",
+      "expectedSpan": [
+        1,
+        13
+      ],
+      "reason": "scale 0 plus scale 2"
+    },
+    {
+      "id": "code-scale-overflow",
+      "class": "diagnostic-code",
+      "path": "code-scale-overflow.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "scale_overflow",
+      "expectedSpan": [
+        1,
+        13
+      ],
+      "reason": "scale 18 times scale 2"
+    },
+    {
+      "id": "code-rescale-narrowing",
+      "class": "diagnostic-code",
+      "path": "code-rescale-narrowing.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "rescale_narrowing",
+      "expectedSpan": [
+        1,
+        15
+      ],
+      "reason": "narrowing rescale"
+    },
+    {
+      "id": "code-range-overflow",
+      "class": "diagnostic-code",
+      "path": "code-range-overflow.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "range_overflow",
+      "expectedSpan": [
+        1,
+        10
+      ],
+      "reason": "derived range exceeds i64"
+    },
+    {
+      "id": "code-unparenthesized",
+      "class": "diagnostic-code",
+      "path": "code-unparenthesized.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unparenthesized_comparison",
+      "expectedSpan": [
+        0,
+        7
+      ],
+      "reason": "bare comparison"
+    },
+    {
+      "id": "code-proposition-overflow",
+      "class": "diagnostic-code",
+      "path": "code-proposition-overflow.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "proposition_overflow",
+      "expectedSpan": [
+        14,
+        25
+      ],
+      "reason": "no fresh identity above u32::MAX"
+    },
+    {
+      "id": "code-integer-overflow-interval",
+      "class": "diagnostic-code",
+      "path": "code-integer-overflow-interval.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "integer_overflow",
+      "expectedSpan": [
+        4,
+        14
+      ],
+      "reason": "interval bound beyond u32"
+    },
+    {
+      "id": "unsupported-past",
+      "class": "unsupported-temporal",
+      "path": "unsupported-past.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        0,
+        1
+      ],
+      "reason": "past operator"
+    },
+    {
+      "id": "unsupported-next",
+      "class": "unsupported-temporal",
+      "path": "unsupported-next.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        0,
+        1
+      ],
+      "reason": "next operator"
+    },
+    {
+      "id": "unsupported-unbounded",
+      "class": "unsupported-temporal",
+      "path": "unsupported-unbounded.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        1,
+        5
+      ],
+      "reason": "unbounded interval"
+    },
+    {
+      "id": "unsupported-fairness",
+      "class": "unsupported-temporal",
+      "path": "unsupported-fairness.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        5,
+        6
+      ],
+      "reason": "fairness envelope"
+    },
+    {
+      "id": "pending-set",
+      "class": "pending-aggregation",
+      "path": "pending-set.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        0,
+        3
+      ],
+      "reason": "set declarations land with TL-424"
+    },
+    {
+      "id": "pending-contract",
+      "class": "pending-aggregation",
+      "path": "pending-contract.txt",
+      "catalog": "standard",
+      "profile": "closed",
+      "expectedCode": "unsupported_operator",
+      "expectedSpan": [
+        0,
+        8
+      ],
+      "reason": "contracts land with TL-425"
+    }
+  ]
+}
