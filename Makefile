@@ -70,6 +70,8 @@ help:
 	@echo "  make miri             - Run the pure suites under Miri on the pinned nightly"
 	@echo "  make fuzz-build       - Compile the checked-in cargo-fuzz target"
 	@echo "  make fuzz-smoke       - Execute the checked-in fuzz corpus"
+	@echo "  make figures          - Regenerate docs/images with ixd-tl"
+	@echo "  make figures-check    - Fail on a missing or stale figure, writes nothing"
 	@echo "  make deny             - cargo deny check licenses and sources"
 	@echo "  make test-execution-control-guard - Self-test the Make execution-control guard"
 	@echo "  make spec             - Validate specification and coverage with Quire"
@@ -213,10 +215,30 @@ coverage-branch:
 		--fail-under-lines $(COVERAGE_MIN_LINES)
 
 # =============================================================================
+# Documentation figures
+# =============================================================================
+#
+# docs/images/figures.json declares the figures; the shared TL figures and the
+# generate and check commands come from ix-diagrams. Install the tool once with
+#   cargo install --locked --git https://github.com/agent-ix/ix-diagrams ixd-tl
+# or point IXD_TL at a built binary. `figures-check` writes nothing and fails on
+# a missing or stale SVG or a README image whose alt text differs from the claim.
+
+IXD_TL ?= ixd-tl
+
+.PHONY: figures
+figures:
+	$(IXD_TL) generate
+
+.PHONY: figures-check
+figures-check:
+	$(IXD_TL) check
+
+# =============================================================================
 # Composite
 # =============================================================================
 
 .PHONY: ci
-ci: fmt-check lint test conformance roundtrip \
+ci: fmt-check lint test conformance roundtrip figures-check \
 	fuzz-build fuzz-smoke deny test-execution-control-guard spec \
 	msrv rustdoc miri mutants-diff
