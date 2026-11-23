@@ -45,8 +45,7 @@ round trip; seeds are the 29 corpus cases.
 
 | ID | Criteria | Verification |
 |---|---|---|
-| FR-061-AC-1 | The 29 hostile cases produce exactly their manifest outcomes with stable codes and spans, and the per-profile counts are 5 parse and 24 refused
-under `LtlfFiniteTrace` and 4 parse and 25 refused under `InfiniteTrace`. | Test (TC-120, TC-122) |
+| FR-061-AC-1 | The 29 hostile cases produce exactly their manifest outcomes with stable codes and spans, and the per-profile counts are 5 parse and 24 refused under `LtlfFiniteTrace` and 4 parse and 25 refused under `InfiniteTrace`. | Test (TC-120, TC-122) |
 | FR-061-AC-2 | The `clean_ascii_v5` fuzz target builds, replays all 29 seeds without a panic, and asserts the round trip on accepted inputs. | Test (TC-121) |
 
 ## Dependencies
