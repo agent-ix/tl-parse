@@ -1,5 +1,49 @@
 {
-  "here": "tl-parse",
-  "out": "docs/images",
-  "figures": ["hero","tl-stack","pipeline","scenario-sequence"]
+  "style": "ix-docs",
+  "data": {
+    "case_path": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "expectedCanonical", "field": "/path"},
+    "profile": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "expectedCanonical", "field": "/profile"},
+    "canonical": {"from": "find", "path": "corpus/v1/manifest.json", "pointer": "/cases", "key": "expectedCanonical", "field": "/expectedCanonical"},
+    "source": {"from": "read", "dir": "corpus/v1", "of": "case_path"},
+    "codes": {"from": "enum-variants", "path": "src/diagnostic.rs", "name": "DiagnosticCode", "plain": true}
+  },
+  "figures": [
+    {
+      "id": "hero", "width": 980, "height": 368,
+      "label": "The source text {source} and a semantic profile, {profile}, go into parse, which returns a FormulaDocument or a Diagnostic with one of {codes} stable codes and a byte span. format_document turns the document into canonical text, {canonical}. Parsing that text again gives the same graph.",
+      "items": [
+        {"k": "box", "at": [0, 24, 184, 62], "role": "code", "title": "source text", "subs": ["{source}", "corpus/v1"]},
+        {"k": "box", "at": [237, 24, 118, 62], "role": "logic", "title": "parse", "subs": ["dialect v1", "bounded"]},
+        {"k": "box", "at": [408, 24, 146, 62], "role": "model", "title": "FormulaDocument", "subs": ["tl-syntax graph", "byte spans"]},
+        {"k": "box", "at": [607, 24, 146, 62], "role": "logic", "title": "format_document", "subs": ["canonical form", "bounded"]},
+        {"k": "box", "at": [808, 24, 172, 62], "role": "code", "title": "canonical text", "subs": ["{canonical}", "no whitespace"]},
+        {"k": "line", "points": [[184, 55], [234, 55]], "role": "code"},
+        {"k": "note", "at": [210, 47], "text": "text", "role": "code", "anchor": "middle"},
+        {"k": "line", "points": [[355, 55], [405, 55]], "role": "model"},
+        {"k": "note", "at": [381, 47], "text": "graph", "role": "model", "anchor": "middle"},
+        {"k": "line", "points": [[554, 55], [604, 55]], "role": "model"},
+        {"k": "note", "at": [580, 47], "text": "graph", "role": "model", "anchor": "middle"},
+        {"k": "line", "points": [[753, 55], [805, 55]], "role": "code"},
+        {"k": "note", "at": [781, 47], "text": "text", "role": "code", "anchor": "middle"},
+        {"k": "box", "at": [0, 170, 184, 56], "role": "ink", "title": "semantic profile", "subs": ["{profile}"]},
+        {"k": "line", "points": [[184, 198], [296, 198], [296, 89]], "role": "ink"},
+        {"k": "note", "at": [192, 190], "text": "profile", "role": "ink"},
+        {"k": "box", "at": [214, 270, 180, 62], "role": "evidence", "title": "Diagnostic", "subs": ["{codes} stable codes", "byte span, no document"]},
+        {"k": "line", "points": [[340, 89], [340, 267]], "role": "evidence"},
+        {"k": "note", "at": [348, 190], "text": "refused", "role": "evidence"},
+        {"k": "box", "at": [607, 170, 146, 56], "role": "evidence", "title": "same graph", "subs": ["equal nodes, root"]},
+        {"k": "line", "points": [[481, 89], [481, 198], [604, 198]], "role": "model"},
+        {"k": "note", "at": [542, 190], "text": "graph", "role": "model", "anchor": "middle"},
+        {"k": "box", "at": [808, 170, 172, 56], "role": "logic", "title": "parse", "subs": ["canonical text again"]},
+        {"k": "line", "points": [[894, 89], [894, 167]], "role": "code"},
+        {"k": "note", "at": [902, 134], "text": "text", "role": "code"},
+        {"k": "line", "points": [[808, 198], [756, 198]], "role": "model"},
+        {"k": "note", "at": [781, 190], "text": "graph", "role": "model", "anchor": "middle"},
+        {"k": "legend", "at": [0, 360], "entries": [["code", "authored source", "box"], ["logic", "processing step", "box"], ["model", "checked document / view", "box"], ["evidence", "outcome", "box"], ["ink", "input", "box"]]}
+      ]
+    },
+    {"id": "tl-stack", "construct": {"name": "tl-stack", "here": "tl-parse"}},
+    {"id": "pipeline", "construct": {"name": "tl-pipeline", "here": "tl-parse"}},
+    {"id": "scenario-sequence", "construct": {"name": "tl-scenario", "here": "tl-parse"}}
+  ]
 }
