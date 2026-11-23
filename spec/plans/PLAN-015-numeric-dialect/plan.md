@@ -61,6 +61,7 @@ Layers follow `ix-board project-chunk P-TL-150`:
 
 | Item | Why deferred | Evidence needed to close |
 |---|---|---|
+| Dialect identity `v5` versus the plain LTL dialect v5 of P-TL-151 | Two projects claim one identity; a human decision (ADR-020) | One project renumbered to v6 and recorded |
 | All executable tests and `make ci` | No build capacity during authoring | Local gate at implementation head |
 | Longer libFuzzer campaign | Supplementary evidence, needs capacity | Retained campaign record under `fuzz/evidence/` |
 | Miri run of the new corpus | No capacity | `make miri` at head |

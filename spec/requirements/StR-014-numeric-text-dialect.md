@@ -27,7 +27,9 @@ typed diagnostics, without changing how any existing dialect parses.
 Without a surface form the numeric model of tl-syntax (FR-302 onward) is
 reachable only by hand-built documents, and reviewers cannot diff requirements.
 Existing users of dialects v1 through v4 must not see their bytes or reports
-move. TL text remains derived interchange; FSL is the editable authority.
+move. TL text remains derived interchange; FSL is the editable authority. Text authored by
+hand is unattributed (tl-syntax/ADR-014 decision 6) and a result derived from it makes
+no claim about an FSL requirement (tl-parse ADR-020).
 
 ## Validation Criteria
 
@@ -38,4 +40,4 @@ move. TL text remains derived interchange; FSL is the editable authority.
 
 ## Dependencies
 
-tl-syntax FR-302..FR-311.
+tl-syntax FR-302..FR-311 (the tl-syntax repository; this repository's StR-014 is not tl-mltl's StR-014).

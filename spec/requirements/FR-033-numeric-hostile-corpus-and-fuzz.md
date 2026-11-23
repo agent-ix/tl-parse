@@ -25,7 +25,9 @@ runner shall execute them.
   reference, expected canonical text or expected code with span, and reason. The
   required classes (a missing class fails the corpus check) are: valid per
   operator and node kind; each decimal scale 0, 1, 2, 9, 18; each diagnostic
-  code; literals `-0`, `007`, `1.`, `.5`, `1e5`, `0x10`, 19-digit overflow,
+  code; minus and parenthesis forms `x -5`, `x - -5`, `-x`, `(p1)` and `(x)`; a valid catalog with a
+  reserved-word name that the source does and does not reference;
+  literals `-0`, `007`, `1.`, `.5`, `1e5`, `0x10`, 19-digit overflow,
   scale 19, 4,096-digit literal; U+2212 minus, fullwidth digits, NUL, an invalid
   UTF-8 file (byte-level CLI case); identifier of 255 and 256 bytes; reserved
   word and `p17` as signal names; chained comparison; `=` for `==`;

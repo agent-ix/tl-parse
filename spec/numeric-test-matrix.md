@@ -11,7 +11,8 @@ relationships:
 
 Project P-TL-150, tl-parse portion: TL-421 and the parsing half of TL-424 and
 TL-425. Test ids TC-1540 through TC-1599 are reserved for this project in
-tl-parse. Every row is planned; none claims an implementation.
+tl-parse. Test case ids are per repository and overlap numerically with the ranges
+of tl-syntax and tl-mltl; cite them across repositories as `tl-parse/TC-1549`. Every row is planned; none claims an implementation.
 
 ## Test Case Summary
 

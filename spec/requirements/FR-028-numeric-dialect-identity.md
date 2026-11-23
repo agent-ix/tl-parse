@@ -9,6 +9,8 @@ relationships:
     type: depends_on
   - target: ix://agent-ix/tl-syntax/FR-303
     type: depends_on
+  - target: ix://agent-ix/tl-parse/ADR-020
+    type: depends_on
 ---
 
 # FR-028: Select a distinct numeric dialect and leave existing dialects unchanged
@@ -31,8 +33,9 @@ other dialect is selected tl-parse shall behave exactly as it does today.
 
 - A `tl-parse.numeric-parse-report/v1` report containing the validated formula
   document, the predicate table, optionally the contract-set document and the
-  aggregation expansion report, the effective limits, spans, and the catalog
-  digest; otherwise typed diagnostics and no graph.
+  aggregation expansion report, the effective limits, spans, and a structural echo
+  of the catalog (its schema identity, signal count and binding count, no digest);
+  otherwise typed diagnostics and no graph.
 
 ## Behavior
 
@@ -40,8 +43,9 @@ other dialect is selected tl-parse shall behave exactly as it does today.
   lowering). Past operators, unbounded intervals and the fairness envelope are
   refused in v5 as `unsupported_operator` with their locus; extending v5 to
   those profiles is a later dialect revision.
-- A profile other than the two future profiles above is refused before parsing
-  (`profile_mismatch`).
+- A profile other than `mltl.closed-trace/v1` and `mltl.online-prefix/v1` is refused
+  before parsing (`profile_mismatch`). Numeric past requirements therefore have no
+  text form in v5 (see ADR-020).
 - V1 through v4 reject every v5-only form (identifier atoms, comparisons,
   `each`, `some`, `atleast`, `contract`, `set`) with their existing diagnostics;
   their reports, canonical output and corpora are byte-identical to the
@@ -49,8 +53,10 @@ other dialect is selected tl-parse shall behave exactly as it does today.
 - The v5 report carries its own schema identity and diagnostics identity
   (`tl-parse.numeric-diagnostics/v1`); the existing `DiagnosticCode` wire
   vocabulary is not extended.
-- `DIALECT_V5_REVISION`, a normative `docs/DIALECT-005-clean-ascii-v5.md` and the
-  dialect digest record follow the pattern of v4.
+- `DIALECT_V5_REVISION` (an integer) and a normative
+  `docs/DIALECT-005-clean-ascii-v5.md` follow the pattern of v4; unlike v4, there is
+  no dialect digest record. The dialect identity string collides with the plain LTL
+  dialect v5 of P-TL-151 and is provisional until that human decision (ADR-020).
 
 ## Acceptance Criteria
 

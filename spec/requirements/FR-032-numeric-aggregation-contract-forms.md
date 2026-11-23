@@ -36,9 +36,12 @@ contract  = "contract" identifier ":" "assume" formula ";" "guarantee" formula "
 - The bound variable is visible only inside the quantified template, as an
   expression leaf (`x > 500`) or as a Boolean leaf (`x`). Elsewhere it is
   `slot_outside_template`. Nested quantifiers over distinct variables are
-  admitted if the product of member counts stays within the tl-syntax bound; a
-  variable that shadows an enclosing one is refused as `unexpected_token` at the
-  shadowing binder.
+  admitted to the depth of tl-syntax FR-306 (2); a third level is refused as
+  `depth_limit`. The bound is the tl-syntax FR-307 bound computed over the whole
+  composition (nodes, predicates and expression nodes, including the per-member
+  expression copies), never per level; a variable that shadows an enclosing one is
+  refused as `unexpected_token` at the shadowing binder. Fresh proposition identities
+  follow the precedence of tl-syntax FR-307 and FR-029 above.
 - `aggregation_too_large` is reported before any node is built, with the exact
   counts from tl-syntax FR-307.
 - Contracts: names unique (`duplicate_contract`), both clauses required
@@ -53,7 +56,7 @@ contract  = "contract" identifier ":" "assume" formula ";" "guarantee" formula "
 | ID | Criteria | Verification |
 |---|---|---|
 | FR-032-AC-1 | Each quantifier over Boolean and numeric member sets parses to the same graph as the hand-written expansion in the corpus, and the report records the exact node and predicate counts. | integration-testing (TC-1552) |
-| FR-032-AC-2 | An expansion at the tl-syntax bound plus one is refused with `aggregation_too_large` and counts, with no graph. | unit-testing (TC-1553) |
+| FR-032-AC-2 | An expansion at the tl-syntax bound plus one (including a nested pair whose product exceeds a bound while each level alone does not, and a template whose per-member expression copies alone exceed it) is refused with `aggregation_too_large` and counts, with no graph; a third nesting level is refused with `depth_limit`. | unit-testing (TC-1553) |
 | FR-032-AC-3 | Contract declarations parse to a contract-set document with the declared names, ids in source order, and shared roots; duplicate name and missing clause are refused. | unit-testing (TC-1554) |
 
 ## Dependencies
