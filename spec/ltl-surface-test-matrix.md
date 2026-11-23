@@ -11,6 +11,12 @@ relationships:
 
 Specification stage (TL-427). Every row is `🚧` until TL-429 lands it.
 
+Identifier scope: ids in this repository are local. `TC-nnn`, `FR-nnn` and
+`ADR-nnn` numbers may coincide with ids of the same shape in sibling repositories
+(for example tl-mltl); when a document cites an id of another repository it
+qualifies it with the repository name (`tl-mltl FR-092`, `tl-mltl TC-300`).
+Unqualified ids always mean this repository.
+
 Ticket acceptance mapping (TL-429): "new dialect; existing dialects unchanged"
 is FR-058 and FR-062; "profile is always selected explicitly, never inferred
 from spelling" is FR-059; "round-trip, fuzz and hostile-input coverage" is

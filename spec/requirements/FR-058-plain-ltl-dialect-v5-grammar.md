@@ -45,8 +45,14 @@ typed diagnostics and no graph.
 
 ## Behavior
 
-Keywords `F`, `G`, `U`, `R`, `X`, `Xs`, `Xw` are case-sensitive and lexed by
-maximal munch, so `Gp0` is `G p0` and `Xsp0` is `Xs p0`. Any interval bracket
+Keywords `F`, `G`, `U`, `R`, `X`, `Xs`, `Xw` are case-sensitive. Lexical
+grammar: at each position the lexer takes the longest of the token spellings
+`F G U R X Xs Xw true false`, `p` followed by one or more decimal digits (the
+digits are consumed greedily and must be canonical, FR-001), the operators and
+the parentheses; whitespace separates tokens but is not required between them.
+So `Gp0` is `G p0`, `Xsp0` is `Xs p0`, `Ftrue` is `F true`, `Gtrue` is `G true`,
+and `Xx` and `Uq` are an operator followed by the unknown character `x` or `q`,
+which is refused at that character's span. There is no word-boundary rule. Any interval bracket
 after a temporal keyword is refused with a diagnostic that names dialects v1
 to v4 as the interval-bearing spellings. `W`, `M`, `O`, `H`, `Y`, `S`, `T` are
 refused as unsupported in v5. Atoms, constants, Boolean operators, grouping and
