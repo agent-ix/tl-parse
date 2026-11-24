@@ -33,7 +33,7 @@ Add `rev = "<commit>"` to pin a commit. It needs the Rust version in `rust-versi
 To install the command-line tool:
 
 ```sh
-cargo install --git https://github.com/agent-ix/tl-parse --bin tl-parse
+cargo install --git https://github.com/agent-ix/tl-parse --tag v0.4.0 tl-parse --bin tl-parse
 ```
 
 To build from a clone:
