@@ -75,7 +75,7 @@ help:
 	@echo "  make deny             - cargo deny check licenses and sources"
 	@echo "  make test-execution-control-guard - Self-test the Make execution-control guard"
 	@echo "  make spec             - Validate specification and coverage with Quire"
-	@echo "  make msrv             - Check all targets and features with Rust 1.98.1"
+	@echo "  make msrv             - Check all targets and features with Rust 1.100.0"
 	@echo "  make rustdoc          - Build warning-free public documentation"
 	@echo "  make build            - Release build"
 	@echo "  make clean            - cargo clean"
@@ -175,7 +175,7 @@ spec:
 
 .PHONY: msrv
 msrv:
-	rustup run 1.98.1 $(CARGO) check --locked --all-targets --all-features
+	rustup run 1.100.0 $(CARGO) check --locked --all-targets --all-features
 
 .PHONY: rustdoc
 rustdoc:

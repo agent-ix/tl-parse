@@ -45,7 +45,7 @@ Backported from `agent-ix/ecaz`:
 - `deny.toml` allow-lists licenses and denies unknown registries/git sources
 - Clippy lints deny undocumented unsafe blocks; crate Rust lints forbid unsafe code.
 - `rustfmt.toml` uses only stable 100-character-width settings. CI fails on drift.
-- `rust-toolchain.toml` pins the exact MSRV (1.98.1) + rustfmt + clippy.
+- `rust-toolchain.toml` pins Rust 1.100.0 for development, with rustfmt and clippy.
 
 ## Layout
 
