@@ -9,16 +9,16 @@ on:
 
 jobs:
   msrv:
-    name: Rust 1.98.1 Feature Boundary
+    name: Rust 1.100.0 Feature Boundary
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install MSRV
+      - name: Install pinned compiler
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.98.1
+          toolchain: 1.100.0
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
       - name: Check library, CLI, and integration tests
@@ -33,14 +33,14 @@ jobs:
           fetch-depth: 0
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.100.0
         with:
           components: rustfmt, clippy
 
-      - name: Install MSRV toolchain
+      - name: Install pinned Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.98.1
+          toolchain: 1.100.0
 
       - name: Install nightly fuzz toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -86,7 +86,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.100.0
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
       - name: Install cargo-deny
